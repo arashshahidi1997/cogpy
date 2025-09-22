@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cogpy"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Arash Shahidi", email = "A.Shahidi@campus.lmu.de"}
+]
+
+# Keep runtime deps minimal; move heavy/optional items to extras below
+dependencies = [
+  "numpy",
+  "scipy",
+  "pandas",
+  "scikit-learn",
+  "xarray",
+  "tqdm",
+  "numba",
+  "dill",
+  "kneed",
+  "jinja2",
+  "pyts",
+  "quantities",
+]
+
+# Optional “feature” installs
+[project.optional-dependencies]
+viz = [
+  "matplotlib",
+  "seaborn",
+  "plotly",
+  "holoviews",
+  "panel",
+  "hvplot",
+  "param",
+  "ipympl",
+]
+notebook = [
+  "ipykernel",
+  "ipywidgets",
+]
+io = [
+  "h5py",
+  "tables",
+  "zarr",
+  "openpyxl",
+  "xmltodict",
+]
+perf = [
+  "dask[distributed]",
+  "pyfftw",
+]
+signal = [
+  "ghostipy",
+  "scikit-image",
+  "emd",
+]
+# The "all" extra includes all the others
+all = [
+  "cogpy[viz]",
+  "cogpy[notebook]",
+  "cogpy[io]",
+  "cogpy[perf]",
+  "cogpy[signal]",
+]
+
+
+[tool.setuptools]
+# by default, find_packages() is assumed.
+# If your source lives in src/, declare it explicitly:
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["integration: slower, external deps"]
+addopts = "-ra"

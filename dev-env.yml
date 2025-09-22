@@ -1,0 +1,35 @@
+name: cogpy-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - scikit-image
+  - tqdm
+  - xarray
+  - ipywidgets
+  - ipykernel
+  - statsmodels
+  - numba
+  - dill
+  - dask
+  - h5py
+  - xmltodict
+  - pyfftw
+  - kneed
+  - openpyxl
+  - jinja2
+  - ipympl
+  - pytables
+  - pytest        # dev-only
+  - black         # optional: code formatting
+  - pre-commit    # optional: git hook mgmt
+  - pip
+  - pip:
+      - emd       # not on conda-forge
+      - cogpy @ . # editable install of your package
