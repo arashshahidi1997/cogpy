@@ -11,7 +11,7 @@ from cogpy.utils.sliding import rolling_win
 def test_mtm_spectrogramx():
 	xsig = ld.load_sample()
 	mtspec_kwargs={'bandwidth':2, 'nperseg':128, 'noverlap': 64, 'remove_mean': True, 'fs':xsig.fs}
-	Sx = sp.mtm_spectrogramx(xsig, axis='time', **mtspec_kwargs).compute()
+	Sx = sp.mtm_spectrogramx(xsig, dim='time', **mtspec_kwargs).compute()
 	S, f, t = gsp.mtm_spectrogram(xsig[0,0].data.compute(), **mtspec_kwargs)
 	assert np.allclose(S, Sx.data[0,0]) 
 

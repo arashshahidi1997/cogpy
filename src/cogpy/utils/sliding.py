@@ -139,6 +139,20 @@ def running_measure(
 	if output_dtype is None:
 		output_dtype = np.result_type(np.asarray(xsig.data).dtype, np.float64)
 
+	# --- Chunking strategy ---
+	core_dims = tuple(measure_input_core_dims[0])  # e.g. (row_dim, col_dim, 'window')
+	# core dims: one chunk each
+	core_chunk_dict = {d: -1 for d in core_dims if d in x_roll.dims}
+	# mapped dims: everything else present in x_roll
+	mapped_dims = tuple(d for d in x_roll.dims if d not in core_dims)
+	# choose a reasonable chunk along mapped dims (tune this!)
+	mapped_chunk_size = 1024  # number of processed windows in memory, adjust to memory
+	mapped_chunk_dict = {d: mapped_chunk_size for d in mapped_dims}
+
+    # apply chunking to windows
+	if is_dask:
+		x_roll = x_roll.chunk({**core_chunk_dict, **mapped_chunk_dict})
+
 	apply_kwargs = dict(
 		input_core_dims=measure_input_core_dims,
 		output_core_dims=measure_output_core_dims,
@@ -146,15 +160,29 @@ def running_measure(
 		output_dtypes=[output_dtype],
 		kwargs=measure_kwargs,
 	)
+
 	if is_dask:
-		# make sure core dims are chunked into a single chunk
-		core_dim_chunk_dict = {d: -1 for d in measure_input_core_dims[0]}
-		x_roll = x_roll.chunk(core_dim_chunk_dict)
 		assert measure_output_sizes is not None, "Dask requires measure_output_sizes, specify as Dict[str, int]"
 		apply_kwargs.update(dask="parallelized", dask_gufunc_kwargs=dict(output_sizes=measure_output_sizes))
 
 	# Single call site
-	out: xr.DataArray = xr.apply_ufunc(measure, x_roll, **apply_kwargs)
+	out = xr.apply_ufunc(measure, x_roll, **apply_kwargs)
+
+    # keep output chunking consistent (core dims unchunked, mapped dims chunked)
+	if _is_dask_array(out):
+		# flatten the declared output core dims (single-output gufunc assumed)
+		out_core_dims = tuple(measure_output_core_dims[0]) if measure_output_core_dims else ()
+		out_core_dims = tuple(d for d in out_core_dims if d in out.dims)  # keep only present dims
+
+		# everything in the output that's not a core dim is a "mapped" dim
+		out_mapped_dims = tuple(d for d in out.dims if d not in out_core_dims)
+
+		# policy: core dims = one chunk, mapped dims = modest chunks
+		mapped_chunk_size = 1024  # tune based on your memory/dtype
+		out_core_chunk_dict = {d: -1 for d in out_core_dims}
+		out_mapped_chunk_dict = {d: mapped_chunk_size for d in out_mapped_dims}
+
+		out = out.chunk({**out_core_chunk_dict, **out_mapped_chunk_dict})
 
 	# Name and coordinates for window positions (center time of each window)
 	if name is None:
