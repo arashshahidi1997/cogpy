@@ -1,10 +1,12 @@
 import numpy as np
+import numpy as np
 import xarray as xr
+import dask.array as da
+import ghostipy as gsp
 from scipy import signal
 from typing import Callable, Dict, List, Any
 from ..utils.convert import closest_power_of_two
 from ..utils import sliding as sl
-import dask.array as da
 
 def nperseg_from_ncycle(fm, fs=1, ncycle=7, power_of_two=True):
 	"""
@@ -52,8 +54,23 @@ def dpss_tapers(N: int, NW: float = 2, K_max: int = None) -> np.ndarray:
 	return signal.windows.dpss(N, NW, Kmax=K_max)
 
 # %% ghostipy
-import numpy as np
-import ghostipy as gsp
+def mtm_kwarg_from_gsp(bandwidth, fs, nperseg, noverlap):
+	"""
+	convert ghostipy mtm_spectrogram kwargs to NW, window_size, window_step
+	"""
+	NW = bandwidth * nperseg / fs
+	window_size = nperseg
+	window_step = nperseg - noverlap
+	return {'NW': NW, 'fs': fs, 'window_size': window_size, 'window_step': window_step}
+
+def mtm_kwarg_to_gsp(NW, fs, window_size, window_step):
+	"""
+	convert NW, window_size, window_step to ghostipy mtm_spectrogram kwargs
+	"""
+	bandwidth = NW * fs / window_size
+	nperseg = window_size
+	noverlap = window_size - window_step
+	return {'bandwidth': bandwidth, 'fs': fs, 'nperseg': nperseg, 'noverlap': noverlap}
 
 def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 	"""
@@ -79,8 +96,10 @@ def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 
 	Parameters
 	----------
-	data : np.ndarray, with shape (T, )
+	x : np.ndarray or dask.array.Array with arbitrary shape
 		Input data
+	axis : int
+		Axis (corresponding to time) along which to compute the spectrogram
 	bandwidth : float
 		Bandwidth of taper, in Hz
 	fs : float, optional
@@ -114,7 +133,10 @@ def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 	"""
 	x = np.moveaxis(x, axis, -1)
 	x_fiber = take_first_fiber_along_axis(x, axis=-1)
-	S, f, t = gsp.mtm_spectrogram(x_fiber.compute(), bandwidth, **kwargs)
+	if isinstance(x_fiber, da.Array):
+		x_fiber: da.Array
+		x_fiber = x_fiber.compute()
+	S, f, t = gsp.mtm_spectrogram(x_fiber, bandwidth, **kwargs)
 
 	def _mtspec_func(x_):
 		S, *_ = gsp.mtm_spectrogram(x_, bandwidth, **kwargs)
@@ -123,15 +145,58 @@ def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 	mtspec = da.apply_along_axis(_mtspec_func, -1, x, shape=S.shape, dtype=S.dtype)
 	return mtspec, f, t
 
-def mtm_spectrogramx(xsig, axis='time', **kwargs):
-	axis = xsig.get_axis_num(axis)
-	mtspec, f, t = mtm_spectrogram(xsig.data, axis=axis, **kwargs)
+def mtm_spectrogramx(xsig, dim='time', **kwargs):
+	"""
+	multitaper spectrogram using ghostipy backend, wrapped as xarray DataArray
+		
+	Parameters
+	----------
+	xsig : xr.DataArray
+		Signal with time dimension
+	dim : str
+		Name of time dimension
+	**kwargs : keyword arguments for mtm_spectrogram function
+		- bandwidth : float
+			Bandwidth of taper, in Hz
+
+			Note:
+			    NW = bandwidth * N / fs 
+			    K = int(np.ceil(2*NW)) - 1
+
+		- fs : float, optional
+			Sampling rate, in Hz.
+		- timestamps : np.ndarray, with shape (T, ), optional
+			Timestamps for the data. If not provided, they will be
+			inferred using np.arange(len(data)) / fs
+		- nperseg : int, optional
+			Number of samples to use for each segment/window.
+		- noverlap : int, optional
+			Number of points to overlap between segments.
+		- min_lambda : float, optional
+			Minimum energy concentration that each taper must satisfy.
+		- n_tapers : int, optional
+			Number of tapers to compute
+		- remove_mean : boolean, optional
+			Whether to remove the mean of the data before computing the
+			MTM spectrum.
+		- nfft : int, optional
+			How many FFT points to use for each segment.
+		- n_fft_threads : int, optional
+			Number of threads to use for the FFT.
+	
+	Returns
+	-------
+	mtspec_xr : xr.DataArray
+		multitaper spectrogram with `freq` and `time` dimensions added
+	"""
+	dim = xsig.get_axis_num(dim)
+	mtspec, f, t = mtm_spectrogram(xsig.data, axis=dim, **kwargs)
 	coords = {dim: xsig.coords[dim] for dim in xsig.dims if dim != 'time'}
-	coords['frequency'] = f
+	coords['freq'] = f
 	coords['time'] = t
 	dims = list(xsig.dims)
 	dims.remove('time')
-	dims += ['frequency', 'time']
+	dims += ['freq', 'time']
 	mtspec_xr = xr.DataArray(mtspec, coords=coords, dims=dims)
 	return mtspec_xr
 
