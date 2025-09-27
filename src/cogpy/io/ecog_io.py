@@ -130,25 +130,27 @@ def oephys_load(directory, nsamples=30000):
 
 
 # Output
-def da_to_zarr(output_file, sigx):
+def da_to_zarr(output_file, sigx, **kwargs):
 	with ProgressBar():
 		name = getattr(sigx, 'name')
 		sigx.to_dataset(name=name).to_zarr(
 			output_file,
-			mode="w"
+			mode="w",
+			**kwargs
 		)
 		
-def ds_to_zarr(output_file, ds):
+def ds_to_zarr(output_file, ds, **kwargs):
 	with ProgressBar():
 		ds.to_zarr(
 			output_file,
-			mode="w"
+			mode="w",
+			**kwargs
 		)
 
-def to_zarr(output_file, obj):
+def to_zarr(output_file, obj, **kwargs):
 	if isinstance(obj, xr.DataArray):
-		da_to_zarr(output_file, obj)
+		da_to_zarr(output_file, obj, **kwargs)
 	elif isinstance(obj, xr.Dataset):
-		ds_to_zarr(output_file, obj)
+		ds_to_zarr(output_file, obj, **kwargs)
 	else:
 		raise TypeError("obj must be either an xarray.DataArray or xarray.Dataset.")

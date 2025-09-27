@@ -5,6 +5,8 @@ import cogpy.utils.grid_neighborhood as gn
 from cogpy.preprocess import channel_feature_functions as ft
 from cogpy.datasets import load as ld
 from cogpy.utils.sliding import rolling_win
+import dask.array as da
+from cogpy.preprocess.channel_feature_functions import local_robust_zscore, local_robust_zscore_dask, make_footprint
 
 # from cogpy.preprocess.channel_features import fp_inc, loc_exclude_df, gradient_ndi, gradient
 # # ---- TEST harness ----
@@ -79,3 +81,25 @@ def test_spatial_shapes(xwin, gneigh, name, fn, expected):
     out = fn(xwin, gneigh)
     assert getattr(out, "shape", None) == expected, f"{name}: got {getattr(out,'shape',None)}, expected {expected}"
 
+
+def test_random_array_matches_numpy_and_dask():
+    rng = np.random.default_rng(0)
+    x = rng.normal(size=(16, 16))
+    footprint = make_footprint(rank=2, connectivity=1, niter=2)
+
+    z_np = local_robust_zscore(x, footprint=footprint)
+    z_da = local_robust_zscore_dask(x, footprint=footprint).compute()
+
+    assert np.allclose(z_np, z_da, equal_nan=True)
+
+
+def test_uniform_array_is_all_nan():
+    x = np.ones((10, 10))
+    footprint = make_footprint(rank=2, connectivity=1, niter=2)
+
+    z_np = local_robust_zscore(x, footprint=footprint)
+    z_da = local_robust_zscore_dask(x, footprint=footprint).compute()
+
+    # Both should return all NaN
+    assert np.all(np.isnan(z_np))
+    assert np.all(np.isnan(z_da))
