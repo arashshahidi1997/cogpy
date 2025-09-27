@@ -70,6 +70,8 @@ all = [
   "cogpy[signal]",
 ]
 
+[project.scripts]
+prep-badchan = "cogpy.cli.workflow:main"  # if you want a dedicated workflow command
 
 [tool.setuptools]
 # by default, find_packages() is assumed.
@@ -78,6 +80,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+cogpy = ["workflows/**"]  # ship all workflow files
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

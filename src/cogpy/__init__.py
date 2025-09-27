@@ -13,3 +13,14 @@ Submodules:
     preprocessing - data preprocessing
     utils - general helpers that don't fit elsewhere
 """
+
+# Re-export selected public API
+# curated top-level API (example)
+from .io.ecog_io import from_file, to_zarr
+__all__ = ["from_file", "to_zarr"]
+
+# module shims so old `import cogpy.decomposition` still works
+import sys, importlib
+for _name in ("brainstates","burst","decomposition","depth_probe",
+              "model","preprocess","spectral","utils","wave"):
+    sys.modules[__name__ + "." + _name] = importlib.import_module(f".core.{_name}", __name__)
