@@ -129,7 +129,7 @@ class ChannelFeatures:
 		self.nfeatures = len(self.feature_dict)
 		self.slider_kwargs_default = dict(window_size=512, window_step=64)
 
-	def compute_features(self, xsig, window_size=512, window_step=64, run_dim='time', zscore=True, run_chunk=100):
+	def compute_features(self, xsig, window_size=512, window_step=64, run_dim='time', zscore=True, run_chunk=1000):
 		xsig = xsig.astype(np.float32)
 		x_roll = rolling_win(xsig, window_size=window_size, window_step=window_step, dim=run_dim)
 		x_roll = x_roll.chunk({self.row_dim: -1, self.col_dim: -1, run_dim: run_chunk, 'window': -1})

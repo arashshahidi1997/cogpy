@@ -2,7 +2,7 @@ from pathlib import Path
 
 def path_placeholderstring():
 	# "{datadir}/{device}/{device}-{session}/{filename}"
-	return "{filename}"
+	return "{sub}/{session}/{modality}/{sub}-{session}-{task}"
 
 def generate_input_path(ext):
 	return path_placeholderstring() + ext
@@ -39,7 +39,7 @@ rule lowpass:
 		order=config['prep']['order'],      # Order of the filter
 		btype='lowpass'
 	input:
-		raw=ancient(generate_pipe_path("raw_zarr", ".zarr"))
+		raw=ancient(generate_pipe_path("denoised", ".zarr"))
 	output:
 		filtered=directory(generate_pipe_path("lowpass", ".zarr"))
 	script:

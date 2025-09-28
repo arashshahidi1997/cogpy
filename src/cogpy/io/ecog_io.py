@@ -156,3 +156,52 @@ def to_zarr(output_file, obj, **kwargs):
 		ds_to_zarr(output_file, obj, **kwargs)
 	else:
 		raise TypeError("obj must be either an xarray.DataArray or xarray.Dataset.")
+	
+# conversions
+def zarr_to_dat(zarr_file: str, dat_file: str):
+	sigx = from_zarr(zarr_file)['sigx']
+	assert_ecog(sigx)
+	arr = sigx.transpose('time', 'AP', 'ML').data
+	arr = arr.reshape(arr.shape[0], -1)
+	save_dat(arr, dat_file, extension='.dat', dtype=np.int16, overwrite=True)
+
+# neuropixels
+import numpy as np
+from pathlib import Path
+from . import xml_io
+from ..core.utils import xarr as xut
+
+def load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=True):
+	data = np.fromfile(DATA_FILE, dtype=np.int16)
+
+	# load xml
+	xml_ecog = xml_io.parse_meta_from_xml(xml_ecog_file)
+
+	dat = from_file(DATA_FILE, XML_FILE).rename({'AP': 'ch'})
+	fs = xml_ecog['fs']
+	dat['fs'] = fs
+	ecog_dat, npix_dat = dat[:, 0, :256], dat[:, 0, 256:]
+	if reshape:
+		ecog_dat = xut.reshape_dimension(ecog_dat, 'ch', (16,16), new_dims=('ML', 'AP'))
+	return ecog_dat, npix_dat, fs
+
+def separate_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, DATA_DIR):
+	print("Loading data...")
+	ecog_flat_dat, npix_dat, fs = load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=False)
+
+	ecog_file = DATA_DIR / 'ecog.zarr'
+	npix_file = DATA_DIR / 'npix.zarr'
+	# save the data to disk
+	ecog_flat_dat.to_zarr(ecog_file)
+	npix_dat.to_zarr(npix_file)
+	print(f"Data saved to {ecog_file} and {npix_file}")
+
+def test_ecog_npix():
+	# home_dir = '/home/arash/Documents/Science/Research/Projects/SWD/PyRatECoG/data'
+	SRC_DATA_DIR = Path('/storage2/ramon/data/NYU/TDM/B17593O19-DH1/B17593O19-DH1-Rec4')
+	XML_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpixHighFs.xml"
+	DATA_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpix.lfp"
+	DATA_DIR = Path('/storage2/arash/codes/LargeScale-Ephys/PyRatECoG/data/ecog_db/arash_db/ECoG_Npix')
+	FS = 639.5833
+	xml_ecog_file = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.xml"
+

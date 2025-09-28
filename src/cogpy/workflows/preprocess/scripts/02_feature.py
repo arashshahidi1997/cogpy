@@ -66,11 +66,6 @@ def feature(sigx: xr.DataArray, window_size: int, window_step: int, zscore: bool
 	print("Extracting features ...")
 	return chfeat.compute_features(sigx, window_size=window_size, window_step=window_step, zscore=zscore)
 
-def plot_feature(feat_dataset: xr.Dataset):
-	import holoviews as hv
-	hv.extension('matplotlib')
-	
-
 def main(input_lowpass, output_feature, window_size, window_step, zscore):
 	sigx = _input(input_lowpass)
 	# test
