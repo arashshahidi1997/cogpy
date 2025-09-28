@@ -136,6 +136,7 @@ def da_to_zarr(output_file, sigx, **kwargs):
 		sigx.to_dataset(name=name).to_zarr(
 			output_file,
 			mode="w",
+			zarr_format=2,
 			**kwargs
 		)
 		
@@ -144,6 +145,7 @@ def ds_to_zarr(output_file, ds, **kwargs):
 		ds.to_zarr(
 			output_file,
 			mode="w",
+			zarr_format=2,
 			**kwargs
 		)
 

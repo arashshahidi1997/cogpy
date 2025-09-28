@@ -3,6 +3,8 @@ import xarray as xr
 import zarr
 from functools import partial
 from pathlib import Path
+from dask.diagnostics import ProgressBar
+from contextlib import nullcontext
 from .channel_feature_functions import (
 	anticorrelation,
 	relative_variance,
@@ -366,7 +368,7 @@ class ChannelFeatures:
 		repr_mssg += "+------------------------+-----------------------------------------------+\n"
 		return repr_mssg
 
-def save_features(feat_ds, zarr_path, encoding_per_var=None, consolidate=True):
+def save_features(feat_ds, zarr_path, encoding_per_var=None, consolidate=True, show_progress=True):
 	"""
 	Compute features (using compute_features) and write them to a Zarr store
 	feature by feature (one variable at a time).
@@ -381,6 +383,8 @@ def save_features(feat_ds, zarr_path, encoding_per_var=None, consolidate=True):
 		Per-variable encoding options (e.g., compression, chunking).
 	consolidate : bool, default True
 		Whether to consolidate Zarr metadata at the end.
+    show_progress : bool, default True
+        Show a Dask progress bar during computation (supports local and distributed schedulers).
 	"""
 	zarr_path = Path(zarr_path)
 
@@ -395,11 +399,15 @@ def save_features(feat_ds, zarr_path, encoding_per_var=None, consolidate=True):
 
 		if first:
 			# write coords + first variable
-			ds_one.to_zarr(zarr_path, mode="w", encoding=enc)
+			print(f"{var}: ... \n\t")
+			with ProgressBar() if show_progress else nullcontext():
+				ds_one.to_zarr(zarr_path, mode="w", encoding=enc, zarr_format=2)
 			first = False
 		else:
 			# append additional variables
-			ds_one.to_zarr(zarr_path, mode="a", encoding=enc)
+			print(f"{var}: ... \n\t")
+			with ProgressBar() if show_progress else nullcontext():
+				ds_one.to_zarr(zarr_path, mode="a", encoding=enc, zarr_format=2)
 
 	# 2) Consolidate metadata for efficient reopening
 	if consolidate:

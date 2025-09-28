@@ -1,7 +1,3 @@
-input_dir: "data"  # relative to the root directory
-output_dir: "pipe-badchannel-results"  # relative to the root directory
-scripts_dir: "scripts" # relative to workflow/rules
-
 # -----------------------------
 # Preprocessing step 1: Low-pass filtering & downsampling
 # -----------------------------

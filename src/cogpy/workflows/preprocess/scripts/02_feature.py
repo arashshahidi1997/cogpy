@@ -11,10 +11,9 @@ Usage:
 	main(input_lowpass, output_feature, slider_kwargs=dict(window_size=512, window_step=64), zscore=True)
 """
 
-from cogpy.preprocess.channel_feature import ChannelFeatures, save_features
+from cogpy.core.preprocess.channel_feature import ChannelFeatures, save_features
 import xarray as xr
 from cogpy.io import ecog_io
-from dask.diagnostics import ProgressBar
 
 def _input(input_zarr):
 	sigx_lp_load = ecog_io.from_zarr(input_zarr)['sigx']
@@ -67,6 +66,11 @@ def feature(sigx: xr.DataArray, window_size: int, window_step: int, zscore: bool
 	print("Extracting features ...")
 	return chfeat.compute_features(sigx, window_size=window_size, window_step=window_step, zscore=zscore)
 
+def plot_feature(feat_dataset: xr.Dataset):
+	import holoviews as hv
+	hv.extension('matplotlib')
+	
+
 def main(input_lowpass, output_feature, window_size, window_step, zscore):
 	sigx = _input(input_lowpass)
 	# test
@@ -88,36 +92,36 @@ if __name__ == "__main__":
 		window_step = snakemake.params.window_step
 		zscore = snakemake.params.zscore
 		
-		from dask.distributed import Client, LocalCluster
-		from dask.diagnostics import ProgressBar
-		import atexit
+		# from dask.distributed import Client, LocalCluster
+		# from dask.diagnostics import ProgressBar
+		# import atexit
 
 		# Configure cluster
-		cluster = LocalCluster(
-			n_workers=2,
-			threads_per_worker=2,
-			memory_limit='2GB',
-			dashboard_address=':8787'
-		)
-		client = Client(cluster)
+		# cluster = LocalCluster(
+		# 	n_workers=2,
+		# 	threads_per_worker=2,
+		# 	memory_limit='2GB',
+		# 	dashboard_address=':8787'
+		# )
+		# client = Client(cluster)
 		
-		# Register cleanup
-		def cleanup():
-			print("Cleaning up Dask client and cluster...")
-			try:
-				client.close()
-				cluster.close()
-			except:
-				pass
+		# # Register cleanup
+		# def cleanup():
+		# 	print("Cleaning up Dask client and cluster...")
+		# 	try:
+		# 		client.close()
+		# 		cluster.close()
+		# 	except:
+		# 		pass
 		
-		atexit.register(cleanup)
+		# atexit.register(cleanup)
 		
 		try:
-			print(f"Dashboard available at: {client.dashboard_link}")
+			# print(f"Dashboard available at: {client.dashboard_link}")
 			main(input_lowpass, output_feature, window_size, window_step, zscore)
 		except Exception as e:
 			print(f"Error during processing: {e}")
-			cleanup()
+			# cleanup()
 			raise e
 	else:
 		raise RuntimeError("This script is intended to be run via Snakemake.")

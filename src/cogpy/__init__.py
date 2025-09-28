@@ -24,3 +24,4 @@ import sys, importlib
 for _name in ("brainstates","burst","decomposition","depth_probe",
               "model","preprocess","spectral","utils","wave"):
     sys.modules[__name__ + "." + _name] = importlib.import_module(f".core.{_name}", __name__)
+

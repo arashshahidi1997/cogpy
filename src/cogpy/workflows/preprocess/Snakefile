@@ -1,13 +1,22 @@
 from pathlib import Path
 
 def path_placeholderstring():
-	return "{device}/{device}-{session}/{filename}"
+	# "{datadir}/{device}/{device}-{session}/{filename}"
+	return "{filename}"
 
 def generate_input_path(ext):
-	return str(Path(config['input_dir']) / path_placeholderstring()) + ext
+	return path_placeholderstring() + ext
 
 def generate_pipe_path(step_name, ext):
-	return str(Path(config['output_dir']) / step_name / path_placeholderstring()) + ext
+	return str(Path('preproc-results') / step_name / path_placeholderstring()) + ext
+
+rule all:
+	input:
+		interp=generate_pipe_path("interpolate", ".zarr"),
+		featuremap=generate_pipe_path("badlabel", ".featuremap.png"),
+		pairplot=generate_pipe_path("badlabel", ".pairplot.png")
+	output:
+		touch(generate_pipe_path("all", ".all"))
 
 rule raw_zarr:
 	"""Converts the input dat signal to zarr format."""
@@ -34,7 +43,7 @@ rule lowpass:
 	output:
 		filtered=directory(generate_pipe_path("lowpass", ".zarr"))
 	script:
-		config['scripts_dir']+"/01_filter.py"
+		"scripts/01_filter.py"
 
 rule downsample:
 	"""Downsamples the input dat signal."""
@@ -69,7 +78,7 @@ rule feature:
 	output:
 		feature=directory(generate_pipe_path("feature", ".zarr"))
 	script:
-		config['scripts_dir']+"/02_feature.py"
+		"scripts/02_feature.py"
 
 rule badlabel:
 	"""Scores the quality of the features."""
@@ -80,7 +89,18 @@ rule badlabel:
 	params:
 		knn=config['bad']['knn'],  # number of neighbors
 	script:
-		config['scripts_dir']+"/03_badlabel.py"
+		"scripts/03_badlabel.py"
+
+rule plot_feature_maps:
+	"""Plots the feature maps with the detected bad channels."""
+	input:
+		feature=generate_pipe_path("feature", ".zarr"),
+		badlabel=generate_pipe_path("badlabel", ".npy")
+	output:
+		featuremap=generate_pipe_path("badlabel", ".featuremap.png"),
+		pairplot=generate_pipe_path("badlabel", ".pairplot.png")
+	script:
+		"scripts/plot_feature_maps.py"
 
 rule interpolate:
 	"""Interpolates the bad labels to create a smooth label signal."""
@@ -90,4 +110,4 @@ rule interpolate:
 	output:
 		interp=directory(generate_pipe_path("interpolate", ".zarr"))
 	script:
-		config['scripts_dir']+"/04_interpolate.py"
+		"scripts/04_interpolate.py"
