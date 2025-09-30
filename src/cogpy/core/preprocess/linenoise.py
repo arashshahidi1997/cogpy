@@ -121,7 +121,11 @@ class LineNoiseEstimatorICA(TransformerMixin):
 		return linenoise_sig
 
 	def _detect_and_set_linenoise_components(self, NW, slider_kwargs, zscore_threshold=1.5):
-		mtx_scores = sp.mtm_spectrogram(self.ic_scores, NW=NW, fs=self.fs, **slider_kwargs)
+		mtm_kwargs = dict(NW=NW, fs=self.fs, **slider_kwargs)
+		mtm_gsp_kwargs = sp.mtm_kwarg_to_gsp(**mtm_kwargs)
+		ic_scx = xr.DataArray(self.ic_scores, dims=['comp', 'time'], coords={'time': np.arange(self.ic_scores.shape[1])/self.fs})
+		# spectrogram of IC scores
+		mtx_scores = sp.mtm_spectrogramx(ic_scx, **mtm_gsp_kwargs)
 		# sum linenoise harmonics
 		linenoise_power = xr.concat([mtx_scores.sel(freq=slc) for slc in self.hslices], dim='freq').sum(dim='freq')
 		linenoise_power = linenoise_power.sum(dim='time') / mtx_scores.sum(dim=('freq', 'time'))

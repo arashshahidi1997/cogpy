@@ -30,6 +30,8 @@ Example:
 """
 import numpy as np
 import xarray as xr
+import dask.array as da
+from dask_image.ndfilters import median_filter as di_median_filter
 import scipy.ndimage as nd
 import scipy.stats as sts
 from scipy import signal
@@ -70,6 +72,45 @@ def local_robust_zscore(input_arr, footprint=None):
 	denom = np.where(local_mad > 0, local_mad, np.nan)
 	robust_zscore_center = (input_arr - local_med) / denom
 	return robust_zscore_center
+
+def local_robust_zscore_dask(input_arr, footprint=None, *, mode="constant", cval=np.nan):
+	"""Local robust z-score using dask, consistent with numpy version:
+	NaN when local MAD == 0.
+	"""
+	is_xr = isinstance(input_arr, xr.DataArray)
+	x = da.asarray(input_arr.data if is_xr else input_arr)
+	if x.ndim < 2:
+		raise ValueError("Need at least 2D input.")
+	if not np.issubdtype(x.dtype, np.floating):
+		x = x.astype("f8")
+
+	if footprint is None:
+		footprint = make_footprint(rank=2, connectivity=1, niter=2)
+	else:
+		footprint = np.asarray(footprint, dtype=bool)
+		assert footprint.ndim == 2, "footprint must be 2D"
+
+	f = footprint.reshape((1,) * (x.ndim - 2) + footprint.shape)
+
+	local_med = di_median_filter(x, footprint=f, mode=mode, cval=cval)
+	mad = di_median_filter(da.fabs(x - local_med), footprint=f, mode=mode, cval=cval)
+
+	# Scale to normal, then mask out zeros
+	scale = 0.6744897501960817
+	denom = mad / scale
+	denom = da.where(denom > 0, denom, np.nan)
+
+	z = (x - local_med) / denom
+
+	if is_xr:
+		return xr.DataArray(
+			z,
+			coords=input_arr.coords,
+			dims=input_arr.dims,
+			name="robust_z",
+			attrs=input_arr.attrs,
+		)
+	return z
 
 # %% Features
 # identity

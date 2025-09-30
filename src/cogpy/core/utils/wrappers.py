@@ -8,6 +8,7 @@ import logging
 import os
 from typing import Any, Optional, Protocol, cast
 from matplotlib.axes import Axes
+from functools import partial
 
 def get_wrapper(attr_name):
     def _get_wrapper(method):
@@ -65,7 +66,6 @@ def add_docs_for(other_func):
         return func
     return dec
 
-from functools import partial
 def partial_method(applicator, method):
     func = partial(applicator, method=method)
     func.__doc__ = applicator.__doc__ + \

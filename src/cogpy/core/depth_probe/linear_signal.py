@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from copy import deepcopy
-from ..io import ecog_io, xml_io, xml_anat_map, save_utils
+from ...io import ecog_io, xml_io, xml_anat_map, save_utils
 # ----imports completed----
 
 # Parent class for IO operations

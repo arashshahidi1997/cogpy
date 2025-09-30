@@ -1,0 +1,19 @@
+# -----------------------------
+# Preprocessing step 1: Low-pass filtering & downsampling
+# -----------------------------
+prep:
+  # Low-pass filter
+  cutoff_lp: 40   # Cutoff frequency [Hz]
+  order: 4        # Filter order
+
+  # Downsampling
+  factor: 4       # Downsampling factor
+
+# -----------------------------
+# Preprocessing step 2: Bad channel detection & interpolation
+# -----------------------------
+bad:
+  window_size: 512   # Window size [samples]
+  window_step: 64    # Step size [samples]
+  knn: 10            # Number of neighbors (k-NN)
+

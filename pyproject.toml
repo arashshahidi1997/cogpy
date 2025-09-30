@@ -70,6 +70,11 @@ all = [
   "cogpy[signal]",
 ]
 
+[project.scripts]
+cogpy-preproc = "cogpy.cli.preprocess:main"
+
+[tool.setuptools.package-data]
+cogpy = ["workflows/**"]  # ship all workflow files
 
 [tool.setuptools]
 # by default, find_packages() is assumed.

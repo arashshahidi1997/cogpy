@@ -1,0 +1,15 @@
+# ---------------------------
+# Python
+# ---------------------------
+__pycache__/
+*.pyc
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+*.egg
+*.log
+*.tmp
