@@ -1,3 +1,4 @@
+from snakebids import bids, generate_inputs
 from pathlib import Path
 
 def path_placeholderstring():
@@ -109,5 +110,8 @@ rule interpolate:
 		badlabel=generate_pipe_path("badlabel", ".npy")
 	output:
 		interp=directory(generate_pipe_path("interpolate", ".zarr"))
-	script:
-		"scripts/04_interpolate.py"
+	# script:
+		# "scripts/04_interpolate.py"
+	shell:
+		"matlab -batch /path/to/scritpt[functionname in lab toolbox] (input file) (output file)"
+
