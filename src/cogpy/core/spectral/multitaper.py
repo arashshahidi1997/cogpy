@@ -72,7 +72,7 @@ def mtm_kwarg_to_gsp(NW, fs, window_size, window_step):
 	noverlap = window_size - window_step
 	return {'bandwidth': bandwidth, 'fs': fs, 'nperseg': nperseg, 'noverlap': noverlap}
 
-def mtm_spectrogram(x, axis, bandwidth, **kwargs):
+def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
 	"""
 	Adapted from ghostipy documentation:
 
@@ -98,10 +98,13 @@ def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 	----------
 	x : np.ndarray or dask.array.Array with arbitrary shape
 		Input data
-	axis : int
-		Axis (corresponding to time) along which to compute the spectrogram
 	bandwidth : float
 		Bandwidth of taper, in Hz
+	axis : int, optional
+		Axis (corresponding to time) along which to compute the spectrogram
+
+	Keyword Arguments
+	-----------------
 	fs : float, optional
 		Sampling rate, in Hz.
 		Default is 1 Hz.
@@ -130,6 +133,27 @@ def mtm_spectrogram(x, axis, bandwidth, **kwargs):
 	n_fft_threads : int, optional
 		Number of threads to use for the FFT.
 		Default is the number of CPUs (which may be virtual).
+	
+	Returns
+	-------
+	mtspec : dask.array.Array
+		multitaper spectrogram with shape (..., nfreq, ntime)
+	f : np.ndarray
+		Frequency vector
+	t : np.ndarray
+		Time vector
+		
+	Example
+	--------
+	>>> import numpy as np
+	>>> from cogpy.core.spectral import mtm_spectrogram
+	>>> # Create a sample multichannel (8 channels) signal
+	>>> fs = 1000  # Sampling frequency
+	>>> t = np.arange(0, 10, 1/fs)  # Time
+	>>> signal = np.array([np.sin(2 * np.pi * 50 * t + np.random.rand()*2*np.pi) for _ in range(8)])
+	>>> # Compute the multitaper spectrogram
+	>>> mtspec, f, t = mtm_spectrogram(signal, bandwidth=4, fs=fs, nperseg=256, noverlap=128)
+	>>> print(mtspec.shape)  # Should be (8, nfreq, ntime)
 	"""
 	x = np.moveaxis(x, axis, -1)
 	x_fiber = take_first_fiber_along_axis(x, axis=-1)
