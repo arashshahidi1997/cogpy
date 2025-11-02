@@ -12,5 +12,3 @@ if TYPE_CHECKING:
         channel_feature_functions, channel_feature, detect_bads,
         filt, filtx, interpolate, linenoise, resample
     )
-    # If you want deep symbol resolution for this specific import:
-    from .detect_bads import OutlierDetector as OutlierDetector
