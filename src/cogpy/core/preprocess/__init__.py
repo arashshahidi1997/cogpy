@@ -1,13 +1,16 @@
-"""
-The :mod:`src.preprocessing` module tools for preprocessing.
-"""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-from .filt import (Filter, SpatialLowpassMedian, 
-                        SpatialLowpassGaussian, TemporalHighpassMedian,
-                        TemporalLowpassButter, TemporalBandpassButter,
-                        Downsample)
+__getattr__, __dir__, __all__ = attach(__name__, submodules=[
+    "channel_feature_functions", "channel_feature",
+    "detect_bads", "filt", "filtx", "interpolate",
+    "linenoise", "resample",
+])
 
-__all__ = ['Filter', 'SpatialLowpassMedian', 
-                        'SpatialLowpassGaussian', 'TemporalHighpassMedian',
-                        'TemporalLowpassButter', 'TemporalBandpassButter',
-                        'Downsample']
+if TYPE_CHECKING:
+    from . import (
+        channel_feature_functions, channel_feature, detect_bads,
+        filt, filtx, interpolate, linenoise, resample
+    )
+    # If you want deep symbol resolution for this specific import:
+    from .detect_bads import OutlierDetector as OutlierDetector

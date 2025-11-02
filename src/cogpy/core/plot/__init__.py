@@ -1,11 +1,20 @@
-"""
-The :mod:`src.plot` module tools for input/output.
-"""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-from .frame_plot import (FramePlot as fr,
-                         widget,
-                         widget_array
-                          )
+__getattr__, __dir__, __all__ = attach(__name__, submodules=[
+    "frame_plot", "orthoslicer", "orthoslicer_facet", "orthoslicer_ranger",
+    "orthoslicer_rangercopy", "orthoslicer_zoom", "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
+    "specgram_plot", "time_player", "time_plot", "xarr_plot",
+])
 
-__all__ = ['fr', 'widget', 'widget_array']
+# NOTE: You have both a folder "orthoslicer" (with base.py) and files
+# "orthoslicer.py", "orthoslicer_ranger.py", etc. Keep either the folder
+# package or the single file to avoid name collision. If both must exist,
+# rename the single-file variant (e.g., "orthoslicer_core.py") and update here.
 
+if TYPE_CHECKING:
+    from . import (
+        frame_plot, orthoslicer, orthoslicer_facet, orthoslicer_ranger,
+        orthoslicer_rangercopy, orthoslicer_zoom, specgram_plot,
+        time_player, time_plot, xarr_plot
+    )

@@ -1,8 +1,9 @@
-"""
-The :mod:`src.subcycle` module tools for processing and anlyzing ECoG data on subcycle scale of spindles, etc.
-"""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-from . import detect, features 
+__getattr__, __dir__, __all__ = attach(__name__, submodules=[
+    "detect", "features", "plot", "process", "utils",
+])
 
-__all__ = ['detect', 'features']
-
+if TYPE_CHECKING:
+    from . import detect, features, plot, process, utils

@@ -1,27 +1,26 @@
-import sklearn
+# cogpy/__init__.py
+from typing import TYPE_CHECKING
+import importlib as _il
 
-"""
-Package for ECoG data analysis.
+# All top-level subpackages you want accessible as `cogpy.<name>`
+_SUBPKGS = (
+    "brainstates", "burst", "decomposition", "depth_probe",
+    "model", "plot", "preprocess", "spectral", "utils", "wave",
+)
 
-Submodules:
-    plot - plotting functions
-    io - input/output functions
-    model - model fitting and evaluation
-    decomposition - signal decomposition
-    wave - wave analysis
-    stats - statistical analysis
-    preprocessing - data preprocessing
-    utils - general helpers that don't fit elsewhere
-"""
+def __getattr__(name: str):
+    if name in _SUBPKGS:
+        # Return the actual module object from cogpy.core.<name>
+        return _il.import_module(f".core.{name}", __name__)
+    raise AttributeError(name)
 
-# Re-export selected public API
-# curated top-level API (example)
-from .io.ecog_io import from_file, to_zarr
-__all__ = ["from_file", "to_zarr"]
+def __dir__():
+    # Make them show up in tab-completion
+    return sorted(list(globals().keys()) + list(_SUBPKGS))
 
-# module shims so old `import cogpy.decomposition` still works
-import sys, importlib
-for _name in ("brainstates","burst","decomposition","depth_probe",
-              "model","preprocess","spectral","utils","wave"):
-    sys.modules[__name__ + "." + _name] = importlib.import_module(f".core.{_name}", __name__)
-
+# ---- Editor-only breadcrumbs (static for Pylance) ----
+if TYPE_CHECKING:
+    from .core import (
+        brainstates, burst, decomposition, depth_probe,
+        model, plot, preprocess, spectral, utils, wave,
+    )
