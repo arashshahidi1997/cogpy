@@ -74,9 +74,12 @@ def from_file(dat_file: Union[str, Path], xml_file: str = None,  metadata: Dict[
 
 	Parameters:
 		- dat_file (str): Path to the .dat file.
-		- num_channels (int): Number of channels in the .dat file.
-		- data_type (str): Data type of the .dat file contents.
-
+		- xml_file (str, optional): Path to the XML file containing metadata. If not provided, metadata must be supplied.
+		- metadata (dict, optional): Dictionary containing metadata such as 'fs', 'ncol', 'nrow', and 'dtype'.
+		- ML_coords (np.ndarray, optional): Array of medial-lateral coordinates. If not provided, defaults to range of ncol.
+		- AP_coords (np.ndarray, optional): Array of anterior-posterior coordinates.
+			If not provided, defaults to range of nrow.
+		
 	Returns:
 		- xr.DataArray: Dask-backed DataArray with dimensions ('AP', 'ML', 'time') and attribute 'fs'.
 	"""
