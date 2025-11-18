@@ -1,6 +1,7 @@
 import numpy as np
 from ._functools import num_to_tuple
 
+
 def roll_dim(x, nroll):
     """
     reshapes the array x, for example if x.shape = (3,6,9,0)
@@ -15,6 +16,7 @@ def roll_dim(x, nroll):
     reshaped version of x with dimesnions rolled by `nroll` times.
     """
     return x.transpose(np.roll(np.arange(x.ndim), nroll))
+
 
 def reshape_axes(arr, axes, shape):
     """
@@ -41,12 +43,15 @@ def reshape_axes(arr, axes, shape):
     """
     shape = num_to_tuple(shape)
     axes = num_to_tuple(axes)
-    axes = tuple([ax % len(arr.shape) for ax in axes]) # convert negative axes to positive
+    axes = tuple(
+        [ax % len(arr.shape) for ax in axes]
+    )  # convert negative axes to positive
     X = flush_axes(arr, axes)
-    shape_up_to_axes = X.shape[:-len(axes)] 
+    shape_up_to_axes = X.shape[: -len(axes)]
     X = X.reshape(shape_up_to_axes + shape)
     X = unflush_axes(X, num_axes=len(shape), dst_axis=axes[0])
     return X
+
 
 def ravel_dims(arr, axis1, axis2):
     """
@@ -59,13 +64,16 @@ def ravel_dims(arr, axis1, axis2):
 
     Returns:
         ndarray: Raveled array.
-    
+
     Example:
     a = np.random.rand(16, 10, 100)
     raveled = ravel_dims(a, 0, 1)
     assert raveled.shape == (160, 100)
     """
-    return reshape_axes(arr, (axis1,axis2), np.prod(np.array(arr.shape)[[axis1,axis2]]))
+    return reshape_axes(
+        arr, (axis1, axis2), np.prod(np.array(arr.shape)[[axis1, axis2]])
+    )
+
 
 def unflush_axes(X, num_axes, dst_axis):
     """
@@ -89,6 +97,7 @@ def unflush_axes(X, num_axes, dst_axis):
     X = np.moveaxis(X, last_axes, dst_axes)
     return X
 
+
 def flush_axes(X, src_axes):
     """
     Move the axes specified by `src_axes` axes of an array `X` to the last axes.
@@ -111,8 +120,8 @@ def flush_axes(X, src_axes):
     X = np.moveaxis(X, src_axes, dst_axes)
     return X
 
+
 def last_naxes(num_axes):
     shape_range = np.arange(num_axes)
     last_axes = tuple(-(shape_range + 1)[::-1])
     return last_axes
-

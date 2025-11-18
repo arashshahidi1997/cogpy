@@ -1,6 +1,7 @@
 import panel as pn
 import param
 
+
 class PlayerWithRealTime(param.Parameterized):
     interval = param.Integer(default=200, bounds=(50, 2000), doc="ms per step")
     speed = param.Number(default=5, bounds=(0.1, 20), doc="Real-time speed multiplier")
@@ -15,12 +16,12 @@ class PlayerWithRealTime(param.Parameterized):
         max_speed = round((dt_sec * 1000) / min_interval, 2)
         default_interval = 200  # Default interval in ms
         default_speed = round((dt_sec * 1000) / default_interval, 1)
-       
+
         return {
-            'interval_bounds': interval_bounds,
-            'speed_bounds': (min_speed, max_speed),
-            'default_interval': default_interval,
-            'default_speed': default_speed
+            "interval_bounds": interval_bounds,
+            "speed_bounds": (min_speed, max_speed),
+            "default_interval": default_interval,
+            "default_speed": default_speed,
         }
 
     def __init__(self, t_values, interval_bounds=(50, 2000), **params):
@@ -37,7 +38,7 @@ class PlayerWithRealTime(param.Parameterized):
         self.param.speed.bounds = bounds_info["speed_bounds"]
         self.speed = bounds_info["default_speed"]
 
-        super().__init__(**params)        
+        super().__init__(**params)
 
         self._updating = False  # Prevent recursive updates
 
@@ -50,13 +51,13 @@ class PlayerWithRealTime(param.Parameterized):
             options=self._t,
             value=self._t[0],
             interval=self.interval,
-            loop_policy="loop"
+            loop_policy="loop",
         )
 
         # Simple readout of current t
         self.readout = pn.pane.Str(width=140)
         self._update_readout()
-        
+
         # Watch for player value changes to update readout
         self.t_player.param.watch(lambda event: self._update_readout(), "value")
 
@@ -64,19 +65,19 @@ class PlayerWithRealTime(param.Parameterized):
         self.interval_slider = pn.widgets.IntSlider.from_param(
             self.param.interval, name="Interval (ms)"
         )
-        
+
         self.speed_input = pn.widgets.FloatInput.from_param(
             self.param.speed, name="Speed (×)", step=0.1, format="0.00"
         )
-        
+
         self.real_time_chk = pn.widgets.Checkbox.from_param(
             self.param.real_time, name="Real-time mode"
         )
 
         # Watch for parameter changes to keep them in sync
-        self.param.watch(self._on_interval_change, 'interval')
-        self.param.watch(self._on_speed_change, 'speed')
-        self.param.watch(self._on_mode_change, 'real_time')
+        self.param.watch(self._on_interval_change, "interval")
+        self.param.watch(self._on_speed_change, "speed")
+        self.param.watch(self._on_mode_change, "real_time")
 
         # Set initial visibility
         self._update_visibility()
@@ -84,9 +85,9 @@ class PlayerWithRealTime(param.Parameterized):
         self.view = pn.Row(
             self.t_player,
             pn.Column(
-                self.readout, 
+                self.readout,
                 self.real_time_chk,
-                pn.Row(self.speed_input, self.interval_slider)
+                pn.Row(self.speed_input, self.interval_slider),
             ),
         )
 
@@ -149,9 +150,10 @@ def example_1():
     pn.extension()
     pn.panel(player.view).show(title="Time Player with Real-Time Control")
 
+
 if __name__ == "__main__":
     # example_1()
-    
+
     # create chunked dask data array with long time
 
     import dask.array as da
@@ -162,10 +164,9 @@ if __name__ == "__main__":
 
     # Create an xarray DataArray
     coords = {
-        'time': time,
-        'x': ('x', da.linspace(-5, 5, 10)),
-        'y': ('y', da.linspace(-5, 5, 10)),
-        'z': ('z', da.linspace(-5, 5, 100)),
+        "time": time,
+        "x": ("x", da.linspace(-5, 5, 10)),
+        "y": ("y", da.linspace(-5, 5, 10)),
+        "z": ("z", da.linspace(-5, 5, 100)),
     }
-    array = xr.DataArray(data, coords=coords, dims=['x', 'y', 'z', 'time'])
-    
+    array = xr.DataArray(data, coords=coords, dims=["x", "y", "z", "time"])

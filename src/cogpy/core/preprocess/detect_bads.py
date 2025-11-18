@@ -13,14 +13,16 @@ import pandas as pd
 from matplotlib.axes import Axes
 from kneed import KneeLocator
 from ..utils.wrappers import ax_plot
-from .channel_feature import ChannelFeatures 
+from .channel_feature import ChannelFeatures
 
 EPSILON = 0.000001
+
 
 class OutlierDetector(ClusterMixin, BaseEstimator):
     """
     detects outliers from given features
     """
+
     kn: KneeLocator
     k_dist: np.ndarray
     dbscan: DBSCAN
@@ -42,7 +44,12 @@ class OutlierDetector(ClusterMixin, BaseEstimator):
     def optimize_eps(self, X, k):
         assert not np.isnan(X).any(), "KneeLocator: Input data contains NaN values"
         self.k_dist = calculate_k_distance(X, k=k)
-        self.kn = KneeLocator(np.arange(1,len(self.k_dist)+1), self.k_dist, curve='convex', direction='increasing')
+        self.kn = KneeLocator(
+            np.arange(1, len(self.k_dist) + 1),
+            self.k_dist,
+            curve="convex",
+            direction="increasing",
+        )
 
     def fit(self, X, y=None):
         if self.eps is None:
@@ -51,7 +58,7 @@ class OutlierDetector(ClusterMixin, BaseEstimator):
             warnings.warn(
                 f"KneeLocator could not find a knee in k-distance curve; "
                 f"setting eps to fallback EPSILON={EPSILON}",
-                RuntimeWarning
+                RuntimeWarning,
             )
             self.eps = EPSILON
         else:
@@ -60,22 +67,22 @@ class OutlierDetector(ClusterMixin, BaseEstimator):
         self.dbscan = DBSCAN(eps=self.eps, min_samples=self.min_samples)
         self.dbscan.fit(X)
         self.labels_raw = self.dbscan.labels_
-        self.labels_ = (self.dbscan.labels_ == -1)
+        self.labels_ = self.dbscan.labels_ == -1
         self.labels = self.labels_
         return self
-    
+
     def fit_predict(self, X, y=None):
         self.fit(X, y=y)
         return self.labels_
 
     @ax_plot
-    def plot_k_distances(self,  ax: Optional[Axes] = None):
+    def plot_k_distances(self, ax: Optional[Axes] = None):
         ax = cast(Axes, ax)
         ax.plot(self.k_dist)
-        ax.axvline(self.kn.knee, color='k', linestyle='--')
-        ax.axhline(self.kn.knee_y, color='k', linestyle='--')
-        eps_str = f'$\epsilon={self.kn.knee_y:.2f}$'
-        ax.set(xlabel='k', ylabel='$\epsilon$', title=f'k-distance plot\n{eps_str}')
+        ax.axvline(self.kn.knee, color="k", linestyle="--")
+        ax.axhline(self.kn.knee_y, color="k", linestyle="--")
+        eps_str = f"$\epsilon={self.kn.knee_y:.2f}$"
+        ax.set(xlabel="k", ylabel="$\epsilon$", title=f"k-distance plot\n{eps_str}")
 
     @ax_plot
     def plot_k_distances(self, ax: None) -> None:
@@ -91,14 +98,23 @@ class OutlierDetector(ClusterMixin, BaseEstimator):
             ax.axvline(knee_x, color="k", linestyle="--")
         ax.axhline(knee_y, color="k", linestyle="--")
 
-        ax.set(xlabel="k", ylabel="$\\epsilon$", title=f"k-distance plot\n$\\epsilon={knee_y:.2f}$")
+        ax.set(
+            xlabel="k",
+            ylabel="$\\epsilon$",
+            title=f"k-distance plot\n$\\epsilon={knee_y:.2f}$",
+        )
 
 
-DetectBadsPipe = Pipeline([
-    ('features', ChannelFeatures()),
-    ('scaler', StandardScaler()),
-    ('dbscan', OutlierDetector())
-], memory='cache', verbose=True)
+DetectBadsPipe = Pipeline(
+    [
+        ("features", ChannelFeatures()),
+        ("scaler", StandardScaler()),
+        ("dbscan", OutlierDetector()),
+    ],
+    memory="cache",
+    verbose=True,
+)
+
 
 class DetectBads(BaseEstimator):
     # Declare attributes so linters know they exist after fit()
@@ -107,12 +123,16 @@ class DetectBads(BaseEstimator):
     labels_: Optional[np.ndarray]
     labels_raw: Optional[np.ndarray]
 
-    def __init__(self) -> None:            
-        self.pipe = Pipeline([
-            ('features', ChannelFeatures()),
-            ('scaler', StandardScaler()),
-            ('dbscan', OutlierDetector())
-        ], memory='cache', verbose=True)
+    def __init__(self) -> None:
+        self.pipe = Pipeline(
+            [
+                ("features", ChannelFeatures()),
+                ("scaler", StandardScaler()),
+                ("dbscan", OutlierDetector()),
+            ],
+            memory="cache",
+            verbose=True,
+        )
 
         self.feature_df = None
         self.labels_ = None
@@ -121,11 +141,11 @@ class DetectBads(BaseEstimator):
     def fit(self, X, y=None):
         self.pipe.fit(X)
 
-        self.features_: ChannelFeatures = self.pipe.named_steps['features']
-        db = cast(OutlierDetector, self.pipe.named_steps['dbscan'])
+        self.features_: ChannelFeatures = self.pipe.named_steps["features"]
+        db = cast(OutlierDetector, self.pipe.named_steps["dbscan"])
 
         # attrs come from the correct step, not the pipeline
-        self.feature_df = getattr(self.features_, 'feature_df', None)
+        self.feature_df = getattr(self.features_, "feature_df", None)
 
         self.labels_ = db.labels_
         self.labels_raw = db.labels_raw
@@ -138,17 +158,18 @@ class DetectBads(BaseEstimator):
 
     def predict(self, X):
         # Access steps via named_steps and cast for type checkers
-        feats = self.pipe.named_steps['features']
-        scaler = self.pipe.named_steps['scaler']
-        db = cast(OutlierDetector, self.pipe.named_steps['dbscan'])
+        feats = self.pipe.named_steps["features"]
+        scaler = self.pipe.named_steps["scaler"]
+        db = cast(OutlierDetector, self.pipe.named_steps["dbscan"])
 
         # Make static analyzers happy and fail early if not fitted
-        check_is_fitted(db, 'eps_')
+        check_is_fitted(db, "eps_")
         eps: float = db.eps_
 
         Z = scaler.transform(feats.transform(X))
         # Refit a DBSCAN with the fitted eps/min_samples for new data
         return DBSCAN(eps=eps, min_samples=db.min_samples).fit_predict(Z) == -1
+
 
 # example usage
 # dbads = DetectBads.fit(fb_sigx)
@@ -156,11 +177,11 @@ class DetectBads(BaseEstimator):
 
 # %% optimize dbscan epsilon
 
+
 # Calculate the k-distance graph
 def calculate_k_distance(data, k):
-    nbrs = NearestNeighbors(n_neighbors=k+1).fit(data)
+    nbrs = NearestNeighbors(n_neighbors=k + 1).fit(data)
     distances, _ = nbrs.kneighbors(data)
     k_distances = np.sort(distances[:, k], axis=0)
     k_distances = nd.gaussian_filter1d(k_distances, sigma=3)
     return k_distances
-

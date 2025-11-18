@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from abc import ABC, abstractmethod
 
+
 class BaseMode(ABC):
     """
     An abstract base class representing a generic mode shape in a domain.
@@ -18,7 +19,8 @@ class BaseMode(ABC):
         generate_mode(sigma): Abstract method to generate a mode based on given parameters.
         shift_mode(mode, loc): Abstract method to shift a mode to a new location within the domain.
     """
-    def __init__(self, shape, boundary_condition='non-periodic'):
+
+    def __init__(self, shape, boundary_condition="non-periodic"):
         """
         Initializes the BaseMode with given shape and boundary condition.
 
@@ -56,6 +58,7 @@ class BaseMode(ABC):
         """
         pass
 
+
 class BaseCover(ABC):
     """
     An abstract base class for covering a domain with modes.
@@ -64,7 +67,8 @@ class BaseCover(ABC):
         shape (tuple of ints): The dimensions of the domain.
         boundary_condition (str): The type of boundary condition applied to the domain.
     """
-    def __init__(self, shape, boundary_condition='non-periodic'):
+
+    def __init__(self, shape, boundary_condition="non-periodic"):
         """
         Initializes the BaseCover with given shape and boundary condition.
 

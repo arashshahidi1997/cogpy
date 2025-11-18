@@ -3,6 +3,7 @@ The :mod:`src.datasets` module tools for making, loading and fetching ECoG datas
 """
 
 from .load import load_sample, load_raw_sample
-# from .make import 
 
-__all__ = ['load_sample', 'load_raw_sample']
+# from .make import
+
+__all__ = ["load_sample", "load_raw_sample"]

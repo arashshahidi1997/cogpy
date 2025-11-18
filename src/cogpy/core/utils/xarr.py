@@ -28,6 +28,7 @@ import pandas as pd
 from .reshape import reshape_axes
 from functools import wraps
 
+
 def dur_slice(xsig, dim, fraction, duration):
     """
     Returns a slice of the time series based on fraction and duration.
@@ -50,6 +51,7 @@ def dur_slice(xsig, dim, fraction, duration):
     """
     time_vec = xsig[dim].values
     return dim_dur_slice(time_vec, fraction, duration)
+
 
 def dim_dur_slice(time_vec, time_fraction, duration):
     """
@@ -104,25 +106,29 @@ def dim_dur_slice(time_vec, time_fraction, duration):
             end_time = start_time + duration
     return slice(start_time, end_time)
 
+
 def _get_index(xsig: xr.DataArray, dim: str) -> pd.Index:
     """
     Returns the index object for a given dimension in an xarray DataArray.
 
     Parameters
-	----------
-	xsig : xr.DataArray
-		The input data array.
+        ----------
+        xsig : xr.DataArray
+                The input data array.
     dim : str
-		The name of the dimension to sample around.
+                The name of the dimension to sample around.
 
     Returns
     -------
     coord_index : pandas.Index
-		The index object from arr.get_index(dim).
+                The index object from arr.get_index(dim).
     """
     return xsig.get_index(dim)
 
-def spaced_sample_around_coord(xsig: xr.DataArray, dim: str, center, nsample: int, step=1, clip=True):
+
+def spaced_sample_around_coord(
+    xsig: xr.DataArray, dim: str, center, nsample: int, step=1, clip=True
+):
     """
     Returns indices spaced around a center coordinate.
     Example:
@@ -131,25 +137,25 @@ def spaced_sample_around_coord(xsig: xr.DataArray, dim: str, center, nsample: in
     t_sample_around5 = spaced_sample_around_coord(t_coord, center=5, nsample=3, step=2)
     Output: [3, 5, 7]
 
-	Parameters
-	----------
-	xsig : xr.DataArray
-		The input data array.
+        Parameters
+        ----------
+        xsig : xr.DataArray
+                The input data array.
     dim : str
-		The name of the dimension to sample around.
-	center : float or int
-		The coordinate value to center the sampling.
-	nsample : int
-		number of samples
-	step : int, optional
-		Step size between samples.
-	clip : bool, optional
-		If True, clips indices to valid range.
+                The name of the dimension to sample around.
+        center : float or int
+                The coordinate value to center the sampling.
+        nsample : int
+                number of samples
+        step : int, optional
+                Step size between samples.
+        clip : bool, optional
+                If True, clips indices to valid range.
 
-	Returns
-	-------
-	np.ndarray
-		Array of sampled indices.
+        Returns
+        -------
+        np.ndarray
+                Array of sampled indices.
     """
     coord_index = _get_index(xsig, dim)
     it = coord_index.get_indexer([center], method="nearest")[0]
@@ -158,7 +164,10 @@ def spaced_sample_around_coord(xsig: xr.DataArray, dim: str, center, nsample: in
         tsamples = tsamples[(tsamples >= 0) & (tsamples < len(coord_index))]
     return tsamples
 
-def xdim_subsample_around(xsig: xr.DataArray, dim: str, center, nsample: int, step=1, clip=True):
+
+def xdim_subsample_around(
+    xsig: xr.DataArray, dim: str, center, nsample: int, step=1, clip=True
+):
     """
     Returns indices spaced around a center coordinate.
     Example:
@@ -167,30 +176,31 @@ def xdim_subsample_around(xsig: xr.DataArray, dim: str, center, nsample: int, st
     t_sample_around5 = spaced_sample_around_coord(t_coord, center=5, nsample=3, step=2)
     Output: [3, 5, 7]
 
-	Parameters
-	----------
-	xsig : xr.DataArray
-		The input data array.
+        Parameters
+        ----------
+        xsig : xr.DataArray
+                The input data array.
     dim : str
-		The name of the dimension to sample around.
-	center : float or int
-		The coordinate value to center the sampling.
-	nsample : int
-		number of samples
-	step : int, optional
-		Step size between samples.
-	clip : bool, optional
-		If True, clips indices to valid range.
+                The name of the dimension to sample around.
+        center : float or int
+                The coordinate value to center the sampling.
+        nsample : int
+                number of samples
+        step : int, optional
+                Step size between samples.
+        clip : bool, optional
+                If True, clips indices to valid range.
 
-	Returns
-	-------
-	np.ndarray
-		Array of sampled indices.
+        Returns
+        -------
+        np.ndarray
+                Array of sampled indices.
     """
     coord_index = _get_index(xsig, dim)
     it = coord_index.get_indexer([center], method="nearest")[0]
     dim_slice = slice_around(it, nsample, step)
     return xsig.coords[dim].isel({dim: dim_slice})
+
 
 def slice_around(it, nsample, step=1):
     half_n = nsample // 2
@@ -198,28 +208,30 @@ def slice_around(it, nsample, step=1):
     stop = start + nsample * step
     return slice(start, stop, step)
 
+
 def xarr_wrap(func_):
     """
     Decorator to wrap a function that takes numpy arrays as input and output
     and applies it to xarray.DataArray objects, retaining the original metadata.
-    
+
     Parameters
     ----------
     func_: function that transforms numpy arrays along a specific axis.
     """
+
     @wraps(func_)
     def wrapper(x, *args, **kwargs):
         if isinstance(x, xr.DataArray):
-            dim = kwargs.pop('dim', None)  # Get the dimension name if provided
+            dim = kwargs.pop("dim", None)  # Get the dimension name if provided
             if dim:
                 # Apply the function along the specified dimension
                 out_data = xr.apply_ufunc(
-                    func_,                   # Function to apply
-                    x,                       # Input DataArray
+                    func_,  # Function to apply
+                    x,  # Input DataArray
                     input_core_dims=[[dim]],  # Dimension along which to apply
-                    kwargs=kwargs,            # Additional arguments for the function
-                    dask='parallelized',      # Enable Dask support for parallel computation
-                    output_dtypes=[x.dtype]   # Output dtype specification
+                    kwargs=kwargs,  # Additional arguments for the function
+                    dask="parallelized",  # Enable Dask support for parallel computation
+                    output_dtypes=[x.dtype],  # Output dtype specification
                 )
             else:
                 # Apply the function to the whole array if no dimension is specified
@@ -227,8 +239,8 @@ def xarr_wrap(func_):
                     func_,
                     x,
                     kwargs=kwargs,
-                    dask='parallelized',
-                    output_dtypes=[x.dtype]
+                    dask="parallelized",
+                    output_dtypes=[x.dtype],
                 )
 
             # Return a DataArray, retaining the original metadata
@@ -236,8 +248,9 @@ def xarr_wrap(func_):
         else:
             # If the input is not an xarray.DataArray, apply the function directly
             return func_(x, *args, **kwargs)
-    
+
     return wrapper
+
 
 def reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords=None):
     """
@@ -245,7 +258,7 @@ def reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords=None):
     Reshapes a specified dimension of an Xarray DataArray into a desired shape,
     replacing the dimension with new dimensions names at the correct position,
     using Xarray's capabilities to transpose and reshape.
-    
+
     Parameters
     ----------
     dataarray : xr.DataArray
@@ -263,7 +276,7 @@ def reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords=None):
     new_coords : dict, optional
         New coordinates for the reshaped dimensions. If not provided, the coordinates
         will be replaced with a range of integers for each dimension.
-    
+
     Returns
     -------
     reshaped_dataarray : xr.DataArray
@@ -271,18 +284,22 @@ def reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords=None):
     """
     if dim not in dataarray.dims:
         raise ValueError(f"Dimension '{dim}' not found in the DataArray.")
-    
+
     if len(new_shape) != len(new_dims):
         raise ValueError("The length of new_shape must match the length of new_dims.")
-    
+
     original_size = dataarray.sizes[dim]
     reshaped_size = np.prod(new_shape)
     if original_size != reshaped_size:
-        raise ValueError("The product of new_shape does not match the size of the dimension to be reshaped.")
-    
+        raise ValueError(
+            "The product of new_shape does not match the size of the dimension to be reshaped."
+        )
+
     dim_index = dataarray.dims.index(dim)
     new_data = reshape_axes(dataarray.data, dim_index, new_shape)
-    new_dims_list = dataarray.dims[:dim_index] + new_dims + dataarray.dims[dim_index+1:]
+    new_dims_list = (
+        dataarray.dims[:dim_index] + new_dims + dataarray.dims[dim_index + 1 :]
+    )
 
     # Prepare new coordinates, adjusting for the new dimensions
     coords_ = {k: v for k, v in dataarray.coords.items() if k != dim}
@@ -295,10 +312,11 @@ def reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords=None):
 
     # Create the reshaped DataArray with the corrected dimensionality
     reshaped_dataarray = xr.DataArray(new_data, dims=new_dims_list, coords=coords_)
-    
+
     # copy attributes
     reshaped_dataarray.attrs = dataarray.attrs
     return reshaped_dataarray
+
 
 def unstack(dataarray, dim):
     new_coords = coords_from_multitindex(dataarray[dim])
@@ -306,11 +324,15 @@ def unstack(dataarray, dim):
     new_dims = tuple(new_coords.keys())
     return reshape_dimension(dataarray, dim, new_shape, new_dims, new_coords)
 
+
 def coords_from_multitindex(xarr_multiindex):
     coo_names = [c for c in xarr_multiindex.coords][1:]
     coo_df = pd.MultiIndex.from_tuples(xarr_multiindex.values, names=coo_names)
-    coo_dict = {name: level.tolist() for name, level in zip(coo_df.names, coo_df.levels)}
+    coo_dict = {
+        name: level.tolist() for name, level in zip(coo_df.names, coo_df.levels)
+    }
     return coo_dict
+
 
 def axis_dim_from_xarr(x, axis=-1, dim=None):
     """
@@ -339,8 +361,9 @@ def axis_dim_from_xarr(x, axis=-1, dim=None):
     else:
         # Get the dimension name for the given axis
         dim = x.dims[axis]
-    
+
     return axis, dim
+
 
 def roll_dim(x, nroll):
     """
@@ -360,4 +383,3 @@ def roll_dim(x, nroll):
     """
     rolled_dims = np.roll(list(x.dims), nroll)
     return x.transpose(*rolled_dims)
-

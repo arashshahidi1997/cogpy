@@ -37,6 +37,7 @@ example usage:
     mixed_signal = mixer.mix(duration=1000)  # Mix signals over 1000
     unmixed_signals = mixer.get_unmixed_modes()  # Access individual mode signals
 """
+
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import List
@@ -46,53 +47,61 @@ import scipy.ndimage as nd
 from functools import partial
 from .envelopes import finite_duration_biexp
 
+
 class PointProcess(ABC):
     @abstractmethod
     def generate(self, duration):
         """
         Generate a realization of the point process for a given duration.
-        
+
         :param duration: The duration for which the process should be generated.
         :return: A realization of the point process.
         """
         pass
 
+
 class PoissonProcess(PointProcess):
     def __init__(self, rate):
         """
         Initializes the Poisson Process.
-        
+
         :param rate: The rate (λ) of the Poisson Process, i.e., average number of events per unit time.
         """
         self.rate = rate
-    
+
     def generate(self, duration):
         """
         Generates a realization of the Poisson process over a duration using exponential ISIs.
-        
+
         :param duration: Duration over which the Poisson process should be generated.
         :return: A binary array with "1"s indicating events and "0"s indicating no events.
         """
         # Estimate total number of events based on Poisson mean
         n = int(np.ceil(self.rate * duration + 3 * np.sqrt(self.rate * duration)))
-        
+
         # Generate ISI using exponential distribution
         isis = np.random.exponential(1.0 / self.rate, n)
-        
+
         # Compute event times
         events = np.cumsum(isis)
-        
+
         # Filter events that are beyond the duration
         events = events[events < duration]
-        
+
         # Create a binary signal of events over the duration
         signal = np.zeros(duration)
         signal[events.astype(int)] = 1
-        
+
         return signal
 
+
 class PointBurst:
-    def __init__(self, point_process: PointProcess, duration_distribution: rv_continuous, refractory_period: int = 0):
+    def __init__(
+        self,
+        point_process: PointProcess,
+        duration_distribution: rv_continuous,
+        refractory_period: int = 0,
+    ):
         """
         Initializes the Point Burst Process.
 
@@ -135,8 +144,11 @@ class PointBurst:
 
         return burst_signal
 
+
 class PoissonBurst(PoissonProcess):
-    def __init__(self, rate: float, duration_mean: float, envelope_func: callable = None):
+    def __init__(
+        self, rate: float, duration_mean: float, envelope_func: callable = None
+    ):
         """
         Initializes the Poisson Burst Process.
 
@@ -149,7 +161,15 @@ class PoissonBurst(PoissonProcess):
 
         # generate a signal of given envelope
         if self.envelope_func is None:
-            self.envelope_func = partial(finite_duration_biexp, A=1.0, alpha=0.3, beta=1.5, t0=0, window="smoothstep", renorm="area")
+            self.envelope_func = partial(
+                finite_duration_biexp,
+                A=1.0,
+                alpha=0.3,
+                beta=1.5,
+                t0=0,
+                window="smoothstep",
+                renorm="area",
+            )
 
     def generate(self, duration):
         """
@@ -172,14 +192,18 @@ class PoissonBurst(PoissonProcess):
             # Ensure burst doesn't exceed the total duration
             end_time = min(event_time + burst_duration, duration)
 
-            envelope = self.envelope_func(np.arange(end_time - event_time), T=burst_duration)
+            envelope = self.envelope_func(
+                np.arange(end_time - event_time), T=burst_duration
+            )
             burst_signal[event_time:end_time] = envelope
 
         return burst_signal
-    
+
 
 class ModeProcess:
-    def __init__(self, mode_function: xr.DataArray, process: PointProcess, convolve=False):
+    def __init__(
+        self, mode_function: xr.DataArray, process: PointProcess, convolve=False
+    ):
         """
         Initialize a ModeProcess with a mode function and a corresponding point process.
 
@@ -202,11 +226,16 @@ class ModeProcess:
         :return: Generated signal for this mode.
         """
         envelope_signal = self.point_process.generate(duration)
-        envex = xr.DataArray(envelope_signal, dims=['time'], coords={'time': np.arange(duration)})
+        envex = xr.DataArray(
+            envelope_signal, dims=["time"], coords={"time": np.arange(duration)}
+        )
         if self.convolve:
             # Apply impulse response
-            return convolve_impulses_sparse(envelope_signal, self.mode_function.values, mode="same")
+            return convolve_impulses_sparse(
+                envelope_signal, self.mode_function.values, mode="same"
+            )
         return self.mode_function * envex
+
 
 class ModeMixer:
     def __init__(self, mode_processes: List[ModeProcess]):
@@ -215,7 +244,10 @@ class ModeMixer:
 
         :param mode_processes: A list of ModeProcess instances.
         """
-        if not all(mode_processes[0].mode_function.shape == mp.mode_function.shape for mp in mode_processes):
+        if not all(
+            mode_processes[0].mode_function.shape == mp.mode_function.shape
+            for mp in mode_processes
+        ):
             raise ValueError("All mode functions must have the same dimensionality.")
 
         self.mode_processes = mode_processes
@@ -228,15 +260,15 @@ class ModeMixer:
         :param duration: The duration for which to mix the signals.
         :return: Mixed signal.
         """
-        mixed_modes = [] 
+        mixed_modes = []
         self.unmixed_modes = []
 
         for mode_process in self.mode_processes:
             generated_signal = mode_process.generate(duration)
             self.unmixed_modes.append(generated_signal)
 
-        self.unmixed_modes = xr.concat(self.unmixed_modes, dim='mode')
-        mixed_modes = self.unmixed_modes.sum(dim='mode') # Sum over all modes
+        self.unmixed_modes = xr.concat(self.unmixed_modes, dim="mode")
+        mixed_modes = self.unmixed_modes.sum(dim="mode")  # Sum over all modes
         return mixed_modes
 
     def get_unmixed_modes(self):
@@ -246,6 +278,7 @@ class ModeMixer:
         :return: List of generated signals.
         """
         return self.unmixed_modes
+
 
 class ImpulseResponseMixer:
     def __init__(self, point_process: PointProcess, impulse_response: xr.DataArray):
@@ -261,15 +294,17 @@ class ImpulseResponseMixer:
         self.point_process = point_process
         self.impulse_response = impulse_response
 
+
 def sample_exponential(mean):
     """
     Generate a sample from an exponential distribution given a mean.
-    
+
     :param mean: The mean of the exponential distribution.
     :return: A sample from the exponential distribution.
     """
     rate = 1 / mean
-    return np.random.exponential(scale=1/rate)
+    return np.random.exponential(scale=1 / rate)
+
 
 # your implementation from earlier
 def convolve_impulses_sparse(sig, kernel, mode="full"):
@@ -282,7 +317,7 @@ def convolve_impulses_sparse(sig, kernel, mode="full"):
         start_shift = 0
     elif mode == "same":
         out_len = L
-        start_shift = -(K // 2)   # center like np.convolve(..., 'same')
+        start_shift = -(K // 2)  # center like np.convolve(..., 'same')
     else:
         raise ValueError("mode must be 'full' or 'same'")
 
@@ -302,4 +337,3 @@ def convolve_impulses_sparse(sig, kernel, mode="full"):
         src_hi = src_lo + (dst_hi - dst_lo)
         out[..., dst_lo:dst_hi] += w * k[..., src_lo:src_hi]
     return out
-

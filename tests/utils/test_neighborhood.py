@@ -3,7 +3,10 @@ import pandas as pd
 import scipy.ndimage as nd
 import pytest
 from cogpy.utils.grid_neighborhood import (
-    GridNeighborhood, make_footprint, build_neighbor_masks, gather_neighbors
+    GridNeighborhood,
+    make_footprint,
+    build_neighbor_masks,
+    gather_neighbors,
 )
 
 
@@ -49,14 +52,14 @@ def test_neighbor_pairs_df_has_correct_pairs_and_columns(gn_2x2):
     """neighbor_pairs_df should list all directed edges and have correct schema."""
     df = gn_2x2.neighbor_pairs_df
     # Schema
-    assert list(df.columns) == ['ch_ref', 'ch_neighbor']
+    assert list(df.columns) == ["ch_ref", "ch_neighbor"]
     # There are 8 directed edges in the 2x2 4-conn grid
     assert len(df) == 8
 
     # Cross-check against adjacency
     A = gn_2x2.adjacency_matrix()
     expected_pairs = {(i, j) for i in range(4) for j in range(4) if A[i, j]}
-    got_pairs = set(map(tuple, df[['ch_ref', 'ch_neighbor']].to_numpy()))
+    got_pairs = set(map(tuple, df[["ch_ref", "ch_neighbor"]].to_numpy()))
     assert got_pairs == expected_pairs
 
 
@@ -66,7 +69,9 @@ def test_gather_neighbors_splits_values_correctly(gn_2x2):
     at indices {0,1,2} and non-neighbors {3}.
     """
     grid_values = np.arange(4).reshape(2, 2)  # values equal to linear indices
-    include_masks = build_neighbor_masks(gn_2x2.footprint, gn_2x2.grid_shape, exclude=False)
+    include_masks = build_neighbor_masks(
+        gn_2x2.footprint, gn_2x2.grid_shape, exclude=False
+    )
 
     neigh = gather_neighbors(
         grid_values=grid_values,

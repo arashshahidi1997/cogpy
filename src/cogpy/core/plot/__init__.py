@@ -1,11 +1,22 @@
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 
-__getattr__, __dir__, __all__ = attach(__name__, submodules=[
-    "frame_plot", "orthoslicer", "orthoslicer_facet", "orthoslicer_ranger",
-    "orthoslicer_rangercopy", "orthoslicer_zoom", "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
-    "specgram_plot", "time_player", "time_plot", "xarr_plot",
-])
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "frame_plot",
+        "orthoslicer",
+        "orthoslicer_facet",
+        "orthoslicer_ranger",
+        "orthoslicer_rangercopy",
+        "orthoslicer_zoom",
+        "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
+        "specgram_plot",
+        "time_player",
+        "time_plot",
+        "xarr_plot",
+    ],
+)
 
 # NOTE: You have both a folder "orthoslicer" (with base.py) and files
 # "orthoslicer.py", "orthoslicer_ranger.py", etc. Keep either the folder
@@ -14,7 +25,14 @@ __getattr__, __dir__, __all__ = attach(__name__, submodules=[
 
 if TYPE_CHECKING:
     from . import (
-        frame_plot, orthoslicer, orthoslicer_facet, orthoslicer_ranger,
-        orthoslicer_rangercopy, orthoslicer_zoom, specgram_plot,
-        time_player, time_plot, xarr_plot
+        frame_plot,
+        orthoslicer,
+        orthoslicer_facet,
+        orthoslicer_ranger,
+        orthoslicer_rangercopy,
+        orthoslicer_zoom,
+        specgram_plot,
+        time_player,
+        time_plot,
+        xarr_plot,
     )

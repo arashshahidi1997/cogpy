@@ -43,7 +43,7 @@ Classes:
             neighbor_indices: Get linear indices of neighbors for a given node (self excluded).
             apply_neighborhoodfunc: Apply a function to each node's neighborhood and return the results.
             neighborhood_mapper: Return a function that applies an ensemble function to each node's neighborhood.
-        
+
 Constants:
     None
 
@@ -71,6 +71,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 from functools import partial
+
 
 class GridNeighborhood:
     """
@@ -104,7 +105,7 @@ class GridNeighborhood:
         Source indices of adjacency edges.
     adj_dst : np.ndarray, dtype=int, 1D
         Destination indices of adjacency edges.
-    
+
     Methods
     -------
     get_neighbor_mask(node_idx, exclude=False):
@@ -122,16 +123,23 @@ class GridNeighborhood:
     __repr__():
         Return a human-readable, bordered table summary of members and methods.
     """
-    def __init__(self, AP:int, ML:int, footprint=None):
+
+    def __init__(self, AP: int, ML: int, footprint=None):
         """Initialize and precompute per-node neighborhood masks and neighbor pairs."""
         if footprint is None:
             footprint = make_footprint(rank=2, connectivity=1, niter=2)
         self.footprint = footprint
         self.grid_shape = (AP, ML)
         self.num_nodes = AP * ML
-        self.include_mask_per_node = build_neighbor_masks(footprint, self.grid_shape, exclude=False)
-        self.exclude_mask_per_node = build_neighbor_masks(footprint, self.grid_shape, exclude=True)
-        self.neighbor_pairs_df = build_neighbor_pairs_df(footprint, self.grid_shape, self.num_nodes)
+        self.include_mask_per_node = build_neighbor_masks(
+            footprint, self.grid_shape, exclude=False
+        )
+        self.exclude_mask_per_node = build_neighbor_masks(
+            footprint, self.grid_shape, exclude=True
+        )
+        self.neighbor_pairs_df = build_neighbor_pairs_df(
+            footprint, self.grid_shape, self.num_nodes
+        )
         self.adj = self.adjacency_matrix()
         self.adj_src, self.adj_dst = self.adjacency_edges()
 
@@ -151,7 +159,9 @@ class GridNeighborhood:
         mask : np.ndarray, dtype=bool, shape grid_shape
             Boolean mask marking neighbors of the given node.
         """
-        neighbor_mask = self.exclude_mask_per_node if exclude else self.include_mask_per_node
+        neighbor_mask = (
+            self.exclude_mask_per_node if exclude else self.include_mask_per_node
+        )
         return neighbor_mask[node_idx]
 
     def adjacency_matrix(self):
@@ -163,7 +173,12 @@ class GridNeighborhood:
         A : np.ndarray, dtype=bool, shape (num_nodes, num_nodes)
             Row i, column j is True if node j is a neighbor of node i (self excluded).
         """
-        return adjacency_matrix(self.grid_shape, exclude=True, exclude_mask_per_node=self.exclude_mask_per_node, num_nodes=self.num_nodes)
+        return adjacency_matrix(
+            self.grid_shape,
+            exclude=True,
+            exclude_mask_per_node=self.exclude_mask_per_node,
+            num_nodes=self.num_nodes,
+        )
 
     def adjacency_edges(self):
         """
@@ -192,12 +207,14 @@ class GridNeighborhood:
         idx : np.ndarray, dtype=int, 1D
             Linear indices into the flattened grid for neighbors of `node_idx`.
         """
-        return np.ravel_multi_index(np.where(self.exclude_mask_per_node[node_idx]), dims=self.grid_shape)
+        return np.ravel_multi_index(
+            np.where(self.exclude_mask_per_node[node_idx]), dims=self.grid_shape
+        )
 
     def apply_neighborhoodfunc(self, ensemble_func, grid_values):
         """
         Apply a function to each node's neighborhood and return the results.
-        
+
         Parameters
         ----------
         ensemble_func : callable
@@ -205,24 +222,26 @@ class GridNeighborhood:
             neighbor values and return a single value (e.g., np.mean, np.median).
         grid_values : np.ndarray, shape grid_shape
             Values laid out on the same grid as the masks.
-        
+
         Returns
         -------
         results : list
             List of results from applying `ensemble_func` to each node's neighborhood.
         """
-        return apply_neighborfunc(ensemble_func, grid_values, self.exclude_mask_per_node)
-    
+        return apply_neighborfunc(
+            ensemble_func, grid_values, self.exclude_mask_per_node
+        )
+
     def neighborhood_mapper(self, ensemble_func):
         """
         Return a function that applies `ensemble_func` to each node's neighborhood.
-        
+
         Parameters
         ----------
         ensemble_func : callable
             Function to apply to each neighborhood. It should accept a 1D array of
             neighbor values and return a single value (e.g., np.mean, np.median).
-        
+
         Returns
         -------
         mapper : callable
@@ -243,21 +262,34 @@ class GridNeighborhood:
         header = "<GridNeighborhood>"
         data = {
             "Method/Attribute": [
-                "footprint", "grid_shape", "nch", "loc_include", "exclude_mask_per_node",
-                "exclude_mask_per_node_df", "mask_cache", "get_neighborhood_arr",
-                "adjacency_matrix", "neighbor_indices"
+                "footprint",
+                "grid_shape",
+                "nch",
+                "loc_include",
+                "exclude_mask_per_node",
+                "exclude_mask_per_node_df",
+                "mask_cache",
+                "get_neighborhood_arr",
+                "adjacency_matrix",
+                "neighbor_indices",
             ],
             "Description": [
-                "Footprint array", "Shape of the grid", "Number of channels",
-                "Included locations", "Excluded locations",
-                "DataFrame of excluded locations", "Collection of locations",
-                "Get neighborhood array", "Get adjacency matrix",
+                "Footprint array",
+                "Shape of the grid",
+                "Number of channels",
+                "Included locations",
+                "Excluded locations",
+                "DataFrame of excluded locations",
+                "Collection of locations",
+                "Get neighborhood array",
+                "Get adjacency matrix",
                 "Get neighbor indices",
             ],
         }
         df = pd.DataFrame(data)
         table = tabulate(df, headers="keys", tablefmt="grid", showindex=False)
         return f"{header}\n{table}"
+
 
 def build_neighbor_masks(footprint, grid_shape, exclude=False):
     """
@@ -289,13 +321,14 @@ def build_neighbor_masks(footprint, grid_shape, exclude=False):
     for node_idx in range(num_nodes):
         mask_ = np.zeros(grid_shape)
         mask_[np.unravel_index(node_idx, grid_shape)] = 1
-        mask_ = signal.convolve2d(mask_, footprint, mode='same')
+        mask_ = signal.convolve2d(mask_, footprint, mode="same")
         if exclude:
             mask_[np.unravel_index(node_idx, grid_shape)] = 0
         mask_per_node.append(mask_)
 
     mask_per_node = np.array(mask_per_node, dtype=bool)
     return mask_per_node
+
 
 def build_neighbor_pairs_df(footprint, grid_shape, num_nodes):
     """
@@ -317,13 +350,19 @@ def build_neighbor_pairs_df(footprint, grid_shape, num_nodes):
         neighbor relations (self excluded). Indices are linear (row-major).
     """
     exclude_mask_per_node = build_neighbor_masks(footprint, grid_shape, exclude=True)
-    neighbor_pairs_df = pd.DataFrame(np.argwhere(exclude_mask_per_node.reshape(-1, num_nodes)), columns=['ch_ref', 'ch_neighbor'])
+    neighbor_pairs_df = pd.DataFrame(
+        np.argwhere(exclude_mask_per_node.reshape(-1, num_nodes)),
+        columns=["ch_ref", "ch_neighbor"],
+    )
     return neighbor_pairs_df
 
-def adjacency_matrix(grid_shape, exclude=True, footprint=None, exclude_mask_per_node=None, num_nodes=None):
+
+def adjacency_matrix(
+    grid_shape, exclude=True, footprint=None, exclude_mask_per_node=None, num_nodes=None
+):
     """
     Build an adjacency matrix from neighborhood masks.
-        
+
     Parameters
     ----------
     grid_shape : tuple[int, int]
@@ -349,10 +388,15 @@ def adjacency_matrix(grid_shape, exclude=True, footprint=None, exclude_mask_per_
         num_nodes = grid_shape[0] * grid_shape[1]
     if exclude_mask_per_node is None:
         if footprint is None:
-            footprint = make_footprint(2,1,2)
-        exclude_mask_per_node = build_neighbor_masks(footprint, grid_shape, exclude=exclude)
-    adj = np.array([exclude_mask_per_node[node_idx].reshape(-1) for node_idx in range(num_nodes)])
+            footprint = make_footprint(2, 1, 2)
+        exclude_mask_per_node = build_neighbor_masks(
+            footprint, grid_shape, exclude=exclude
+        )
+    adj = np.array(
+        [exclude_mask_per_node[node_idx].reshape(-1) for node_idx in range(num_nodes)]
+    )
     return adj
+
 
 def adjacency_edges(*args, **kwargs):
     """
@@ -371,6 +415,7 @@ def adjacency_edges(*args, **kwargs):
     src_order = np.argsort(src)
     return src[src_order], dst[src_order]
 
+
 def gather_neighbors(grid_values, neighbor_mask, node_idx, **kwargs):
     """
     Get grid values of neighbors of a reference node.
@@ -379,7 +424,7 @@ def gather_neighbors(grid_values, neighbor_mask, node_idx, **kwargs):
     ----------
     grid_values : np.ndarray, shape grid_shape
         Values laid out on the same grid as the masks.
-    neighbor_mask: 
+    neighbor_mask:
     node_idx : int
         Passed through to `select_neighbor_mask`.
 
@@ -398,10 +443,11 @@ def gather_neighbors(grid_values, neighbor_mask, node_idx, **kwargs):
     neigh = grid_values[np.where(include_mask_node)]
     return neigh
 
+
 def map_neighbors(ensemble_func, neighbor_mask):
     """
     Return a function that applies `ensemble_func` to each node's neighborhood.
-        
+
     Parameters
     ----------
     ensemble_func : callable
@@ -416,11 +462,13 @@ def map_neighbors(ensemble_func, neighbor_mask):
         Function that takes `node_idx` and `grid_values`, applies `ensemble_func`
         to the neighborhood of `node_idx`, and returns the result.
     """
+
     def apply_func_to_neighbors(node_idx, grid_values):
         neigh = gather_neighbors(grid_values, neighbor_mask, node_idx)
         return ensemble_func(neigh)
 
     return apply_func_to_neighbors
+
 
 def apply_neighborfunc(ensemble_func, grid_values, neighbor_mask):
     """
@@ -435,7 +483,7 @@ def apply_neighborfunc(ensemble_func, grid_values, neighbor_mask):
         Values laid out on the same grid as the masks.
     neighbor_mask : np.ndarray, dtype=bool, shape (num_nodes, H, W
         Per-node neighborhood masks.
-    
+
     Returns
     -------
     results : list
@@ -444,6 +492,7 @@ def apply_neighborfunc(ensemble_func, grid_values, neighbor_mask):
     num_nodes = grid_values.shape[0] * grid_values.shape[1]
     neighborfunc = map_neighbors(ensemble_func, neighbor_mask)
     return [neighborfunc(node_idx, grid_values) for node_idx in range(num_nodes)]
+
 
 def make_footprint(rank=2, connectivity=1, niter=2):
     """
@@ -463,8 +512,11 @@ def make_footprint(rank=2, connectivity=1, niter=2):
     footprint : np.ndarray, dtype=bool, shape determined by `rank` and `niter`
         The generated Boolean stencil (position-agnostic neighborhood motif).
     """
-    footprint = nd.iterate_structure(nd.generate_binary_structure(rank, connectivity), niter)
+    footprint = nd.iterate_structure(
+        nd.generate_binary_structure(rank, connectivity), niter
+    )
     return footprint
+
 
 def remove_center(footprint):
     """
@@ -481,8 +533,9 @@ def remove_center(footprint):
         Copy of `footprint` where the center (floor-div midpoint) is False.
     """
     footprint_exclude = np.copy(footprint)
-    footprint_exclude[footprint.shape[0]//2, footprint.shape[1]//2] = False
+    footprint_exclude[footprint.shape[0] // 2, footprint.shape[1] // 2] = False
     return footprint_exclude
+
 
 def grid_index_array(grid_shape):
     """

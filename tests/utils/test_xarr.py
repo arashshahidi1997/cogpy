@@ -4,6 +4,7 @@ import dask.array as da
 import pytest
 from cogpy.utils.xarr import xdim_subsample_around, dim_dur_slice, axis_dim_from_xarr
 
+
 def test_dim_dur_slice():
     # 0..3600s with high sampling rate
     time_vec = np.linspace(0.0, 3600.0, 10001)
@@ -24,6 +25,7 @@ def test_dim_dur_slice():
     assert s1.start == pytest.approx(3000.0)
     assert s1.stop == pytest.approx(3600.0)
 
+
 def test_dim_dur_slice_invalid_inputs():
     # Unsorted time vector should raise
     unsorted_time = np.array([0.0, 2.0, 1.0, 3.0])
@@ -35,37 +37,44 @@ def test_dim_dur_slice_invalid_inputs():
     with pytest.raises(ValueError, match="Duration exceeds total time span"):
         dim_dur_slice(time_vec, time_fraction=0.5, duration=20.0)
 
+
 def test_sampling():
-	test_x = xr.DataArray(np.arange(20), dims='t', coords={'t': np.arange(20)})
-	it = test_x.get_index('t').get_indexer([11], method="nearest")[0]
-	sample_win = np.arange(-2, 2) * 2
-	tsamples = it + sample_win
-	assert np.all(tsamples == np.array([7,9,11,13]))
+    test_x = xr.DataArray(np.arange(20), dims="t", coords={"t": np.arange(20)})
+    it = test_x.get_index("t").get_indexer([11], method="nearest")[0]
+    sample_win = np.arange(-2, 2) * 2
+    tsamples = it + sample_win
+    assert np.all(tsamples == np.array([7, 9, 11, 13]))
 
-	sample_win = np.arange(-3, 3) * 2
-	tsamples = it + sample_win
-	# clip to valid range
-	tsamples = tsamples[(tsamples >= 0) & (tsamples < test_x.sizes['t'])]
-	assert np.all(tsamples == np.array([5,7,9,11,13,15]))
+    sample_win = np.arange(-3, 3) * 2
+    tsamples = it + sample_win
+    # clip to valid range
+    tsamples = tsamples[(tsamples >= 0) & (tsamples < test_x.sizes["t"])]
+    assert np.all(tsamples == np.array([5, 7, 9, 11, 13, 15]))
 
-	# write using xdim_subsample_around
-	tsamples = xdim_subsample_around(test_x, dim='t', center=11, nsample=4, step=2, clip=True)
-	assert np.array_equal(tsamples, np.array([7,9,11,13]))
+    # write using xdim_subsample_around
+    tsamples = xdim_subsample_around(
+        test_x, dim="t", center=11, nsample=4, step=2, clip=True
+    )
+    assert np.array_equal(tsamples, np.array([7, 9, 11, 13]))
 
-	tsamples = xdim_subsample_around(test_x, dim='t', center=11, nsample=7, step=2, clip=True)
-	
-	assert np.array_equal(tsamples, np.array([5, 7, 9, 11, 13, 15, 17])), print(tsamples)
+    tsamples = xdim_subsample_around(
+        test_x, dim="t", center=11, nsample=7, step=2, clip=True
+    )
+
+    assert np.array_equal(tsamples, np.array([5, 7, 9, 11, 13, 15, 17])), print(
+        tsamples
+    )
+
 
 def test_axis_dim_from_xarr():
-    x = xr.DataArray(np.random.randn(10, 10), dims=['time', 'space'])
+    x = xr.DataArray(np.random.randn(10, 10), dims=["time", "space"])
     axis, dim = axis_dim_from_xarr(x, axis=0)
     assert axis == 0
-    assert dim == 'time'
-    axis, dim = axis_dim_from_xarr(x, dim='space')
+    assert dim == "time"
+    axis, dim = axis_dim_from_xarr(x, dim="space")
     assert axis == 1
-    assert dim == 'space'
-    axis, dim = axis_dim_from_xarr(x, axis=0, dim='space')
+    assert dim == "space"
+    axis, dim = axis_dim_from_xarr(x, axis=0, dim="space")
     assert axis == 1
-    assert dim == 'space'
-    print('All tests passed.')
-
+    assert dim == "space"
+    print("All tests passed.")

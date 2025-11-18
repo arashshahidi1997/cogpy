@@ -23,9 +23,11 @@ from math import ceil
 from numba import njit, prange
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array
+
 # from pyts.base import UnivariateTransformerMixin
 from ..utils.sliding import rolling_win
 from ..spectral.multitaper import multitaper_psd
+
 
 @njit
 def _outer_dot(v, X, n_samples, window_size, n_windows):
@@ -37,19 +39,21 @@ def _outer_dot(v, X, n_samples, window_size, n_windows):
 
 
 @njit
-def _diagonal_averaging(X, n_samples, n_timestamps, window_size,
-                        n_windows, grouping_size, gap):
+def _diagonal_averaging(
+    X, n_samples, n_timestamps, window_size, n_windows, grouping_size, gap
+):
     X_new = np.empty((n_samples, grouping_size, n_timestamps))
     first_row = [(0, col) for col in range(n_windows)]
     last_col = [(row, n_windows - 1) for row in range(1, window_size)]
     indices = first_row + last_col
     for i in prange(n_samples):
         for group in prange(grouping_size):
-            for (j, k) in indices:
+            for j, k in indices:
                 X_new[i, group, j + k] = np.diag(
                     X[i, group, :, ::-1], gap - j - k - 1
                 ).mean()
     return X_new
+
 
 # UnivariateTransformerMixin):
 class MultiTaperSpectrogram(BaseEstimator):
@@ -88,7 +92,9 @@ class MultiTaperSpectrogram(BaseEstimator):
 
     """
 
-    def __init__(self, window_size=128, window_step=32, NW=4, nfft=None, K_max=None, fs=1):
+    def __init__(
+        self, window_size=128, window_step=32, NW=4, nfft=None, K_max=None, fs=1
+    ):
         self.window_size = window_size
         self.window_step = window_step
         self.NW = NW
@@ -139,14 +145,13 @@ class MultiTaperSpectrogram(BaseEstimator):
 
         # X_window = _windowed_view(X, n_timestamps,
         #                    window_size, window_step=1)
-        
+
         # X_spec = multitaper_psd(X_window, axis=-1)
         # return np.squeeze(X_spec)
         pass
 
     def _check_params(self, n_timestamps):
-        if not isinstance(self.window_size,
-                          (int, np.integer, float, np.floating)):
+        if not isinstance(self.window_size, (int, np.integer, float, np.floating)):
             raise TypeError("'window_size' must be an integer or a float.")
         if isinstance(self.window_size, (int, np.integer)):
             if not 2 <= self.window_size <= n_timestamps:
@@ -164,10 +169,13 @@ class MultiTaperSpectrogram(BaseEstimator):
                     "(got {0}).".format(self.window_size)
                 )
             window_size = max(2, ceil(self.window_size * n_timestamps))
-        if not (self.groups is None
-                or isinstance(self.groups, (int, list, tuple, np.ndarray))):
-            raise TypeError("'groups' must be either None, an integer "
-                            "or array-like.")
+        if not (
+            self.groups is None
+            or isinstance(self.groups, (int, list, tuple, np.ndarray))
+        ):
+            raise TypeError(
+                "'groups' must be either None, an integer " "or array-like."
+            )
         if isinstance(self.groups, (int, np.integer)):
             if not 1 <= self.groups <= self.window_size:
                 raise ValueError(
@@ -178,12 +186,11 @@ class MultiTaperSpectrogram(BaseEstimator):
             idx = np.concatenate(self.groups)
             diff = np.setdiff1d(idx, np.arange(self.window_size))
             flat_list = [item for group in self.groups for item in group]
-            if ((diff.size > 0)
-                or not (all(isinstance(x, (int, np.integer))
-                            for x in flat_list))):
+            if (diff.size > 0) or not (
+                all(isinstance(x, (int, np.integer)) for x in flat_list)
+            ):
                 raise ValueError(
                     "If 'groups' is array-like, all the values in 'groups' "
                     "must be integers between 0 and ('window_size' - 1)."
                 )
         return window_size
-

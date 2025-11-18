@@ -1,10 +1,18 @@
 import numpy as np
 import pandas as pd
-from .burst_phase import get_burst_signal, get_burst_sig_at_ch, bandpass_filter, hilbert_transform
+from .burst_phase import (
+    get_burst_signal,
+    get_burst_sig_at_ch,
+    bandpass_filter,
+    hilbert_transform,
+)
 from tqdm import tqdm
 
+
 # %% burst-wave analysis
-def get_burst_concurrent_wave_subsets(wave_rec_df_, burst_rec_df_, is_wave_burst_concurrent, compute_rel_coos=True):
+def get_burst_concurrent_wave_subsets(
+    wave_rec_df_, burst_rec_df_, is_wave_burst_concurrent, compute_rel_coos=True
+):
     """
     Get the burst-wave subset for each burst in the burst dataframe.
     The burst-wave subset is a dataframe that contains the wave detections that are concurrent with the burst detections.
@@ -59,16 +67,21 @@ def get_burst_concurrent_wave_subsets(wave_rec_df_, burst_rec_df_, is_wave_burst
         reference_burst = burst_rec_df_.iloc[iburst]
         wave_subset = wave_rec_df_.iloc[wave_subset].copy()
         if compute_rel_coos:
-            wave_subset['AP_diff'] = wave_subset.AP - reference_burst.AP
-            wave_subset['ML_diff'] = wave_subset.ML - reference_burst.ML
-        wave_subset['ref_burst'] = iburst
+            wave_subset["AP_diff"] = wave_subset.AP - reference_burst.AP
+            wave_subset["ML_diff"] = wave_subset.ML - reference_burst.ML
+        wave_subset["ref_burst"] = iburst
         burst_concurrent_wave_subset[iburst] = wave_subset.reset_index()
 
     # concat dict of dataframes adding burst key
-    burst_concurrent_wave_subset = pd.concat(burst_concurrent_wave_subset, names=['burst'])
-    burst_concurrent_wave_subset.loc[:, 'burst_idx'] = burst_concurrent_wave_subset.index.get_level_values('burst')
+    burst_concurrent_wave_subset = pd.concat(
+        burst_concurrent_wave_subset, names=["burst"]
+    )
+    burst_concurrent_wave_subset.loc[:, "burst_idx"] = (
+        burst_concurrent_wave_subset.index.get_level_values("burst")
+    )
     burst_concurrent_wave_subset = burst_concurrent_wave_subset.reset_index(drop=True)
     return burst_concurrent_wave_subset
+
 
 def get_is_wave_burst_colocalized_spatial_bins(wave_rec_df_, burst_rec_df_):
     """
@@ -87,9 +100,11 @@ def get_is_wave_burst_colocalized_spatial_bins(wave_rec_df_, burst_rec_df_):
     is_wave_burst_colocalized : np.ndarray
         A boolean array of shape (len(wave_rec_df_), len(burst_rec_df_)) indicating the colocalization of wave and burst detections in spatial bins
     """
-    wave_spatial_groups = wave_rec_df_.groupby(['AP_bin', 'ML_bin'])
-    burst_spatial_groups = burst_rec_df_.groupby(['AP_bin', 'ML_bin'])
-    is_wave_burst_colocalized = np.zeros((len(wave_rec_df_), len(burst_rec_df_)), dtype=bool)
+    wave_spatial_groups = wave_rec_df_.groupby(["AP_bin", "ML_bin"])
+    burst_spatial_groups = burst_rec_df_.groupby(["AP_bin", "ML_bin"])
+    is_wave_burst_colocalized = np.zeros(
+        (len(wave_rec_df_), len(burst_rec_df_)), dtype=bool
+    )
     for (ap_bin, ml_bin), wave_group in wave_spatial_groups:
         try:
             burst_group = burst_spatial_groups.get_group((ap_bin, ml_bin))
@@ -100,11 +115,13 @@ def get_is_wave_burst_colocalized_spatial_bins(wave_rec_df_, burst_rec_df_):
             continue
     return is_wave_burst_colocalized
 
+
 # spatial dist
 def prep_wave_df(wave_df):
-    wave_df.loc[:, 'iAP'] = (wave_df.peak_x-1).astype(int)
-    wave_df.loc[:, 'iML'] = (wave_df.peak_x-1).astype(int)
+    wave_df.loc[:, "iAP"] = (wave_df.peak_x - 1).astype(int)
+    wave_df.loc[:, "iML"] = (wave_df.peak_x - 1).astype(int)
     return wave_df
+
 
 def get_burst_conco_wave_subset(burst_df, wave_df):
     wave_df = prep_wave_df(wave_df)
@@ -115,35 +132,42 @@ def get_burst_conco_wave_subset(burst_df, wave_df):
 
     # is colocalized
     axial_dist_channels = 4
-    spatial_dist_thresh = round(np.sqrt(2)*axial_dist_channels + 0.5)
+    spatial_dist_thresh = round(np.sqrt(2) * axial_dist_channels + 0.5)
     is_wave_burst_colocalized = spatial_dist < spatial_dist_thresh
 
     # temporal dist
     time_dist = np.abs(wave_df.peak_abs.values[:, None] - burst_df.time.values)
 
     # is concurrent
-    time_dist_thresh = 1 # s
+    time_dist_thresh = 1  # s
     is_wave_burst_concurrent = time_dist < time_dist_thresh
 
     # is concurrent and colocalized
-    is_wave_burst_concurrent_and_colocalized = is_wave_burst_colocalized & is_wave_burst_concurrent
+    is_wave_burst_concurrent_and_colocalized = (
+        is_wave_burst_colocalized & is_wave_burst_concurrent
+    )
 
     # concurrent and colocalized wave subset
-    burst_conco_wave_subset = get_burst_concurrent_wave_subsets(wave_df, burst_df, is_wave_burst_concurrent_and_colocalized)
+    burst_conco_wave_subset = get_burst_concurrent_wave_subsets(
+        wave_df, burst_df, is_wave_burst_concurrent_and_colocalized
+    )
     return burst_conco_wave_subset
+
 
 def get_burst_wave_phase(burst_conco_wave_subset, burst_df, csig, time_halfwindow=1):
     burst_wave_phase = []
-    burst_conco_wave_group = burst_conco_wave_subset.groupby('burst_idx')
+    burst_conco_wave_group = burst_conco_wave_subset.groupby("burst_idx")
     for burst_idx, conco_waves in tqdm(burst_conco_wave_group):
         burst = burst_df.loc[burst_idx]
         burst_sig = get_burst_signal(csig, burst, time_halfwindow=time_halfwindow)
         burst_sig = get_burst_sig_at_ch(burst_sig, burst)
-        burst_sig_bp = bandpass_filter(burst_sig, burst, fs=csig.fs, freq_halfbandwidth=2.5)
+        burst_sig_bp = bandpass_filter(
+            burst_sig, burst, fs=csig.fs, freq_halfbandwidth=2.5
+        )
         burst_analytic = hilbert_transform(burst_sig_bp)
 
         # sum burst_phase at each wave time
         wave_phase = conco_waves.peak_abs.values
-        burst_wave_phase.append(burst_analytic.sel(time=wave_phase, method='nearest'))
+        burst_wave_phase.append(burst_analytic.sel(time=wave_phase, method="nearest"))
 
     return burst_wave_phase

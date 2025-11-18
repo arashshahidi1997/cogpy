@@ -3,11 +3,12 @@ import json
 from tqdm import tqdm
 from functools import partial
 
+
 # %% operations
 def save_options(input_file, suffix, operation=None, overwrite=False):
     """
     input_file: target file
-    suffix: 
+    suffix:
     operation: default '.copy'
     overwrite: default False
     """
@@ -24,19 +25,21 @@ def save_options(input_file, suffix, operation=None, overwrite=False):
         # add (count) to avoide overwriting
     return output_file
 
+
 def add_extension(file, ext: str, suffix=None):
     if suffix is None:
         suffix = Path(file).suffix
     # assert (suffix[0] == '.') and (ext[0] == '.'), \
-        # print('invalid suffix; add a dot "." before the extension')
+    # print('invalid suffix; add a dot "." before the extension')
     return Path(file).with_suffix(ext + suffix)
+
 
 def not_overwrite(file):
     """
     file: pathlib.Path
       path to file which will be avoided to overwrite by adding .copy{i}.`suffix`
       where i starts from None and then will increase from 1 until the target filename does not already exist.
-    
+
     suffix: str
       extension of the target file, remember to add a dot before the extension, e.g. .dat, .xml
     """
@@ -44,14 +47,15 @@ def not_overwrite(file):
     icopy = 1
     lenstr_icopy = None
     while file.is_file():
-        file = file.parent/(f'{file.stem[:lenstr_icopy]}({str(icopy)}){file.suffix}')
-        lenstr_icopy = -(len(str(icopy))+2) # +2 for parantheses
+        file = file.parent / (f"{file.stem[:lenstr_icopy]}({str(icopy)}){file.suffix}")
+        lenstr_icopy = -(len(str(icopy)) + 2)  # +2 for parantheses
         icopy += 1
 
     return file
 
+
 # %% meta/log file
-def save_log(log_dict, log_file, extension='.log', **save_kwargs):
+def save_log(log_dict, log_file, extension=".log", **save_kwargs):
     """
     log_file: target file
     operation: default '.copy'
@@ -59,6 +63,6 @@ def save_log(log_dict, log_file, extension='.log', **save_kwargs):
     """
     assert isinstance(log_dict, dict)
     log_dst = save_options(log_file, extension, **save_kwargs)
-    with open(log_dst, 'w') as f:
+    with open(log_dst, "w") as f:
         json.dump(log_dict, f)
-    print(f'processing log saved to \n {log_dst}')
+    print(f"processing log saved to \n {log_dst}")

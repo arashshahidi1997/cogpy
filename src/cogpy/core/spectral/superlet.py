@@ -12,6 +12,7 @@ from scipy.signal import fftconvolve
 
 # %% Superlet
 
+
 def superlet(
     data_arr,
     samplerate,
@@ -21,7 +22,6 @@ def superlet(
     c_1=3,
     adaptive=False,
 ):
-
     """
     Performs Superlet Transform (SLT) according to Moca et al. [1]_
     Both multiplicative SLT and fractional adaptive SLT are available.
@@ -121,8 +121,7 @@ def multiplicativeSLT(data_arr, samplerate, scales, order_max, order_min=1, c_1=
 
 
 def FASLT(data_arr, samplerate, scales, order_max, order_min=1, c_1=3):
-
-    """ Fractional adaptive SL transform
+    """Fractional adaptive SL transform
 
     For non-integer orders fractional SLTs are
     calculated in the interval [order, order+1) via:
@@ -182,8 +181,8 @@ def FASLT(data_arr, samplerate, scales, order_max, order_min=1, c_1=3):
 
         # multiply non-fractional next_spec for
         # all remaining scales/frequencies
-        gmean_spec[jump + 1:] *= np.power(
-            next_spec[jump - last_jump + 1:].T, exponents[jump + 1:]
+        gmean_spec[jump + 1 :] *= np.power(
+            next_spec[jump - last_jump + 1 :].T, exponents[jump + 1 :]
         ).T
 
         # go to the next [order, order+1) interval
@@ -194,10 +193,10 @@ def FASLT(data_arr, samplerate, scales, order_max, order_min=1, c_1=3):
 
 # --- Morlet Wavelet formulation ---
 
+
 class MorletSL:
     def __init__(self, c_i=3, k_sd=5):
-
-        """ The Morlet formulation according to
+        """The Morlet formulation according to
         Moca et al. shifts the admissability criterion from
         the central frequency to the number of cycles c_i
         within the Gaussian envelope which has a constant
@@ -211,7 +210,6 @@ class MorletSL:
         return self.time(*args, **kwargs)
 
     def time(self, t, s=1.0):
-
         """
         Complext Morlet wavelet in the SL formulation.
 
@@ -242,7 +240,6 @@ class MorletSL:
 
 
 def fourier_period(scale):
-
     """
     This is the approximate Morlet fourier period
     as used in the source publication of Moca et al. 2021
@@ -262,8 +259,8 @@ def scale_from_period(period):
 
 # --- Continuous Wavelet transform ---
 
-def cwtSL(data, wavelet, scales, dt):
 
+def cwtSL(data, wavelet, scales, dt):
     """
     The continuous Wavelet transform specifically
     for Morlets with the Superlet formulation
@@ -297,7 +294,7 @@ def cwtSL(data, wavelet, scales, dt):
 
         t = _get_superlet_support(scale, dt, wavelet.c_i)
         # sample wavelet and normalise
-        norm = dt ** 0.5 / (4 * np.pi)
+        norm = dt**0.5 / (4 * np.pi)
         wavelet_data = norm * wavelet(t, scale)  # this is an 1d array for sure!
         output[ind, :] = fftconvolve(data, wavelet_data[tuple(slices)], mode="same")
 
@@ -305,7 +302,6 @@ def cwtSL(data, wavelet, scales, dt):
 
 
 def _get_superlet_support(scale, dt, cycles):
-
     """
     Effective support for the convolution is here not only
     scale but also cycle dependent.
@@ -320,7 +316,6 @@ def _get_superlet_support(scale, dt, cycles):
 
 
 def compute_adaptive_order(freq, order_min, order_max):
-
     """
     Computes the superlet order for a given frequency of interest
     for the fractional adaptive SLT (FASLT) according to
@@ -347,8 +342,8 @@ def compute_adaptive_order(freq, order_min, order_max):
 # Some test data akin to figure 3 of the source publication
 # ---------------------------------------------------------
 
-def gen_superlet_testdata(freqs, cycles=11, fs=1000, eps=0):
 
+def gen_superlet_testdata(freqs, cycles=11, fs=1000, eps=0):
     """
     Harmonic superposition of multiple
     few-cycle oscillations akin to the
@@ -383,4 +378,3 @@ def gen_superlet_testdata(freqs, cycles=11, fs=1000, eps=0):
         signal = np.random.randn(len(signal)) * eps + signal
 
     return signal
-

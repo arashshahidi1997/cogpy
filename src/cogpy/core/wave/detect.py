@@ -1,10 +1,12 @@
 """
 module for identifying local minima and maxima
 """
+
 import numpy as np
 from scipy.ndimage import filters
 import scipy.ndimage as nd
 import pandas as pd
+
 
 def detect_extrema(x, footprint, minima=True):
     """
@@ -65,16 +67,22 @@ class Extrema:
         # Construct footprint
         struct = nd.generate_binary_structure(2, 1)
         footprint = nd.iterate_structure(struct, der_step).astype(int)
-        self.der_kernel = np.expand_dims(footprint, 0)  # Expand dims in the time direction
+        self.der_kernel = np.expand_dims(
+            footprint, 0
+        )  # Expand dims in the time direction
 
         # Extrema detection
         self.ext_arr = detect_extrema(arr, footprint=self.der_kernel, minima=minima)
         nonzero_indices = self.ext_arr.nonzero()
-        df = pd.DataFrame(np.argwhere(self.ext_arr), columns=['t', 'h', 'w'])  # Coordinates of extrema
-        df['val'] = pd.Series(arr[nonzero_indices])  # Values of the signal at non-zero indices
+        df = pd.DataFrame(
+            np.argwhere(self.ext_arr), columns=["t", "h", "w"]
+        )  # Coordinates of extrema
+        df["val"] = pd.Series(
+            arr[nonzero_indices]
+        )  # Values of the signal at non-zero indices
 
         # Sort DataFrame
-        self.df = df.sort_values(['t', 'h', 'w'])
+        self.df = df.sort_values(["t", "h", "w"])
 
         # Empty DataFrame
         self.empty = pd.DataFrame(columns=self.df.columns)
@@ -95,7 +103,7 @@ class Extrema:
 
         """
         try:
-            return self.df[self.df['t'] == t]
+            return self.df[self.df["t"] == t]
         except:
             return self.empty
 
@@ -110,14 +118,16 @@ class Extrema:
             DataFrame: DataFrame with the troughs for the specified cluster.
 
         """
-        return self.df[self.df['Clu'] == clu]
+        return self.df[self.df["Clu"] == clu]
 
     def channel_column(self):
         """
         Adds a column representing the channel index to the DataFrame.
 
         """
-        self.df['ch'] = pd.Series(np.ravel_multi_index((self.df['h'], self.df['w']), dims=self.gridshape))
+        self.df["ch"] = pd.Series(
+            np.ravel_multi_index((self.df["h"], self.df["w"]), dims=self.gridshape)
+        )
 
     def detect_waves(self, propagate_radius=1):
         """
@@ -139,10 +149,12 @@ class Extrema:
         clusters = np.copy(labels)
 
         for i in range(clusters.shape[0] - 1):
-            clusters[i:i + 2] = nd.filters.minimum_filter(clusters[i:i + 2], footprint=self.propagator_kernel)
-            clusters[i:i + 2][(not_ext_arr[i:i + 2]).nonzero()] = np.inf
+            clusters[i : i + 2] = nd.filters.minimum_filter(
+                clusters[i : i + 2], footprint=self.propagator_kernel
+            )
+            clusters[i : i + 2][(not_ext_arr[i : i + 2]).nonzero()] = np.inf
 
-        clu = clusters[tuple(self.df[['t', 'h', 'w']].to_numpy().T)].astype(int)
+        clu = clusters[tuple(self.df[["t", "h", "w"]].to_numpy().T)].astype(int)
 
         # Relabel clusters
         x = np.zeros(np.max(clu) + 1, dtype=int)
@@ -151,7 +163,7 @@ class Extrema:
         clu = x[clu]
 
         # Add cluster id to DataFrame
-        self.df['Clu'] = clu
+        self.df["Clu"] = clu
 
     def get_waves(self, interval):
         """
@@ -172,23 +184,22 @@ class Extrema:
 
         """
         df = self.df[self.df == 0]
-        clusters = np.unique(df['Clu'])
+        clusters = np.unique(df["Clu"])
         df_com_list = []
         for i, c in enumerate(clusters):
-            h_mean, w_mean, val_mean = df[df['Clu'] == c][['h', 'w', 'val']].mean()
+            h_mean, w_mean, val_mean = df[df["Clu"] == c][["h", "w", "val"]].mean()
             df_com_list.append([h_mean, w_mean, val_mean, c])
 
-        df_com = pd.DataFrame(df_com_list, columns=['h', 'w', 'val', 'Clu'])
+        df_com = pd.DataFrame(df_com_list, columns=["h", "w", "val", "Clu"])
         return df_com
+
 
 # Batch
 class Waves:
-    def __init__(self, df:pd.DataFrame):
+    def __init__(self, df: pd.DataFrame):
         self.df = df
-        self.w = df.groupy('Clu')
-        
+        self.w = df.groupy("Clu")
+
     def duration(self):
         # return self.w.apply(duration)
         pass
-
-    

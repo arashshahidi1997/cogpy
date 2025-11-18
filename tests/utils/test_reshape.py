@@ -1,5 +1,6 @@
 from cogpy.utils.reshape import *
 
+
 # %% test
 def test_unflush_axes():
     # Test case 1
@@ -31,12 +32,14 @@ def test_unflush_axes():
 
     print("All test cases pass")
 
+
 def test_reshape_axis():
     original_shape = (30, 64, 20, 10)
     arr = np.random.rand(*original_shape)
     reshaped_array = reshape_axes(arr, axes=1, shape=(8, 8))
     assert (reshaped_array.reshape(-1) == arr.reshape(-1)).all()
     assert reshaped_array.shape == (30, 8, 8, 20, 10)
+
 
 def test_reshape_axes():
     # Test case 1

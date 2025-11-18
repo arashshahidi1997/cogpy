@@ -9,32 +9,44 @@ from ...brainstates import brainstates as bstates
 # %% detect bursts
 from ...wave.process import extract_wave_df
 from tqdm import tqdm
-def scx_process_waves(scx_: xr.DataArray, ss: SpatSpecDecomposition, height_quantile=0.2):
+
+
+def scx_process_waves(
+    scx_: xr.DataArray, ss: SpatSpecDecomposition, height_quantile=0.2
+):
     bursts_df = []
     # replace nan with height value - 1
     for ifac in tqdm(scx_.factor.to_numpy()):
         x = scx_.isel(factor=ifac)
         height = np.nanquantile(x.data, height_quantile)
-        x.data[np.isnan(x.data)] = height-1
+        x.data[np.isnan(x.data)] = height - 1
         wave_df = extract_wave_df(x, height=height)
-        wave_df.loc[:, 'factor'] = ifac
-        wave_df.loc[:, 'row'] = ss.ldx_df.hmax.loc[ifac]
-        wave_df.loc[:, 'col'] = ss.ldx_df.wmax.loc[ifac]
-        wave_df.loc[:, 'freq'] = ss.ldx_df.freqmax.loc[ifac]
+        wave_df.loc[:, "factor"] = ifac
+        wave_df.loc[:, "row"] = ss.ldx_df.hmax.loc[ifac]
+        wave_df.loc[:, "col"] = ss.ldx_df.wmax.loc[ifac]
+        wave_df.loc[:, "freq"] = ss.ldx_df.freqmax.loc[ifac]
         bursts_df.append(wave_df)
     bursts_df = pd.concat(bursts_df, ignore_index=True)
     return bursts_df
 
 
 class Burst:
-    def __init__(self, scx=None, ss=None, states=None, burst_df=None, factors=None, height_quantile=0.2):
+    def __init__(
+        self,
+        scx=None,
+        ss=None,
+        states=None,
+        burst_df=None,
+        factors=None,
+        height_quantile=0.2,
+    ):
         self.states = states
         if burst_df is None:
             self.scx = scx
             self.ss = ss
             self.height_quantile = height_quantile
             self.df = scx_process_waves(scx, ss, height_quantile=height_quantile)
-            self.factors = scx['factor'].values
+            self.factors = scx["factor"].values
         else:
             self.df = burst_df
             self.state_durations = bstates.get_state_durations(states)
@@ -46,34 +58,39 @@ class Burst:
     def add_brain_state_info(self):
         brainstate_df = bstates._sort_into_states(self.df.tpeak.values, self.states)
         for key in self.states.keys():
-            iperkey = f'iper_{key}'
+            iperkey = f"iper_{key}"
             self.df.loc[:, iperkey] = brainstate_df[iperkey]
-            self.df.loc[:, f'isin_{key}'] = brainstate_df[iperkey] != 0
+            self.df.loc[:, f"isin_{key}"] = brainstate_df[iperkey] != 0
 
     def get_rate(self, qthresh=0.25):
         ampthresh = np.quantile(self.df.amp, qthresh)
-        columns = [f'rate_{bstate_key}' for bstate_key in self.states]
-        rates = pd.DataFrame(np.zeros((len(self.df['factor'].unique()), len(self.states))), columns=columns)
+        columns = [f"rate_{bstate_key}" for bstate_key in self.states]
+        rates = pd.DataFrame(
+            np.zeros((len(self.df["factor"].unique()), len(self.states))),
+            columns=columns,
+        )
         for fac in self.factors:
             # add factor column
-            fburst = self.df[self.df['factor'] == fac]
+            fburst = self.df[self.df["factor"] == fac]
             for bstate_key in self.states:
-                isin_state = fburst[f'isin_{bstate_key}']
+                isin_state = fburst[f"isin_{bstate_key}"]
                 if isin_state.any():
-                    rate_ = (fburst[isin_state]['amp'] > ampthresh).sum() / self.state_durations[bstate_key]
-                    rates.loc[fac, f'rate_{bstate_key}'] = rate_
+                    rate_ = (
+                        fburst[isin_state]["amp"] > ampthresh
+                    ).sum() / self.state_durations[bstate_key]
+                    rates.loc[fac, f"rate_{bstate_key}"] = rate_
         # add amothresh as column
-        rates.loc[:, 'ampthresh'] = ampthresh
+        rates.loc[:, "ampthresh"] = ampthresh
 
         # reset index to factor
-        rates = rates.reset_index().rename(columns={'index':'factor'})
+        rates = rates.reset_index().rename(columns={"index": "factor"})
         return rates
 
     def get_isi(self, qthresh=0.25):
         prom_isi = []
         ampthresh = np.quantile(self.df.amp, qthresh)
         for fac in self.factors:
-            isfac = self.df['factor'] == fac
+            isfac = self.df["factor"] == fac
             fburst = self.df[isfac]
             isprominent = fburst.amp > ampthresh
             fprom_burst = fburst[isprominent].copy()
@@ -84,7 +101,9 @@ class Burst:
 
             # compute isi for each SWS period: groupby iper_PerSWS
             try:
-                fprom_burst_perSWS = fprom_burst.groupby('iper_PerSWS').apply(lambda x: compute_naive_isi(x))
+                fprom_burst_perSWS = fprom_burst.groupby("iper_PerSWS").apply(
+                    lambda x: compute_naive_isi(x)
+                )
             except Exception as e:
                 print(e)
                 print(fprom_burst)
@@ -94,7 +113,7 @@ class Burst:
             # # handle empty fprom_burst_perSWS
             # if len(fprom_burst_perSWS.values) == 0:
             #     continue
-            
+
             try:
                 fprom_isi = np.concatenate(fprom_burst_perSWS.values)
             except Exception as e:
@@ -103,19 +122,20 @@ class Burst:
                 print(fprom_burst_perSWS.values)
                 raise e
 
-            fprom_burst.loc[:, 'isi'] = fprom_isi
+            fprom_burst.loc[:, "isi"] = fprom_isi
             prom_isi.append(fprom_burst)
-        
+
         if len(prom_isi) > 0:
             prom_isi = pd.concat(prom_isi, ignore_index=True)
         else:
             # return empty dataframe with  columns
-            prom_isi = pd.DataFrame(columns=tuple(self.df.columns) + ('isi',))
+            prom_isi = pd.DataFrame(columns=tuple(self.df.columns) + ("isi",))
         return prom_isi
 
     def add_coo(self, session):
-        self.df.loc[:,'AP'] = session.coo[0][self.df.row.values.astype(int)]
-        self.df.loc[:,'ML'] = session.coo[1][self.df.col.values.astype(int)]
+        self.df.loc[:, "AP"] = session.coo[0][self.df.row.values.astype(int)]
+        self.df.loc[:, "ML"] = session.coo[1][self.df.col.values.astype(int)]
+
 
 def compute_naive_isi(df):
     if len(df) == 1:

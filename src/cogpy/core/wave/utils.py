@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def wave_gen(x: pd.Series, wave_df: pd.DataFrame):
     """
     x: xr.DataArray

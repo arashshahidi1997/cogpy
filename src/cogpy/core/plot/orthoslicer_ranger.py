@@ -8,8 +8,9 @@ from holoviews.plotting.links import RangeToolLink
 # If you have this locally, keep it; otherwise replace with your own time player
 from ..plot.time_player import PlayerWithRealTime
 
-hv.extension('bokeh')
+hv.extension("bokeh")
 pn.extension()
+
 
 def _clip_pair(lo, hi, bounds):
     b0, b1 = bounds
@@ -21,8 +22,10 @@ def _clip_pair(lo, hi, bounds):
         c1 = min(c0 + eps, b1)
     return (c0, c1)
 
+
 def nearest_sel(dimx, val):
-    return dimx.sel({dimx.name: val}, method='nearest').item()
+    return dimx.sel({dimx.name: val}, method="nearest").item()
+
 
 class OrthoSlicerRanger(param.Parameterized):
     """
@@ -46,13 +49,22 @@ class OrthoSlicerRanger(param.Parameterized):
     y = param.Number(label="Y")
     z = param.Number(label="Z")
     clim = param.Range(label="Color Limits")
-    t_window = param.Range(label="Time window")   # selection on X (time)
+    t_window = param.Range(label="Time window")  # selection on X (time)
 
     # layout toggles
     merge_tools = param.Boolean(default=False)
 
-    def __init__(self, array, rangeslider_sig=None, dt=None, dz=None, dy=None, dx=None,
-                 clim_quantile=True, **params):
+    def __init__(
+        self,
+        array,
+        rangeslider_sig=None,
+        dt=None,
+        dz=None,
+        dy=None,
+        dx=None,
+        clim_quantile=True,
+        **params,
+    ):
         """
         array: xr.DataArray, dims include whatever you map to (t,z,y,x)
         rangeslider_sig: xr.DataArray (1D over original time), drives the RangeTool
@@ -69,9 +81,11 @@ class OrthoSlicerRanger(param.Parameterized):
 
         # dimension metadata
         self.dt, self.dz, self.dy, self.dx = dt, dz, dy, dx
-        self.vdim = hv.Dimension(array.name or 'val',
-                                 label=(array.name or 'Value'),
-                                 unit=array.attrs.get('units', ''))
+        self.vdim = hv.Dimension(
+            array.name or "val",
+            label=(array.name or "Value"),
+            unit=array.attrs.get("units", ""),
+        )
 
         # tap streams
         self.tap_xy = streams.Tap()  # we'll set .source later in view_xy
@@ -106,7 +120,7 @@ class OrthoSlicerRanger(param.Parameterized):
             if hvdim.label and std_name in self.param:
                 self.param[std_name].label = hvdim.label
 
-        self._units  = {k: v.unit  for k, v in self.hvdims.items()}
+        self._units = {k: v.unit for k, v in self.hvdims.items()}
         self._labels = {k: v.label for k, v in self.hvdims.items()}
 
         # handy aliases
@@ -119,15 +133,15 @@ class OrthoSlicerRanger(param.Parameterized):
 
     def _standardize_coords(self):
         # rename & transpose to the canonical order
-        self.array = self.array.rename(self._rename_map).transpose('t', 'z', 'y', 'x')
-        self.array.name = 'val'
+        self.array = self.array.rename(self._rename_map).transpose("t", "z", "y", "x")
+        self.array.name = "val"
 
         # rename time of the range-signal, keep it 1D on t
         if self.rangeslider_sig is None:
             # fallback: build a simple mean signal over the volume
-            self.rangeslider_sig = self.array.mean(dim=('z', 'y', 'x'))
+            self.rangeslider_sig = self.array.mean(dim=("z", "y", "x"))
         if isinstance(self.rangeslider_sig, xr.DataArray):
-            t_renamer = {self.dt[0]: self._rename_map.get(self.dt[0], 't')}
+            t_renamer = {self.dt[0]: self._rename_map.get(self.dt[0], "t")}
             self.rangeslider_sig = self.rangeslider_sig.rename(t_renamer)
 
         # update param labels from hvdims (nice display names)
@@ -136,36 +150,41 @@ class OrthoSlicerRanger(param.Parameterized):
                 self.param[dim].label = self._labels[dim] or dim
 
     def _get_bounds(self):
-        b = {d: (float(self.array[d].min().item()), float(self.array[d].max().item()))
-             for d in self.array.dims}
-        b[self.array.name] = (float(self.array.min().item()), float(self.array.max().item()))
+        b = {
+            d: (float(self.array[d].min().item()), float(self.array[d].max().item()))
+            for d in self.array.dims
+        }
+        b[self.array.name] = (
+            float(self.array.min().item()),
+            float(self.array.max().item()),
+        )
         return b
 
     def _set_param_bounds(self):
         self.bounds = self._get_bounds()
-        for dim in ('t', 'x', 'y', 'z'):
+        for dim in ("t", "x", "y", "z"):
             lo, hi = self.bounds[dim]
             self.param[dim].bounds = (lo, hi)
             setattr(self, dim, lo)
 
         # --- set t_window.bounds FIRST
-        t_bounds = self.param['t'].bounds
-        self.param['t_window'].bounds = t_bounds
+        t_bounds = self.param["t"].bounds
+        self.param["t_window"].bounds = t_bounds
 
         # initial window using percentiles, but CLIP it
         t0, t1 = np.percentile(self.array.t.values, [10, 30])
         self.t_window = _clip_pair(float(t0), float(t1), t_bounds)
 
     def _set_contrast_limits(self):
-        vmin, vmax = self.bounds['val']
+        vmin, vmax = self.bounds["val"]
         if self.clim_quantile:
             vals = self.array.values
             clim_init = (float(np.percentile(vals, 2)), float(np.percentile(vals, 98)))
         else:
             clim_init = (float(vmin), float(vmax))
         self.clim = clim_init
-        self.param['clim'].bounds = (float(vmin), float(vmax))
-        self.param['clim'].default = clim_init
+        self.param["clim"].bounds = (float(vmin), float(vmax))
+        self.param["clim"].default = clim_init
 
     # ----------------------------- core plots --------------------------------
     def _fmt_val(self, dim, val):
@@ -179,10 +198,10 @@ class OrthoSlicerRanger(param.Parameterized):
         return f"{self.ot}-{self.oz} @ {self.ox}={self._fmt_val('x', self.x)}, {self.oy}={self._fmt_val('y', self.y)}"
 
     # --------------------------- public HV views ------------------------------
-    @param.depends("t","z","x","y","clim","use_datashader")
+    @param.depends("t", "z", "x", "y", "clim", "use_datashader")
     def view_tz(self):
 
-        if hasattr(self, '_rtl'):
+        if hasattr(self, "_rtl"):
             # readout the live bounds:
             self.t_window = self._rx.x_range
 
@@ -190,58 +209,85 @@ class OrthoSlicerRanger(param.Parameterized):
 
         # base
         img = self.array.sel(x=self.x, y=self.y, method="nearest")
-        base = hv.Image(img, kdims=[self.hvdims["t"], self.hvdims["z"]], vdims=[self.vdim])
+        base = hv.Image(
+            img, kdims=[self.hvdims["t"], self.hvdims["z"]], vdims=[self.vdim]
+        )
         if self.use_datashader:
-            base = rasterize(base, aggregator=ds.mean('val'),
-                            width=width, height=height, dynamic=False)
+            base = rasterize(
+                base,
+                aggregator=ds.mean("val"),
+                width=width,
+                height=height,
+                dynamic=False,
+            )
         base = base.opts(
-            cmap='Viridis', colorbar=True, framewise=True,
-            title=self._title_tz(), clim=self.clim,
-            width=width, height=height,
-            tools=['tap','pan','wheel_zoom','box_zoom','reset'],
-            active_tools=['tap'],
+            cmap="Viridis",
+            colorbar=True,
+            framewise=True,
+            title=self._title_tz(),
+            clim=self.clim,
+            width=width,
+            height=height,
+            tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
+            active_tools=["tap"],
         )
 
         # crosshair
-        cross = hv.VLine(self.t).opts(color='white', line_width=1, alpha=0.8) * \
-                hv.HLine(self.z).opts(color='white', line_width=1, alpha=0.8)
+        cross = hv.VLine(self.t).opts(
+            color="white", line_width=1, alpha=0.8
+        ) * hv.HLine(self.z).opts(color="white", line_width=1, alpha=0.8)
 
         # bind tap to base (not the overlay)
         self.tap_tz.source = base
 
-        # RangeToolLink 
-        self._range_curve = hv.Curve(self.rangeslider_sig, kdims=['t']).opts(width=width, height=ranger_hegiht, tools=[])
-        tb = self.param['t_window'].bounds
+        # RangeToolLink
+        self._range_curve = hv.Curve(self.rangeslider_sig, kdims=["t"]).opts(
+            width=width, height=ranger_hegiht, tools=[]
+        )
+        tb = self.param["t_window"].bounds
 
         # Range x to keep track of the bounds
         self._rx = streams.RangeX(source=base, x_range=self.t_window)
-        self._rtl = RangeToolLink(self._range_curve, base, axes=['x'], boundsx=self.t_window)
+        self._rtl = RangeToolLink(
+            self._range_curve, base, axes=["x"], boundsx=self.t_window
+        )
         return (base.hist() * cross + self._range_curve).cols(1)
 
-
-    @param.depends("t","z","x","y","clim","use_datashader")
+    @param.depends("t", "z", "x", "y", "clim", "use_datashader")
     def view_xy(self):
         width, height = 400, 300
         img = self.array.sel(t=self.t, z=self.z, method="nearest")
-        base = hv.Image(img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim])
-        if self.use_datashader:
-            base = rasterize(base, aggregator=ds.mean('val'),
-                            width=width, height=height, dynamic=False)
-        base = base.opts(
-            cmap='Viridis', colorbar=True, framewise=True,
-            title=self._title_xy(), clim=self.clim,
-            width=width, height=height,
-            tools=['tap','pan','wheel_zoom','box_zoom','reset'],
-            active_tools=['tap'],
+        base = hv.Image(
+            img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim]
         )
-        cross = hv.VLine(self.x).opts(color='white', line_width=1, alpha=0.8) * \
-                hv.HLine(self.y).opts(color='white', line_width=1, alpha=0.8)
+        if self.use_datashader:
+            base = rasterize(
+                base,
+                aggregator=ds.mean("val"),
+                width=width,
+                height=height,
+                dynamic=False,
+            )
+        base = base.opts(
+            cmap="Viridis",
+            colorbar=True,
+            framewise=True,
+            title=self._title_xy(),
+            clim=self.clim,
+            width=width,
+            height=height,
+            tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
+            active_tools=["tap"],
+        )
+        cross = hv.VLine(self.x).opts(
+            color="white", line_width=1, alpha=0.8
+        ) * hv.HLine(self.y).opts(color="white", line_width=1, alpha=0.8)
 
         # bind tap to THIS base each re-render
         self.tap_xy.source = base
 
         return base.hist() * cross
-    
+
     # ------------------------------- controls --------------------------------
     def _set_controls(self):
         # discrete coordinate options
@@ -252,8 +298,7 @@ class OrthoSlicerRanger(param.Parameterized):
         # param controls (x, y, z, clim, datashader)
         self.param_controls = pn.Param(
             self,
-            parameters=["x","y","z","clim","use_datashader",
-                        "merge_tools"],
+            parameters=["x", "y", "z", "clim", "use_datashader", "merge_tools"],
             widgets={
                 "x": pn.widgets.DiscreteSlider(options=x_vals, name=self.ox),
                 "y": pn.widgets.DiscreteSlider(options=y_vals, name=self.oy),
@@ -273,11 +318,13 @@ class OrthoSlicerRanger(param.Parameterized):
         self.tap_tz.add_subscriber(self._on_tap_tz)
 
     def _set_t_player(self):
-        self.t_player_widget = PlayerWithRealTime(self.array.t.values, interval_bounds=(50, 2000))
+        self.t_player_widget = PlayerWithRealTime(
+            self.array.t.values, interval_bounds=(50, 2000)
+        )
         self.t_player = self.t_player_widget.t_player
         # keep player <-> param.t in sync
-        self.t_player.param.watch(lambda e: setattr(self, 't', e.new), 'value')
-        self.param.watch(lambda e: setattr(self.t_player, 'value', e.new), 't')
+        self.t_player.param.watch(lambda e: setattr(self, "t", e.new), "value")
+        self.param.watch(lambda e: setattr(self.t_player, "value", e.new), "t")
 
     # ------------------------------ taps -------------------------------------
     def _on_tap_xy(self, x, y):
@@ -289,7 +336,7 @@ class OrthoSlicerRanger(param.Parameterized):
 
     # --- IMPORTANT: accept **kwargs for Tap callbacks
     def _on_tap_tz(self, **kwargs):
-        x, y = kwargs.get('x'), kwargs.get('y')
+        x, y = kwargs.get("x"), kwargs.get("y")
         if x is not None and y is not None:
             self.param.update(
                 t=nearest_sel(self.array.t, x),
@@ -315,9 +362,15 @@ class OrthoSlicerRanger(param.Parameterized):
         Right: XY orthoslice
         """
         # Dynamic panes: pass callables (no parentheses)
-        target_pane_tz = pn.pane.HoloViews(self.view_target, width=400, height=300, sizing_mode="fixed")
-        source_pane_tz = pn.pane.HoloViews(self.view_source(), width=400, height=120, sizing_mode="fixed")
-        xy_pane = pn.pane.HoloViews(self.view_xy, width=400, height=300, sizing_mode="fixed")
+        target_pane_tz = pn.pane.HoloViews(
+            self.view_target, width=400, height=300, sizing_mode="fixed"
+        )
+        source_pane_tz = pn.pane.HoloViews(
+            self.view_source(), width=400, height=120, sizing_mode="fixed"
+        )
+        xy_pane = pn.pane.HoloViews(
+            self.view_xy, width=400, height=300, sizing_mode="fixed"
+        )
 
         left_col = pn.Column(
             target_pane_tz,
@@ -348,11 +401,10 @@ class OrthoSlicerRanger(param.Parameterized):
                 pn.pane.HoloViews(xyview, sizing_mode="stretch_width"),
             ),
             self.controls_panel(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
 
         return app
-
 
     def panel_app3(self):
         tzview = self.view_tz
@@ -364,10 +416,9 @@ class OrthoSlicerRanger(param.Parameterized):
                 pn.pane.HoloViews(xyview, sizing_mode="stretch_width"),
             ),
             self.controls_panel(),
-            sizing_mode="stretch_width"
+            sizing_mode="stretch_width",
         )
         return app
 
     def show(self):
         self.panel_app().show()
-

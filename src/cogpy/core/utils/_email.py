@@ -1,5 +1,6 @@
 import os
 
+
 def os_send_email(email_address, email_title, email_body):
     """
     Send an email using the system's mail command.

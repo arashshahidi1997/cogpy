@@ -18,7 +18,7 @@
 #     # Test that specgram_coords matches ghostipy's mtm_spectrogram output
 #     x = np.random.randn(1_000_000)
 #     S_dummy, f_gsp, t_gsp = gsp.mtm_spectrogram(x, fs=fs, nperseg=nperseg, noverlap=noverlap, bandwidth=bandwidth)
-    
+
 #     step = nperseg - noverlap
 #     f_calc, t_calc, M, nwin  = specgram_coords(fs, nperseg, noverlap, len(x))
 
@@ -40,7 +40,7 @@
 
 #     # compute one channel
 #     S_channel, f, t = gsp.mtm_spectrogram(x[0].values, **mtm_kwargs)
-    
+
 #     # load from zarr
 #     S_xr_loaded = xr.open_dataarray(zarr_path, engine="zarr", chunks="auto")
 
@@ -49,4 +49,3 @@
 
 #     # delete the zarr file
 #     shutil.rmtree(zarr_path)
-

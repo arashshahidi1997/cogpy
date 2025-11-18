@@ -1,16 +1,19 @@
 """basic imports"""
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 from copy import deepcopy
 from ...io import ecog_io, xml_io, xml_anat_map, save_utils
+
 # ----imports completed----
+
 
 # Parent class for IO operations
 class LineSignalIO:
     def from_file(self, dat_file, dtype=None):
         # set meta
-        self.meta_from_xml(dat_file.with_suffix('.xml'))
+        self.meta_from_xml(dat_file.with_suffix(".xml"))
         # load dat
         self.source_file = dat_file
         self.set_dat(dat_file, dtype=dtype)
@@ -27,7 +30,7 @@ class LineSignalIO:
         # time
         self.set_time_attrs()
         self.convert_to_float()
-        
+
     def from_array(self, A, xml_file=None, **meta_kwargs):
         """
         Parameters
@@ -45,7 +48,14 @@ class LineSignalIO:
         self._arr = A
         self.set_time_attrs()
 
-    def to_file(self, dat_origin, dat_target=None, operation=None, overwrite=False, dtype=np.int16):
+    def to_file(
+        self,
+        dat_origin,
+        dat_target=None,
+        operation=None,
+        overwrite=False,
+        dtype=np.int16,
+    ):
         """
         save signal to dat and xml
         operation should be in suffix format (.suffix)
@@ -54,7 +64,7 @@ class LineSignalIO:
         save_kwargs = dict(operation=operation, overwrite=overwrite)
         if dat_target is None:
             dat_target = dat_origin
-            
+
         # write xml
         self.meta_to_xml(dat_origin, xml_target=dat_target, **save_kwargs)
 
@@ -65,17 +75,22 @@ class LineSignalIO:
         self.to_log(dat_origin, log_target=dat_target, **save_kwargs)
 
     def xarr(self):
-        sigx = xr.DataArray(self._arr, coords=[range(self.nchan), self.times], dims=['ch','time'], name='LineSignal')
+        sigx = xr.DataArray(
+            self._arr,
+            coords=[range(self.nchan), self.times],
+            dims=["ch", "time"],
+            name="LineSignal",
+        )
         sigx.attrs = dict(self.meta_kwargs)
         return sigx
-    
+
     def from_xarr(sigx):
         """
         sigx: xarray.DataArray
         """
         sig = LineSignalIO()
         sig.set_meta(**sigx.attrs)
-        sig._arr = sigx.transpose('ch','time').data
+        sig._arr = sigx.transpose("ch", "time").data
         sig.times = sigx.time.data
         sig.set_time_attrs(modify_times=False, modify_bounds=True)
         sig.log_on()
@@ -85,8 +100,8 @@ class LineSignalIO:
     def set_dat(self, dat_file, dtype=None):
         # create memory map
         if dtype is None:
-            dtype = 'int16'
-        A = np.memmap(dat_file, dtype=dtype, mode='r')
+            dtype = "int16"
+        A = np.memmap(dat_file, dtype=dtype, mode="r")
         # reshape (sample, ) -> (sample, channel)
         A = A.reshape(-1, self.nchan)
         # reshape (sample, channel) -> (channel, sample)
@@ -94,7 +109,15 @@ class LineSignalIO:
         # set _arr attribute
         self._arr = A
 
-    def to_dat(self, dat_origin, dat_target=None, dat_extension='.lfp', operation=None, overwrite=False, dtype=np.int16):
+    def to_dat(
+        self,
+        dat_origin,
+        dat_target=None,
+        dat_extension=".lfp",
+        operation=None,
+        overwrite=False,
+        dtype=np.int16,
+    ):
         """
         save signal to dat
         """
@@ -103,17 +126,19 @@ class LineSignalIO:
 
         if dat_target is None:
             dat_target = dat_origin
- 
+
         # reshape A to (samples, channels)
         A = self._arr.T.reshape(-1)
-        
+
         # save dat
-        ecog_io.save_dat(A, dat_target, extension=dat_extension, dtype=dtype, **save_kwargs)
+        ecog_io.save_dat(
+            A, dat_target, extension=dat_extension, dtype=dtype, **save_kwargs
+        )
 
     def copy_from_meta(self):
         sig = LineSignalIO()
         for key, value in self.__dict__.items():
-            if not key in ['_arr', '_filt_log']:
+            if not key in ["_arr", "_filt_log"]:
                 sig.__dict__ = sig.__dict__ | {key: value}
 
         sig._filt_log = deepcopy(self._filt_log)
@@ -121,74 +146,87 @@ class LineSignalIO:
         return sig
 
     def meta_from_session(self, session):
-        self.set_meta(height=session.nRows, width=session.nCols, fs=session.Fs, nbits='int16')
+        self.set_meta(
+            height=session.nRows, width=session.nCols, fs=session.Fs, nbits="int16"
+        )
 
     def meta_from_xml(self, xml_file):
         xml_dict = xml_io.parse_xml(xml_file)
 
         # acq
         acq = xml_io.read_acquistionSystem(xml_dict)
-        fs = float(acq['samplingRate'])
-        nbits = acq['nBits']
-        
-        if 'float' in nbits and not isinstance(nbits, int):
-            nbits = nbits.replace('float', '')
+        fs = float(acq["samplingRate"])
+        nbits = acq["nBits"]
+
+        if "float" in nbits and not isinstance(nbits, int):
+            nbits = nbits.replace("float", "")
             nbits = int(nbits)
 
-        elif 'int' in nbits:
-            nbits = nbits.replace('int', '')
+        elif "int" in nbits:
+            nbits = nbits.replace("int", "")
             nbits = int(nbits)
-            
+
         # raise error if digitization resolution is different that 16bits
         # assert nbits == 16
 
         # bad channels and dimensions
         anat_map = xml_io.read_anat_map(xml_dict)
-        anat = anat_map.set_index('grp')
+        anat = anat_map.set_index("grp")
 
         width = anat.index.nunique()
         shank_heights = anat.index.value_counts()
         height = shank_heights.iloc[0]
-        assert (shank_heights == height).all(), \
-            print('Shanks have different heights! The algorithms are written for channel grids.')
-        
+        assert (shank_heights == height).all(), print(
+            "Shanks have different heights! The algorithms are written for channel grids."
+        )
+
         self.set_meta(height=height, width=width, fs=fs, nbits=nbits, anat_map=anat_map)
 
-    def meta_to_xml_file(self, xml_file, operation='.copy', overwrite=False):
+    def meta_to_xml_file(self, xml_file, operation=".copy", overwrite=False):
         # write xml
         xml_dict = xml_io.parse_xml(xml_file)
 
         # remapping
-        anat_map = self.anat_map.reset_index().drop(columns='id').rename(columns={'index':'id'})
+        anat_map = (
+            self.anat_map.reset_index()
+            .drop(columns="id")
+            .rename(columns={"index": "id"})
+        )
 
         # write anat map
         xml_anat_map.write_anat_map(anat_map, xml_dict, self.gridshape)
 
         # write sampling frequency
-        xml_dict['parameters']['acquisitionSystem']['samplingRate'] = self.fs
+        xml_dict["parameters"]["acquisitionSystem"]["samplingRate"] = self.fs
 
         # save xml
         xml_io.unparse_xml(xml_dict, xml_file, operation)
 
-    def meta_to_xml(self, xml_origin, xml_target=None, operation=None, overwrite=False, order='F'):
+    def meta_to_xml(
+        self, xml_origin, xml_target=None, operation=None, overwrite=False, order="F"
+    ):
         """
         save signal to dat and xml
         """
         # this function needs despaghetization
         save_kwargs = dict(operation=operation, overwrite=overwrite)
-        
+
         if xml_target is None:
             xml_target = xml_origin
 
         # write xml
         xml_dict = xml_io.parse_xml(xml_origin)
         # remapping
-        anat_map = self.anat_map.reset_index().drop(columns='id').rename(columns={'index':'id'})
+        anat_map = (
+            self.anat_map.reset_index()
+            .drop(columns="id")
+            .rename(columns={"index": "id"})
+        )
         # write anat map
         xml_anat_map.write_anat_map(anat_map, xml_dict, self.gridshape)
         # write sampling frequency
-        xml_dict['parameters']['acquisitionSystem']['samplingRate'] = self.fs
-        xml_dict['parameters']['acquisitionSystem']['nBits'] = self._arr.dtype
+        xml_dict["parameters"]["acquisitionSystem"]["samplingRate"] = self.fs
+        xml_dict["parameters"]["acquisitionSystem"]["nBits"] = self._arr.dtype
 
         # save xml
         xml_io.unparse_xml(xml_dict, xml_target, **save_kwargs)
@@ -206,15 +244,15 @@ class LineSignalIO:
     @property
     def meta_kwargs(self):
         _meta_kwargs = dict(
-            height = self.height,
-            width = self.width,
-            fs = self.fs,
-            nbits = self.nbits,
-            nchan = self.nchan,
-            anat_map = self.anat_map,
-            dt = self.dt,
-            dtype = self.dtype,
-            gridshape = self.gridshape
+            height=self.height,
+            width=self.width,
+            fs=self.fs,
+            nbits=self.nbits,
+            nchan=self.nchan,
+            anat_map=self.anat_map,
+            dt=self.dt,
+            dtype=self.dtype,
+            gridshape=self.gridshape,
         )
         return _meta_kwargs
 
@@ -229,7 +267,7 @@ class LineSignalIO:
 
     @property
     def dt(self):
-        return 1/self.fs
+        return 1 / self.fs
 
     @property
     def dur(self):
@@ -259,20 +297,38 @@ class LineSignalIO:
 
     @property
     def dtype(self):
-        return 'int{nbits}'.format(nbits=self.nbits)
+        return "int{nbits}".format(nbits=self.nbits)
 
     def empty_anat_map(self, transpose=True):
         if transpose:
-            return pd.DataFrame.from_dict(dict(id=np.arange(self.nchan), 
-                                    grp=np.repeat(np.arange(self.width), self.height), 
-                                    skip=np.zeros(self.nchan)))
+            return pd.DataFrame.from_dict(
+                dict(
+                    id=np.arange(self.nchan),
+                    grp=np.repeat(np.arange(self.width), self.height),
+                    skip=np.zeros(self.nchan),
+                )
+            )
         else:
-            return pd.DataFrame.from_dict(dict(id=np.arange(self.nchan).reshape(*self.gridshape).T.reshape(-1), 
-                        grp=np.repeat(np.arange(self.width), self.height).T,
-                        skip=np.zeros(self.nchan)))
+            return pd.DataFrame.from_dict(
+                dict(
+                    id=np.arange(self.nchan).reshape(*self.gridshape).T.reshape(-1),
+                    grp=np.repeat(np.arange(self.width), self.height).T,
+                    skip=np.zeros(self.nchan),
+                )
+            )
 
-    def update_meta(self, height=None, width=None, fs=None, nbits=None, nchan=None,
-                    anat_map=None, dt=None, dtype=None, gridshape=None):
+    def update_meta(
+        self,
+        height=None,
+        width=None,
+        fs=None,
+        nbits=None,
+        nchan=None,
+        anat_map=None,
+        dt=None,
+        dtype=None,
+        gridshape=None,
+    ):
         if height is not None:
             self.height = height
         if width is not None:
@@ -291,7 +347,14 @@ class LineSignalIO:
             self.gridshape = gridshape
 
     # ---LOG---
-    def to_log(self, dat_origin, log_extension='.log', log_target=None, operation=None, overwrite=False):
+    def to_log(
+        self,
+        dat_origin,
+        log_extension=".log",
+        log_target=None,
+        operation=None,
+        overwrite=False,
+    ):
         """
         save log to .log
         """
@@ -300,15 +363,17 @@ class LineSignalIO:
 
         if log_target is None:
             log_target = dat_origin
- 
+
         # reshape A to (samples, channels)
         log_dict = self.log_add_source(dat_origin)
 
         # save dat
-        save_utils.save_log(log_dict, log_target, extension=log_extension, **save_kwargs)
+        save_utils.save_log(
+            log_dict, log_target, extension=log_extension, **save_kwargs
+        )
 
     def log_add_source(self, src):
-        return {'src':str(src), 'filt_log':self._filt_log}
+        return {"src": str(src), "filt_log": self._filt_log}
 
     def log_on(self):
         self._filt_log = []
@@ -317,7 +382,7 @@ class LineSignalIO:
         sig = LineSignalIO()
 
         for key, value in self.__dict__.items():
-            if not key in ['_arr', '_filt_log']:
+            if not key in ["_arr", "_filt_log"]:
                 sig.__dict__ = sig.__dict__ | {key: value}
 
         sig._arr = deepcopy(self._arr)
@@ -329,9 +394,8 @@ class LineSignalIO:
         self._temp_arr = self._arr
 
     def recover(self):
-        if hasattr(self, 'A_temp'):
+        if hasattr(self, "A_temp"):
             self._arr = self.A_temp
-            del(self._temp_arr)
+            del self._temp_arr
         else:
-            print('no cache to recover: first run the LineSignalIO.cache() method')
-
+            print("no cache to recover: first run the LineSignalIO.cache() method")

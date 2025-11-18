@@ -8,11 +8,12 @@ import pickle as pkl
 import quantities as pq
 from ..utils.wrappers import ax_plot
 
+
 class DATAX:
-    def __init__(self, data=None, time_dim='time', ml_dim='ML', ap_dim='AP', fs=625.0):
+    def __init__(self, data=None, time_dim="time", ml_dim="ML", ap_dim="AP", fs=625.0):
         """
         Base class for handling xarray DataArray with default attributes.
-        
+
         Parameters:
         - data: xarray.DataArray or None (default: None)
         - time_dim: str, name of the time dimension (default: 'time')
@@ -20,26 +21,27 @@ class DATAX:
         - ap_dim: str, name of the AP dimension (default: 'AP')
         - fs: float, sampling frequency (default: 625.0 Hz)
         """
-        
+
         if data is None:
             time = np.linspace(0, 133.4, 83356)  # Default time values
             self.xarr = xr.DataArray(
                 np.random.rand(83356, 32, 16),  # Default random data
                 dims=[time_dim, ml_dim, ap_dim],
                 coords={time_dim: time},
-                attrs={'fs': fs}  # Sampling frequency
+                attrs={"fs": fs},  # Sampling frequency
             )
         else:
             self.xarr = data
 
-        self.fs = self.xarr.attrs.get('fs', fs)
+        self.fs = self.xarr.attrs.get("fs", fs)
         self.lmin = self.xarr.min(dim=[ml_dim, ap_dim])  # Default min extrema
         self.lmax = self.xarr.max(dim=[ml_dim, ap_dim])  # Default max extrema
         self.mask2D = np.zeros((32, 16), dtype=bool)  # Default bad channel mask
 
+
 # Refactored FramePlot for xarray compatibility
 class FramePlot(DATAX):
-    plotting_shape_context = ('ML', 'AP', 'time')
+    plotting_shape_context = ("ML", "AP", "time")
 
     def take_frame(self, t):
         """Extract a single frame at time index `t` using xarray."""
@@ -75,7 +77,9 @@ class FramePlot(DATAX):
         pass
 
     def tplayer(self, interval=300, step=1):
-        return widgets.Play(min=0, max=self.xarr.sizes["time"] - 1, step=step, interval=interval)
+        return widgets.Play(
+            min=0, max=self.xarr.sizes["time"] - 1, step=step, interval=interval
+        )
 
     def tslider(self, step=1):
         return widgets.IntSlider(0, 0, self.xarr.sizes["time"] - 1, step=step)
@@ -107,19 +111,21 @@ def animate(data, extent=[0, 16, 16, 0], save_dst=None):
 
     def update(frame):
         ax.clear()
-        ax.imshow(data.isel(time=frame), cmap='hot', extent=extent)
-        ax.set_title(f'Frame: {frame}')
+        ax.imshow(data.isel(time=frame), cmap="hot", extent=extent)
+        ax.set_title(f"Frame: {frame}")
 
     ani = FuncAnimation(fig, update, frames=len(data.time), interval=50, blit=False)
-    
+
     if save_dst:
-        ani.save(save_dst, writer='ffmpeg')
+        ani.save(save_dst, writer="ffmpeg")
 
     return ani
 
 
 # Updated widget_array function for xarray
-def widget_array(arr_list, plot_func, interval=300, s=4, title=None, autoplay=True, **kwargs):
+def widget_array(
+    arr_list, plot_func, interval=300, s=4, title=None, autoplay=True, **kwargs
+):
     """
     Create an interactive widget for visualizing xarray.DataArray.
 
@@ -144,10 +150,16 @@ def widget_array(arr_list, plot_func, interval=300, s=4, title=None, autoplay=Tr
         Whether to autoplay animation (default True).
     """
 
-    arr_list = list(arr_list) if hasattr(arr_list, '__iter__') else arr_list
+    arr_list = list(arr_list) if hasattr(arr_list, "__iter__") else arr_list
     h, w = len(arr_list), len(arr_list[0])
 
-    slider = widgets.Play(min=0, max=arr_list[0].sizes['time'] - 1, step=1, interval=interval) if autoplay else widgets.IntSlider(0, 0, arr_list[0].sizes['time'] - 1)
+    slider = (
+        widgets.Play(
+            min=0, max=arr_list[0].sizes["time"] - 1, step=1, interval=interval
+        )
+        if autoplay
+        else widgets.IntSlider(0, 0, arr_list[0].sizes["time"] - 1)
+    )
 
     fig, axes = plt.subplots(h, w, figsize=(w * s, h * s))
 
@@ -171,25 +183,29 @@ def plot_signal(arr, ax=None, color_bar=False, **kwargs):
     if color_bar:
         plt.colorbar(ax=ax)
 
+
 @ax_plot
-def plot_extrema(ext, ax=None, cmin='r', cmax='b', **kwargs):
+def plot_extrema(ext, ax=None, cmin="r", cmax="b", **kwargs):
     dfl, dfm = ext
     ax.scatter(dfl.w, dfl.h, c=cmin, **kwargs)
     ax.scatter(dfm.w, dfm.h, c=cmax, **kwargs)
 
+
 @ax_plot
-def plot_waves(ext, ax=None, cmin='r', cmax='b', **kwargs):
-    for df, c in zip(ext, [cmin, cmax]):    
-        for w, h, clu in df[['w','h','Clu']].values:
-            ax.text(w, h, clu, c=c, ha='center',va='center', **kwargs)
+def plot_waves(ext, ax=None, cmin="r", cmax="b", **kwargs):
+    for df, c in zip(ext, [cmin, cmax]):
+        for w, h, clu in df[["w", "h", "Clu"]].values:
+            ax.text(w, h, clu, c=c, ha="center", va="center", **kwargs)
+
 
 @ax_plot
 def plot_contour(arr, ax=None, **kwargs):
     """Plot a contour plot using xarray."""
     ax.contour(arr, **kwargs)
 
+
 @ax_plot
-def plot_bad_channels(mask, ax=None, s=2, c='purple', **kwargs):
+def plot_bad_channels(mask, ax=None, s=2, c="purple", **kwargs):
     """Plot bad channels."""
     ax.scatter(*np.where(mask.T), s=s, c=c, **kwargs)
 
@@ -202,24 +218,27 @@ def save_frames(directory, frames):
 
 
 # Convert frames to video using ffmpeg
-def save_movie(directory='.'):
+def save_movie(directory="."):
     """Convert saved frames into a movie."""
-    os.system(f"ffmpeg -r 30 -i {directory}/frame_%04d.png -vcodec libx264 -y {directory}/movie.mp4")
+    os.system(
+        f"ffmpeg -r 30 -i {directory}/frame_%04d.png -vcodec libx264 -y {directory}/movie.mp4"
+    )
+
 
 @ax_plot
 def widget(arr, plot_func, ax=None, autoplay=True, **kwargs):
     """
     Note!
-    %matplotlib inline 
+    %matplotlib inline
     %matplotlib widget
     ---
     arr: array (h, w, t)
-    plot_func: plot_func(GridSignal, t, ax, **kwargs) | array of plot_func 1d or 2d 
+    plot_func: plot_func(GridSignal, t, ax, **kwargs) | array of plot_func 1d or 2d
     if both sig and plot_func are 2d arrays then their shape should be identical. Each GridSignal is plotted by the corresponding plot_func
 
         autoplay: True: player, False: slider
 
-        """
+    """
     if autoplay:
         slider = widgets.Play(0, 0, arr.shape[-1] - 1, interval=300)
 
@@ -229,13 +248,17 @@ def widget(arr, plot_func, ax=None, autoplay=True, **kwargs):
     @widgets.interact(t=slider)
     def plot_frame(t):
         ax.clear()
-        plot_func(arr[...,t], **kwargs)
+        plot_func(arr[..., t], **kwargs)
         plt.draw()
 
 
 # Interactive widgets
-grid_button = widgets.ToggleButton(value=False, description='Grid', icon='check')
-extrema_button = widgets.ToggleButton(value=True, description='Extrema', icon='check')
-bad_chan_button = widgets.ToggleButton(value=False, description='Bad Channels', icon='check')
-autoplay_button = widgets.ToggleButton(value=False, description='Autoplay', icon='check')
-contour_button = widgets.ToggleButton(value=True, description='Contour', icon='check')
+grid_button = widgets.ToggleButton(value=False, description="Grid", icon="check")
+extrema_button = widgets.ToggleButton(value=True, description="Extrema", icon="check")
+bad_chan_button = widgets.ToggleButton(
+    value=False, description="Bad Channels", icon="check"
+)
+autoplay_button = widgets.ToggleButton(
+    value=False, description="Autoplay", icon="check"
+)
+contour_button = widgets.ToggleButton(value=True, description="Contour", icon="check")
