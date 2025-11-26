@@ -1,3 +1,28 @@
+"""Top-level API for cogpy.
+
+    cogpy is a Python package for ecog data analysis.
+
+Subpackages
+-----------
+.. autosummary::
+   :toctree: generated
+
+    cogpy.brainstates
+    cogpy.burst
+    cogpy.cli    
+    cogpy.core
+    cogpy.datasets
+    cogpy.decomposition    
+    cogpy.depth_probe
+    cogpy.io
+    cogpy.model
+    cogpy.plot
+    cogpy.preprocess
+    cogpy.spectral
+    cogpy.utils
+    cogpy.wave
+"""
+
 from typing import TYPE_CHECKING
 import sys, importlib
 

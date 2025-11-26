@@ -34,20 +34,20 @@ def dpss_tapers(N: int, NW: float = 2, K_max: int = None) -> np.ndarray:
 
     Parameters
     ----------
-    N: int
-            Length of the tapers.
-    NW: float
-            Time-bandwidth product.
-    K_max: int, optional
-            Maximum number of tapers to return. If None, K_max is set to 2NW-1.
+    N : int
+        Length of the tapers.
+    NW : float
+        Time-bandwidth product.
+    K_max : int, optional
+        Maximum number of tapers to return. If None, K_max is set to ``2 * NW-1``.
 
     Returns
     -------
-    tapers: np.ndarray
-            DPSS tapers of shape (K_max, N).
+    np.ndarray
+        DPSS tapers of shape (K_max, N).
 
-    see
-    ---
+    See Also
+    --------
     scipy.signal.windows.dpss
     """
     if K_max is None:

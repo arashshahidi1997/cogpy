@@ -1,14 +1,20 @@
 """
-**three tiny helper functions**:
+Module: ieeg_io
+Status: WIP
+tag: pixecog
+Last Updated: 2025-11-21
+Author: Arash Shahidi, A.Shahidi@campus.lmu.de
 
-1. **`load_bids_metadata()`** → reads JSON, electrodes, channels
-2. **`load_binary()`** → memmaps and reshapes `(time, channel)`
-3. **`reshape_to_grid()`** → reorders channels to `(AP, ML, time)`
+Summary:
+    Utilities for reading intracranial EEG data in BIDS IEEG format.
 
-And finally:
+    Functions:
+    load_ieeg_metadata: Load metadata from BIDS sidecar files.
+    from_file: Create xarray.DataArray from .dat file.
 
-4. **`make_xarray()`** → builds the actual `xr.DataArray`
-5. **`load_ieeg()`** → a tiny wrapper that ties everything together
+Example:
+    from cogpy.io import ieeg_io
+    da = ieeg_io.from_file('sub-01_ses-01_task-free_ieeg.lfp')
 """
 
 # ✅ **1. Load BIDS Metadata**

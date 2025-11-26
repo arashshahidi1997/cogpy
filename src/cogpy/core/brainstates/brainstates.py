@@ -1,37 +1,41 @@
+"""Short summary of the module.
+----------------------------
+This module provides utilities for mapping numerical values to interval-based states, organizing DataFrame columns into state labels, validating interval structures, and analyzing state transitions and durations.
+
+Status
+------
+WIP
+
+Metadata
+--------
+Author : Arash Shahidi <A.Shahidi@campus.lmu.de>
+Last Updated : 2025-08-26
+
+Extended description of the module.
+----------------------------------------------
+The module focuses on interval-based state classification and transition analysis.  
+It offers core tools for verifying disjoint intervals, mapping time series or numerical values to state definitions, computing state durations, handling micro- and macro-state relationships, and converting state dictionaries into structured DataFrames.  
+Testing utilities are included to ensure correct mapping and labeling behavior.
+
+Notes
+-----
+- State intervals are defined as `[start, end]` pairs in lists, tuples, or arrays.  
+- Functions assume state labels are strings.  
+- Many utilities operate on DataFrames containing time or numeric columns to be classified into state intervals.  
+- Mapping functions return DataFrames that encode state membership using period indices or `-1` for non-membership.  
+- The module includes tools for cleaning corrupt intervals and subtracting microstates from macrostates to produce purified state sets.  
+- Transition analysis functions generate DataFrames describing when and how states change over time.
+
+See Also
+--------
+cogpy.brainstates.intervals : Tools for signal segmentation, event detection, or additional state-processing utilities.
+
+Examples
+--------
+>>> from package_name import module_name
+>>> module_name.example_function()
 """
-This module contains functions for mapping numbers to intervals, sorting columns into states, and analyzing state transitions.
 
-Functions:
-- check_intervals_disjoint: Checks if a list of intervals is disjoint.
-- map_numbers_to_intervals: Maps indices of a sorted list of numbers to the indices of intervals they belong to.
-- map_numbers_to_disjoint_intervals: Maps indices of a sorted list of numbers to the indices of disjoint intervals they belong to.
-- get_state_durations: Calculates the total duration of each state from the state intervals.
-- label_numbers_by_state_intervals: Sorts a column of a DataFrame into predefined state intervals and returns a DataFrame.
-- sort_col_into_states: Sorts a column of a DataFrame into predefined state intervals and returns a DataFrame.
-- get_states_df: Converts a dictionary of state intervals to a DataFrame with state edges.
-- subtract_intervals: Drops microstate intervals from macrostate intervals.
-- drop_corrupt_intervals: Drops intervals with end time less than or equal to start time.
-- purify_macro_states: Purifies the state intervals by removing microstate intervals from macrostate intervals.
-- check_disjoint_states: Checks if the state intervals in a dictionary are non-overlapping.
-
-Utility Functions:
-- test_map_numbers_to_intervals: Tests the map_numbers_to_intervals function.
-- test_label_numbers_by_state_intervals: Tests the label_numbers_by_state_intervals function.
-
-Note:
-- The functions in this module are designed to work with state intervals, which are defined as lists or tuples with a start and an end.
-- The functions are designed to work with state labels as strings.
-- The functions are designed to work with a DataFrame containing time values to be labeled by state intervals.
-- The functions are designed to work with a dictionary of state intervals with state labels as keys and array of [start, end] intervals as values.
-- The functions are designed to work with a DataFrame containing columns for each state, filled with period index if the time value falls into the state interval and with -1 if it does not.
-- The functions are designed to work with a DataFrame containing rows corresponding to state intervals and columns for state, interval number, start time, and end time.
-- The functions are designed to work with a DataFrame containing rows corresponding to state transitions and columns for transition time, previous state, and next state.
-- The functions are designed to work with a DataFrame containing only the rows that satisfy the inclusion and exclusion criteria.
-- The functions are designed to work with a DataFrame containing a multiindex of state periods and idx of event.
-
-Author:
-- Arash Shahidi
-"""
 
 import numpy as np
 import pandas as pd
