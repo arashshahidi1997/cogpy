@@ -1,20 +1,19 @@
-"""
-Module: sliding
-Status: WIP
-Last Updated: 2025-08-26
-Author: Arash Shahidi, A.Shahidi@campus.lmu.de
+"""Sliding window operations
 
-Summary:
-        Sliding window utilities
+Status
+------
+WIP 
 
-Functions:
-        rolling_win: Applies a rolling window to an xarray DataArray.
+Metadata
+--------
+Author : Arash Shahidi <A.Shahidi@campus.lmu.de>
+Last Updated : 2025-08-26
 
-Classes:
+Utitlies for sliding window operations on xarray DataArrays and dask Arrays as well as NumPy arrays.
 
-Constants:
-
-Example:
+Examples
+--------
+>>> from cogpy.utils.sliding import rolling_win
 """
 
 import numpy as np

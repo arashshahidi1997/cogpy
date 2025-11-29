@@ -4,79 +4,39 @@ import dask.array as da
 import ghostipy as gsp
 from scipy import signal
 from typing import Callable, Dict, List, Any
-from ..utils.convert import closest_power_of_two
-from ..utils import sliding as sl
+from cogpy.utils.convert import closest_power_of_two
+from cogpy.utils import sliding as sl
+from ghostipy.spectral.mtm import get_tapers as _get_tapers_bandwidth
 
-
-def nperseg_from_ncycle(fm, fs=1, ncycle=7, power_of_two=True):
+def get_tapers(
+    N: int,
+    *,
+    fs: float = 1.0,
+    bandwidth: float | None = None,
+    NW: float | None = None,
+    min_lambda: float = 0.95,
+    n_tapers: int | None = None,
+):
     """
-    rel_nperseg: number of cycles per segment
+    Wrapper around ghostipy.spectral.mtm.get_tapers with either `bandwidth` or `NW`.
 
-    Parameters
-    ----------
-    fm: center frequency
-    fs: sampling frequency
-
-    Returns
-    -------
-    nperseg: number of samples per segment
+    Exactly one of `bandwidth` or `NW` must be provided.
     """
-    nperseg = int(fs * ncycle / fm)
-    if power_of_two:
-        nperseg = closest_power_of_two(nperseg)
-    return nperseg
+    # Enforce exactly one parameterization
+    if (bandwidth is None) == (NW is None):
+        raise ValueError("Exactly one of `bandwidth` or `NW` must be specified.")
 
+    if bandwidth is None:
+        # convert NW -> bandwidth [Hz]
+        bandwidth = NW * fs / N  # type: ignore[operator]
 
-def dpss_tapers(N: int, NW: float = 2, K_max: int = None) -> np.ndarray:
-    """
-    Generate Discrete Prolate Spheroidal Sequences (DPSS) tapers.
-
-    Parameters
-    ----------
-    N : int
-        Length of the tapers.
-    NW : float
-        Time-bandwidth product.
-    K_max : int, optional
-        Maximum number of tapers to return. If None, K_max is set to ``2 * NW-1``.
-
-    Returns
-    -------
-    np.ndarray
-        DPSS tapers of shape (K_max, N).
-
-    See Also
-    --------
-    scipy.signal.windows.dpss
-    """
-    if K_max is None:
-        K_max = int(2 * NW - 1)
-    assert K_max > 0 and K_max < N / 2, print(
-        "increase resolution `N` or decrease time-frequency-half-bandwidth `NW`"
+    return _get_tapers_bandwidth(
+        N,
+        bandwidth,
+        fs=fs,
+        min_lambda=min_lambda,
+        n_tapers=n_tapers,
     )
-    return signal.windows.dpss(N, NW, Kmax=K_max)
-
-
-# %% ghostipy
-def mtm_kwarg_from_gsp(bandwidth, fs, nperseg, noverlap):
-    """
-    convert ghostipy mtm_spectrogram kwargs to NW, window_size, window_step
-    """
-    NW = bandwidth * nperseg / fs
-    window_size = nperseg
-    window_step = nperseg - noverlap
-    return {"NW": NW, "fs": fs, "window_size": window_size, "window_step": window_step}
-
-
-def mtm_kwarg_to_gsp(NW, fs, window_size, window_step):
-    """
-    convert NW, window_size, window_step to ghostipy mtm_spectrogram kwargs
-    """
-    bandwidth = NW * fs / window_size
-    nperseg = window_size
-    noverlap = window_size - window_step
-    return {"bandwidth": bandwidth, "fs": fs, "nperseg": nperseg, "noverlap": noverlap}
-
 
 def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     """
@@ -296,7 +256,7 @@ def multitaper_fft(y, axis=-1, NW=2, nfft=None, K_max=None, detrend=True, tapers
     N = y.shape[-1]  # number of samples
 
     if tapers is None:
-        tapers = dpss_tapers(N, NW, K_max)  # shape (ntaper, sample_dim)
+        tapers = get_tapers(N, NW=NW, n_tapers=K_max)  # shape (ntaper, sample_dim)
     else:
         assert tapers.shape[1] == N, "tapers should have shape (ntaper, sample_dim)"
         assert tapers.ndim == 2, "tapers should have shape (ntaper, sample_dim)"
