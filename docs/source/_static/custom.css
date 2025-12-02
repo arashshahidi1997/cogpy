@@ -1,0 +1,29 @@
+/* Highlight function signatures */
+.py.function .sig-name {
+  color: #d45500;
+}
+
+/* Highlight class names in documentation */
+.py.class .sig-name {
+  color: #0072b2;
+}
+
+/* Give literal code blocks a distinct background */
+.highlight pre,
+.literal-block {
+  background-color: #1f1f1f;
+  color: #f4f4f4;
+}
+
+/* Softer code block background */
+div.highlight pre,
+div.highlight {
+  background-color: #f5f5f5 !important;
+  color: #222 !important;
+}
+
+/* Inline code */
+code {
+  background: #eee !important;
+  color: #c7254e !important;
+}

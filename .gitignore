@@ -13,3 +13,6 @@ __pycache__/
 *.egg
 *.log
 *.tmp
+
+# add sphinx build
+docs/build/
