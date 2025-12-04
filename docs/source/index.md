@@ -1,4 +1,4 @@
-# cogpy Documentation
+# cogpy API Docs
 
 Toolkit for ECoG processing, workflows, and related utilities maintained by Arash Shahidi.
 
