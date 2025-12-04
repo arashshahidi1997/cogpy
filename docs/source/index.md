@@ -1,6 +1,6 @@
 # cogpy API Docs
 
-Toolkit for ECoG processing, workflows, and related utilities maintained by Arash Shahidi.
+Python package for ECoG processing, snakemake workflows, and related utilities maintained by Arash Shahidi.
 
 ```{toctree}
 :maxdepth: 1
