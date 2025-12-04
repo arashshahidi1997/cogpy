@@ -8,21 +8,19 @@ pages:
     # only build on the default branch (master/main)
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
-    # 0) Ensure we're in the project directory
-    - cd "$CI_PROJECT_DIR"
+    - |
+      set -euo pipefail
+      cd "$CI_PROJECT_DIR"
 
-    # 1) Install docs dependencies using the shared conda environment
-    - PYTHON_BIN="/storage/share/python/environments/Anaconda3/envs/cogpy/bin/python"
-    - "$PYTHON_BIN" -m pip install -U pip
-    - "$PYTHON_BIN" -m pip install -r docs/requirements.txt
+      # Use the shared cogpy environment where Sphinx and its deps are already installed
+      CONDA_ENV="/storage/share/python/environments/Anaconda3/envs/cogpy"
+      export PATH="$CONDA_ENV/bin:$PATH"
 
-    # 2) Build Sphinx HTML docs into docs/build/html
-    - PATH="/storage/share/python/environments/Anaconda3/envs/cogpy/bin:$PATH" make -C docs html
-
-    # 3) Prepare GitLab Pages artifact from the Sphinx build
-    - rm -rf public
-    - mkdir -p public
-    - cp -a docs/build/html/. public/
+      # Build and collect the docs
+      make -C docs html
+      rm -rf public
+      mkdir -p public
+      cp -a docs/build/html/. public/
 
   artifacts:
     paths:
