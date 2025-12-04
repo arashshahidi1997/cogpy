@@ -4,16 +4,6 @@ This module :mod:`cogpy.wave` provides tools for detecting and analyzing neural 
 
     from cogpy.wave.detect import detect_extrema
 
-Subpackages
------------
-.. autosummary::
-   :toctree: generated
-
-    cogpy.wave.detect
-    cogpy.wave.features
-    cogpy.wave.plot
-    cogpy.wave.process
-    cogpy.wave.utils
 """
 
 # Auto-generated shim: exposes cogpy.core.wave as cogpy.wave

@@ -4,13 +4,6 @@ This module :mod:`cogpy.depth_probe` provides tools for analyzing linear probes 
 
     from cogpy.depth_probe import csd
 
-Subpackages
------------
-.. autosummary::
-   :toctree: generated
-
-    cogpy.depth_probe.csd
-    cogpy.depth_probe.linear_signal
 """
 
 # Auto-generated shim: exposes cogpy.core.depth_probe as cogpy.depth_probe

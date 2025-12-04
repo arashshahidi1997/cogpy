@@ -4,14 +4,6 @@ This module :mod:`cogpy.brainstates` provides tools for detecting and analyzing 
 
     from cogpy.brainstates import EMG
 
-Subpackages
------------
-.. autosummary::
-   :toctree: generated
-
-    cogpy.brainstates.brainstates
-    cogpy.brainstates.EMG
-    cogpy.brainstates.intervals
 """
 
 # Auto-generated shim: exposes cogpy.core.brainstates as cogpy.brainstates

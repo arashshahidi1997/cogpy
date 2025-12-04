@@ -163,7 +163,7 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     --------
     >>> import numpy as np
     >>> import dask.array as da
-    >>> from cogpy.core.spectral import mtm_spectrogram
+    >>> from cogpy.core.spectral import multitaper
 
     >>> fs = 1000
     >>> t = np.arange(0, 10, 1/fs)
@@ -173,10 +173,9 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     >>> # Parallelize over channels (time axis unchunked)
     >>> x_da = da.from_array(signal, chunks=(2, signal.shape[-1]))
 
-    >>> mtspec, f, tt = mtm_spectrogram(x_da, bandwidth=4, fs=fs,
+    >>> mtspec, f, tt = multitaper.mtm_spectrogram(x_da, bandwidth=4, fs=fs,
     ...                                 nperseg=256, noverlap=128)
-    >>> mtspec
-    dask.array<...>    # shape = (8, n_freq, n_time_segments)
+    >>> assert mtspec.shape == (8, 129, 77)  # (n_channels, n_freq, n_time_segments)
     """
     x = np.moveaxis(x, axis, -1)
     x_fiber = take_first_fiber_along_axis(x, axis=-1)

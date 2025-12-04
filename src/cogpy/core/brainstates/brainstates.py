@@ -32,8 +32,6 @@ cogpy.brainstates.intervals : Tools for signal segmentation, event detection, or
 
 Examples
 --------
->>> from package_name import module_name
->>> module_name.example_function()
 """
 
 

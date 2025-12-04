@@ -5,9 +5,7 @@ __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
         "bivariate_spectral",
-        "gsp_multichannel",
         "multitaper",
-        "oscillations",
         "process_spectrogram",
         "ssa",
         "superlet",
@@ -18,9 +16,7 @@ __getattr__, __dir__, __all__ = attach(
 if TYPE_CHECKING:
     from . import (
         bivariate_spectral,
-        gsp_multichannel,
         multitaper,
-        oscillations,
         process_spectrogram,
         ssa,
         superlet,

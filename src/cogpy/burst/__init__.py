@@ -4,15 +4,6 @@ This module :mod:`cogpy.burst` provides tools for detecting and analyzing neural
 
     from cogpy.burst.detect import blob_detection
 
-Subpackages
------------
-.. autosummary::
-   :toctree: generated
-
-    cogpy.burst.blob_detection
-    cogpy.burst.burst_merge
-    cogpy.burst.burst_phase
-    cogpy.burst.burst_wave
 """
 
 # Auto-generated shim: exposes cogpy.core.burst as cogpy.burst
