@@ -1,4 +1,4 @@
-image: python:3.12
+# No image: we're using a shell executor, so jobs run directly on the host
 
 variables:
   UV_CACHE_DIR: .uv_cache
@@ -14,15 +14,29 @@ cache:
 pages:
   stage: deploy
   rules:
+    # only build on the default branch (master/main)
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
-    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    # 0) Ensure we're in the project directory
+    - cd "$CI_PROJECT_DIR"
+
+    # 1) Install uv if not already present
+    - if ! command -v uv >/dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh;
+      fi
     - export PATH="$HOME/.local/bin:$PATH"
+
+    # 2) Install docs dependencies
     - uv pip install -r docs/requirements.txt
+
+    # 3) Build Sphinx HTML docs into docs/build/html
     - make -C docs html
+
+    # 4) Prepare GitLab Pages artifact from the Sphinx build
     - rm -rf public
     - mkdir -p public
-    - cp -r docs/build/html/. public/
+    - cp -a docs/build/html/. public/
+
   artifacts:
     paths:
       - public
