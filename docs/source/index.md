@@ -1,6 +1,6 @@
 # cogpy Documentation
 
-Toolkit for ECoG processing, workflows, and related utilities maintained by the Sirota Lab.
+Toolkit for ECoG processing, workflows, and related utilities maintained by Arash Shahidi.
 
 ```{toctree}
 :maxdepth: 1

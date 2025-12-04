@@ -1,0 +1,28 @@
+image: python:3.12
+
+variables:
+  UV_CACHE_DIR: .uv_cache
+
+stages:
+  - deploy
+
+cache:
+  key: sphinx-uv-cache
+  paths:
+    - .uv_cache/
+
+pages:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  script:
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
+    - uv pip install -r docs/requirements.txt
+    - make -C docs html
+    - rm -rf public
+    - mkdir -p public
+    - cp -r docs/build/html/. public/
+  artifacts:
+    paths:
+      - public
