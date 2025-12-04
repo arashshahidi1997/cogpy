@@ -1,19 +1,6 @@
 # No image: we're using a shell executor, so jobs run directly on the host
-
-variables:
-  UV_CACHE_DIR: .uv_cache
-  # Force uv to use its managed Python runtime so distutils is available
-  UV_PYTHON_PREFERENCE: only-managed
-  # Explicitly point uv at the environment we use locally for building docs
-  UV_PYTHON: /storage/share/python/environments/Anaconda3/envs/cogpy/bin/python
-
 stages:
   - deploy
-
-cache:
-  key: sphinx-uv-cache
-  paths:
-    - .uv_cache/
 
 pages:
   stage: deploy
@@ -24,19 +11,15 @@ pages:
     # 0) Ensure we're in the project directory
     - cd "$CI_PROJECT_DIR"
 
-    # 1) Install uv if not already present
-    - if ! command -v uv >/dev/null; then
-        curl -LsSf https://astral.sh/uv/install.sh | sh;
-      fi
-    - export PATH="$HOME/.local/bin:$PATH"
+    # 1) Install docs dependencies using the shared conda environment
+    - PYTHON_BIN="/storage/share/python/environments/Anaconda3/envs/cogpy/bin/python"
+    - "$PYTHON_BIN" -m pip install -U pip
+    - "$PYTHON_BIN" -m pip install -r docs/requirements.txt
 
-    # 2) Install docs dependencies
-    - uv pip install -r docs/requirements.txt
+    # 2) Build Sphinx HTML docs into docs/build/html
+    - PATH="/storage/share/python/environments/Anaconda3/envs/cogpy/bin:$PATH" make -C docs html
 
-    # 3) Build Sphinx HTML docs into docs/build/html
-    - make -C docs html
-
-    # 4) Prepare GitLab Pages artifact from the Sphinx build
+    # 3) Prepare GitLab Pages artifact from the Sphinx build
     - rm -rf public
     - mkdir -p public
     - cp -a docs/build/html/. public/
