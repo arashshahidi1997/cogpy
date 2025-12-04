@@ -2,6 +2,8 @@
 
 variables:
   UV_CACHE_DIR: .uv_cache
+  # Force uv to use its managed Python runtime so distutils is available
+  UV_PYTHON_PREFERENCE: only-managed
 
 stages:
   - deploy
