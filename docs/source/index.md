@@ -11,7 +11,12 @@ readme
 
 ## Tutorials
 
-Coming soon.
+```{toctree}
+:maxdepth: 1
+:caption: Tutorials
+
+tutorials/index
+```
 
 ```{toctree}
 :maxdepth: 1
