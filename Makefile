@@ -30,6 +30,7 @@ help:
 	@echo "  make docs        Build Sphinx docs into $(DOCS_HTML)"
 	@echo "  make docs-serve  Serve $(DOCS_HTML) via python -m http.server"
 	@echo "  make docs-clean  Clean Sphinx build artifacts"
+	@echo "  make update      datalad update --merge -s $(ORIGIN_REMOTE)"
 	@echo "  make save        datalad save with SAVE_MSG='$(SAVE_MSG)'"
 	@echo "  make push        datalad push to $(ORIGIN_REMOTE)"
 	@echo "  make deploy      datalad push to $(PAGES_REMOTE)"
@@ -71,6 +72,10 @@ docs-serve: docs
 clean: docs-clean
 
 # --- DataLad helpers ----------------------------------------------------------
+update:
+	@echo ">> datalad update --merge -s $(ORIGIN_REMOTE)"
+	@$(DATALAD) update --merge -s $(ORIGIN_REMOTE)
+
 save:
 	@echo ">> datalad save -m \"$(SAVE_MSG)\""
 	@$(DATALAD) save -m "$(SAVE_MSG)"

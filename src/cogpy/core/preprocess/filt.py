@@ -4,11 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
 import scipy.ndimage as nd
-import numpy as np
-import xarray as xr
-import scipy.ndimage as ndi
-import scipy.stats as sts
-from functools import partial
 
 
 def butteer_worth_widget(fs):

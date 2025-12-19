@@ -1,6 +1,5 @@
 import numpy as np
 import xarray as xr
-import dask.array as da
 import pytest
 from cogpy.utils.xarr import xdim_subsample_around, dim_dur_slice, axis_dim_from_xarr
 

@@ -78,9 +78,7 @@ src/cogpy/core/preprocess/linenoise.py
 src/cogpy/core/preprocess/resample.py
 src/cogpy/core/spectral/__init__.py
 src/cogpy/core/spectral/bivariate_spectral.py
-src/cogpy/core/spectral/gsp_multichannel.py
 src/cogpy/core/spectral/multitaper.py
-src/cogpy/core/spectral/oscillations.py
 src/cogpy/core/spectral/process_spectrogram.py
 src/cogpy/core/spectral/ssa.py
 src/cogpy/core/spectral/superlet.py
@@ -94,6 +92,7 @@ src/cogpy/core/utils/curve.py
 src/cogpy/core/utils/grid_neighborhood.py
 src/cogpy/core/utils/reshape.py
 src/cogpy/core/utils/sliding.py
+src/cogpy/core/utils/sliding_core.py
 src/cogpy/core/utils/stats.py
 src/cogpy/core/utils/subgrid.py
 src/cogpy/core/utils/time_series.py
@@ -149,9 +148,7 @@ src/cogpy/preprocess/resample.pyi
 src/cogpy/spectral/__init__.py
 src/cogpy/spectral/__init__.pyi
 src/cogpy/spectral/bivariate_spectral.pyi
-src/cogpy/spectral/gsp_multichannel.pyi
 src/cogpy/spectral/multitaper.pyi
-src/cogpy/spectral/oscillations.pyi
 src/cogpy/spectral/process_spectrogram.pyi
 src/cogpy/spectral/ssa.pyi
 src/cogpy/spectral/superlet.pyi
@@ -181,6 +178,8 @@ src/cogpy/wave/utils.pyi
 src/cogpy/workflows/preprocess/Snakefile
 src/cogpy/workflows/preprocess/Snakefilenew
 src/cogpy/workflows/preprocess/config.yml
+src/cogpy/workflows/preprocess/__pycache__/main-single.cpython-311.pyc
+src/cogpy/workflows/preprocess/__pycache__/main.cpython-311.pyc
 src/cogpy/workflows/preprocess/scripts/01_filter.py
 src/cogpy/workflows/preprocess/scripts/02_feature.py
 src/cogpy/workflows/preprocess/scripts/03_badlabel.py
@@ -189,3 +188,9 @@ src/cogpy/workflows/preprocess/scripts/__init__.py
 src/cogpy/workflows/preprocess/scripts/features.ipynb
 src/cogpy/workflows/preprocess/scripts/plot_feature_maps.py
 src/cogpy/workflows/preprocess/scripts/plot_features.ipynb
+src/cogpy/workflows/preprocess/scripts/__pycache__/01_filter.cpython-311.pyc
+src/cogpy/workflows/preprocess/scripts/__pycache__/02_feature.cpython-311.pyc
+src/cogpy/workflows/preprocess/scripts/__pycache__/03_badlabel.cpython-311.pyc
+src/cogpy/workflows/preprocess/scripts/__pycache__/04_interpolate.cpython-311.pyc
+src/cogpy/workflows/preprocess/scripts/__pycache__/__init__.cpython-311.pyc
+src/cogpy/workflows/preprocess/scripts/__pycache__/plot_feature_maps.cpython-311.pyc

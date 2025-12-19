@@ -1,4 +1,5 @@
-from cogpy.utils.reshape import *
+import numpy as np
+from cogpy.utils.reshape import reshape_axes, unflush_axes
 
 
 # %% test

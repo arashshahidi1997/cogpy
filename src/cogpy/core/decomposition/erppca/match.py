@@ -5,7 +5,7 @@ import xarray as xr
 import itertools
 from copy import deepcopy
 from scipy.optimize import linear_sum_assignment
-from .base import SpatSpecDecomposition
+from .spatspec import SpatSpecDecomposition
 from .erpPCA import get_similarity
 
 

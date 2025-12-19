@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 from cogpy.brainstates.brainstates import *
-import warnings
 
 
 # %% Utility and Testing Functions

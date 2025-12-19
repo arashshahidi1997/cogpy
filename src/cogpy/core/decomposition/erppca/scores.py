@@ -3,9 +3,7 @@
 # %% process scores
 import scipy.signal as scisig
 from ...utils import xarr as xut
-import numpy as np
 import xarray as xr
-import pandas as pd
 
 
 def scx_bandpass(scx: xr.DataArray, wl, wh, order, axis=0):

@@ -1,6 +1,5 @@
-import pytest
 import numpy as np
-from cogpy.utils.curve import *
+from cogpy.utils.curve import find_elbow
 
 
 def test_find_elbow():

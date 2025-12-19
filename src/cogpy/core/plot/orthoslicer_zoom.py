@@ -1,10 +1,12 @@
-import numpy as np, xarray as xr
-import holoviews as hv, panel as pn, param
+import numpy as np
+import xarray as xr
+import holoviews as hv
+import panel as pn
+import param
 import datashader as ds
 from holoviews.operation.datashader import rasterize
 from holoviews import streams
 from ..plot.time_player import PlayerWithRealTime
-from ..utils.xarr import spaced_sample_around_coord
 
 hv.extension("bokeh")
 

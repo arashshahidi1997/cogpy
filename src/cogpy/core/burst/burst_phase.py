@@ -1,8 +1,6 @@
-import numpy as np
 import xarray as xr
 from scipy import signal
 from tqdm import tqdm
-import pandas as pd
 
 # Spindle Phase
 DEFAULT_TIME_HALFWINDOW = 0.4

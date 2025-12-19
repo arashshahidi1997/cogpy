@@ -6,7 +6,8 @@
 """
 
 from typing import TYPE_CHECKING
-import sys, importlib
+import sys
+import importlib
 
 _SUBPKGS = (
     "brainstates",

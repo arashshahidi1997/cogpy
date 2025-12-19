@@ -1,4 +1,5 @@
-from cogpy.wave.features import *
+import numpy as np
+from cogpy.wave.features import positive_boundaries
 
 
 def test_positive_boundaries():

@@ -1,10 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.decomposition import PCA, FastICA
+from sklearn.decomposition import PCA
 from scipy.interpolate import interp1d
-from mpl_toolkits import mplot3d
-from mpl_toolkits.mplot3d import Axes3D
-import scipy.stats as sts
 
 
 def scree_plot(pca: PCA, cutoff=0.95, ax=plt.gca()):

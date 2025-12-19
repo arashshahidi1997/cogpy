@@ -33,3 +33,9 @@ use each one. All prompts rely on the shared path settings in
 - **Guide:** `prompt/codex-release-guide.md`
 - **Prompt:** `prompt/release.prompt.md`
 - **Use for:** Updating changelog entries during a release.
+
+## Create Tutorial
+
+- **Prompt:** `prompt/create-tutorial.prompt.md`
+- **Use for:** Authoring a new MyST/Jupytext tutorial notebook under
+  `docs/source/tutorials/` and validating it with the Sphinx build.

@@ -4,8 +4,6 @@ import xarray as xr
 import ipywidgets as widgets
 import os
 from matplotlib.animation import FuncAnimation
-import pickle as pkl
-import quantities as pq
 from ..utils.wrappers import ax_plot
 
 
