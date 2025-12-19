@@ -9,6 +9,19 @@ This module provides:
     * `running_blockwise` – applies a function to the full core block per window
 
 All functions are NumPy-only; higher-level xarray wrappers live elsewhere.
+
+Examples
+--------
+>>> import numpy as np
+>>> from cogpy.core.utils.sliding_core import sliding_window, running_reduce
+>>> x = np.arange(100)
+>>> xwin = sliding_window(x, window_size=10, window_step=5)
+>>> xwin.shape
+(19, 10)
+>>> xmulti = np.arange(16*100).reshape(16, 100)
+>>> xmulti_win = sliding_window(xmulti, window_size=10, window_step=5, axis=1)
+>>> xmulti_win.shape
+(16, 19, 10)
 """
 
 from __future__ import annotations

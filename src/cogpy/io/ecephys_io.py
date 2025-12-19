@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import dask.array as da
-from typing import Union, Dict, Any
+from typing import Union
 
 
 def load_ecephys_metadata(lfp_path):

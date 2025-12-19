@@ -63,12 +63,10 @@ Example:
     array([ 1,  2, 16, 17, 32])
 """
 
-from pickletools import read_uint1
 import numpy as np
 import pandas as pd
 import scipy.ndimage as nd
 from scipy import signal
-import matplotlib.pyplot as plt
 from tabulate import tabulate
 from functools import partial
 

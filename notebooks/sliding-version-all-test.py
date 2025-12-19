@@ -9,7 +9,7 @@ from __future__ import annotations
 import importlib.util
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import xarray as xr

@@ -5,7 +5,6 @@ import cogpy.utils.grid_neighborhood as gn
 from cogpy.preprocess import channel_feature_functions as ft
 from cogpy.datasets import load as ld
 from cogpy.utils.sliding import rolling_win
-import dask.array as da
 from cogpy.preprocess.channel_feature_functions import (
     local_robust_zscore,
     local_robust_zscore_dask,

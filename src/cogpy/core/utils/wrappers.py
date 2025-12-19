@@ -3,7 +3,6 @@ from copy import deepcopy, copy
 import time
 from contextlib import contextmanager
 import matplotlib.pyplot as plt
-import xarray as xr
 import logging
 import os
 from typing import Any, Optional, Protocol, cast

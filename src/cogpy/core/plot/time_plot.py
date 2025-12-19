@@ -1,8 +1,5 @@
-from plotly.graph_objs import Layout, Scatter, Annotations, Scatter, Figure, Marker
-from plotly.graph_objs.layout import YAxis, Annotation, Font
-import plotly.graph_objs as go
-from plotly.offline import iplot
-from plotly.subplots import make_subplots
+from plotly.graph_objs import Layout, Scatter
+from plotly.graph_objs.layout import YAxis, Annotation
 
 
 def design_trace_layout(times, data, ch_names):

@@ -29,9 +29,8 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import dask.array as da
-from typing import Tuple, Dict, Any, Optional, Union, Callable
+from typing import Dict, Any, Union
 from . import xml_io
-from functools import wraps
 from .save_utils import save_options
 from dask.diagnostics import ProgressBar
 from xarray import open_zarr as from_zarr
@@ -187,7 +186,6 @@ def zarr_to_dat(zarr_file: str, dat_file: str):
 # neuropixels
 import numpy as np
 from pathlib import Path
-from . import xml_io
 from ..core.utils import xarr as xut
 
 

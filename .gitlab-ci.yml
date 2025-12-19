@@ -1,15 +1,6 @@
 # No image: we're using a shell executor, so jobs run directly on the host
-
-variables:
-  UV_CACHE_DIR: .uv_cache
-
 stages:
   - deploy
-
-cache:
-  key: sphinx-uv-cache
-  paths:
-    - .uv_cache/
 
 pages:
   stage: deploy
@@ -17,25 +8,19 @@ pages:
     # only build on the default branch (master/main)
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
-    # 0) Ensure we're in the project directory
-    - cd "$CI_PROJECT_DIR"
+    - |
+      set -euo pipefail
+      cd "$CI_PROJECT_DIR"
 
-    # 1) Install uv if not already present
-    - if ! command -v uv >/dev/null; then
-        curl -LsSf https://astral.sh/uv/install.sh | sh;
-      fi
-    - export PATH="$HOME/.local/bin:$PATH"
+      # Use the shared cogpy environment where Sphinx and its deps are already installed
+      CONDA_ENV="/storage/share/python/environments/Anaconda3/envs/cogpy"
+      export PATH="$CONDA_ENV/bin:$PATH"
 
-    # 2) Install docs dependencies
-    - uv pip install -r docs/requirements.txt
-
-    # 3) Build Sphinx HTML docs into docs/build/html
-    - make -C docs html
-
-    # 4) Prepare GitLab Pages artifact from the Sphinx build
-    - rm -rf public
-    - mkdir -p public
-    - cp -a docs/build/html/. public/
+      # Build and collect the docs
+      make -C docs html
+      rm -rf public
+      mkdir -p public
+      cp -a docs/build/html/. public/
 
   artifacts:
     paths:

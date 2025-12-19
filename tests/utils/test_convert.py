@@ -1,5 +1,4 @@
 from cogpy.utils.convert import closest_power_of_two
-import matplotlib.pyplot as plt
 import numpy as np
 
 

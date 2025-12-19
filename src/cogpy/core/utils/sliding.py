@@ -19,7 +19,7 @@ Examples
 import numpy as np
 import xarray as xr
 import math
-from typing import Callable, Optional, Dict, Any, Sequence, List
+from typing import Callable, Optional, Dict, Any, Sequence
 
 
 def rolling_win(

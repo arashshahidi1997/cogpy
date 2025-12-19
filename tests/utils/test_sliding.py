@@ -4,7 +4,6 @@ import xarray as xr
 import cogpy.utils.sliding as sl
 from cogpy.utils.time_series import seconds_to_samples
 import quantities as pq
-import xarray as xr
 from cogpy.datasets import load as ld
 
 # import cartesian product for parametrize

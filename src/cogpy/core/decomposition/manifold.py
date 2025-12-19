@@ -1,6 +1,4 @@
-from sklearn.manifold import TSNE
 import numpy as np
-import pandas as pd
 
 
 def simplify_point_cloud(X, eps, random_state=None):

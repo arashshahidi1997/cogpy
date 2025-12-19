@@ -27,7 +27,6 @@ import scipy.stats as sts
 from scipy.interpolate import PchipInterpolator
 from scipy.ndimage import gaussian_filter1d
 from ..spectral import multitaper as sp
-from ..utils import sliding as sl
 from ..utils.wrappers import ax_plot
 from ..utils.curve import find_elbow
 from ..utils.convert import closest_power_of_two

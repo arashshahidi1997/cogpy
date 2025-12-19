@@ -4,7 +4,6 @@ import dask.array as da
 import ghostipy as gsp
 from scipy import signal
 from typing import Callable, Dict, List, Any
-from cogpy.utils.convert import closest_power_of_two
 from cogpy.utils import sliding as sl
 from ghostipy.spectral.mtm import get_tapers as _get_tapers_bandwidth
 

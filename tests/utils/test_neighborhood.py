@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import scipy.ndimage as nd
 import pytest
 from cogpy.utils.grid_neighborhood import (
     GridNeighborhood,

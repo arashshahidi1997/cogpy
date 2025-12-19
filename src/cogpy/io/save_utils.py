@@ -1,7 +1,5 @@
 from pathlib import Path
 import json
-from tqdm import tqdm
-from functools import partial
 
 
 # %% operations

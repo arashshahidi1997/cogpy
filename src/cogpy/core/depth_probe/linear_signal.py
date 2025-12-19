@@ -138,7 +138,7 @@ class LineSignalIO:
     def copy_from_meta(self):
         sig = LineSignalIO()
         for key, value in self.__dict__.items():
-            if not key in ["_arr", "_filt_log"]:
+            if key not in ["_arr", "_filt_log"]:
                 sig.__dict__ = sig.__dict__ | {key: value}
 
         sig._filt_log = deepcopy(self._filt_log)
@@ -382,7 +382,7 @@ class LineSignalIO:
         sig = LineSignalIO()
 
         for key, value in self.__dict__.items():
-            if not key in ["_arr", "_filt_log"]:
+            if key not in ["_arr", "_filt_log"]:
                 sig.__dict__ = sig.__dict__ | {key: value}
 
         sig._arr = deepcopy(self._arr)

@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import ipywidgets as widgets
-import pickle as pkl
 import os
 from matplotlib.animation import FuncAnimation
 import quantities as pq

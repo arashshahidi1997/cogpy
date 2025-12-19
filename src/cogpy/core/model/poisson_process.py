@@ -43,7 +43,6 @@ from abc import ABC, abstractmethod
 from typing import List
 from scipy.stats import rv_continuous
 import xarray as xr
-import scipy.ndimage as nd
 from functools import partial
 from .envelopes import finite_duration_biexp
 
