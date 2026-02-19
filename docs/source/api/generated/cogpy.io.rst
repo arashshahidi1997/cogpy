@@ -1,4 +1,4 @@
-cogpy.io
+﻿cogpy.io
 ========
 
 .. automodule:: cogpy.io
@@ -16,6 +16,7 @@ cogpy.io
    :toctree:
    :recursive:
 
+   converters
    ecephys_io
    ecog_io
    ieeg_io

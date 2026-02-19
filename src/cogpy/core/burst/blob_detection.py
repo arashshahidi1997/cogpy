@@ -183,7 +183,12 @@ def separate_min_max_sigma_dict(sigma_dict_raw):
 
 
 def detect_blobs(
-    datax: xr.DataArray, num_sigma: int = 10, sigma_dict_raw=None
+    datax: xr.DataArray,
+    num_sigma: int = 10,
+    sigma_dict_raw=None,
+    *,
+    threshold_rel: float = 0.2,
+    exclude_border: int | bool = 1,
 ) -> pd.DataFrame:
     """
     Get the blobs (Laplace of Gaussian blobs) in a data array and return a dataframe with their coordinates and amplitudes.
@@ -222,8 +227,8 @@ def detect_blobs(
         min_sigma=min_sigma,
         max_sigma=max_sigma,
         num_sigma=num_sigma,
-        threshold_rel=0.2,
-        exclude_border=1,
+        threshold_rel=float(threshold_rel),
+        exclude_border=exclude_border,
     )
     coords = datax.coords
     dims = datax.dims
@@ -250,8 +255,16 @@ def detect_blobs(
     blob_df = blob_df[col_order]
 
     # add amplitude
-    blob_df.loc[:, "amp"] = blob_df[idims].apply(
-        lambda x: datax.isel(**{dim: x[idim] for idim, dim in zip(idims, dims)}).values,
-        axis=1,
-    )
+    def _amp_at_center(row) -> float:
+        idx = {dim: int(getattr(row, "i" + dim)) for dim in dims}
+        v = np.asarray(datax.isel(**idx).values)
+        if v.size == 0:
+            return float("nan")
+        if v.size == 1:
+            return float(v.reshape(-1)[0].item())
+        # Defensive fallback: squeeze unexpected non-scalar selections.
+        return float(v.reshape(-1)[0].item())
+
+    # Use itertuples to avoid pandas apply() expanding non-scalar returns into a DataFrame.
+    blob_df.loc[:, "amp"] = [_amp_at_center(r) for r in blob_df.itertuples(index=False)]
     return blob_df

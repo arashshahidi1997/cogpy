@@ -65,7 +65,7 @@ docs-clean:
 	@echo ">> Cleaning Sphinx build directory"
 	@$(SPHINX_MAKE) clean
 
-docs-serve: docs
+serve:
 	@echo ">> Serving docs from $(DOCS_HTML) at http://0.0.0.0:$(DOCS_PORT)"
 	@cd "$(DOCS_HTML)" && $(PYTHON) -m http.server $(DOCS_PORT)
 

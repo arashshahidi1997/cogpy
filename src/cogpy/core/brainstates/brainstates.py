@@ -42,6 +42,7 @@ from tqdm import tqdm
 from typing import List
 from .intervals import (
     check_intervals_disjoint,
+    map_numbers_to_intervals,
     map_numbers_to_disjoint_intervals,
     subtract_intervals,
 )

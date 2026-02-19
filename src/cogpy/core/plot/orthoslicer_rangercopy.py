@@ -1,3 +1,25 @@
+"""
+Interactive orthoslicer with a linked time-window selector (stabilized).
+
+This module defines :class:`~cogpy.core.plot.orthoslicer_rangercopy.OrthoSlicerRanger`,
+a more reliable version of the RangeTool-linked orthoslicer concept.
+
+Key differences vs. ``orthoslicer_ranger.py``:
+
+- The RangeTool plumbing is built once in ``_build_core()`` using stable
+  HoloViews ``DynamicMap`` objects and streams, instead of being recreated inside
+  the view functions on every parameter update.
+- ``RangeToolLink`` is kept alive as an instance attribute to avoid garbage
+  collection surprises.
+- ``panel_app()`` uses ``view_tz`` / ``view_xy`` consistently.
+
+Compared to the other orthoslicer modules:
+
+- Adds a linked time-window selector (``t_window``) via RangeToolLink.
+- Does not focus on general zoom persistence (see ``orthoslicer_zoom.py``) or
+  faceting/local sampling helpers (see ``orthoslicer_facet.py``).
+"""
+
 import numpy as np
 import xarray as xr
 import holoviews as hv

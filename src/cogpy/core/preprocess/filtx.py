@@ -122,6 +122,7 @@ def bandpassx(
     axis = sigx.get_axis_num(axis)
     bp_filt = lambda x: signal.filtfilt(b, a, x, axis=axis)
     sigx_bp = xut.xarr_wrap(bp_filt)(sigx)
+    sigx_bp.name = "Bandpass ({}-{} Hz)".format(wl, wh)
     return sigx_bp
 
 
@@ -130,6 +131,7 @@ def lowpassx(sigx: xr.DataArray, wl: float, order: int, axis: str) -> xr.DataArr
     axis = sigx.get_axis_num(axis)
     bp_filt = lambda x: signal.filtfilt(b, a, x, axis=axis)
     sigx_bp = xut.xarr_wrap(bp_filt)(sigx)
+    sigx_bp.name = "Lowpass ({} Hz)".format(wl)
     return sigx_bp
 
 
@@ -138,6 +140,7 @@ def highpassx(sigx: xr.DataArray, wh: float, order: int, axis: str) -> xr.DataAr
     axis = sigx.get_axis_num(axis)
     bp_filt = lambda x: signal.filtfilt(b, a, x, axis=axis)
     sigx_bp = xut.xarr_wrap(bp_filt)(sigx)
+    sigx_bp.name = "Highpass ({} Hz)".format(wh)
     return sigx_bp
 
 

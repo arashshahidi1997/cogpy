@@ -29,19 +29,29 @@ import dask.array as da
 from typing import Union
 
 
-def load_ecephys_metadata(lfp_path):
+def resolve_ecephys_sidecars(lfp_path: Union[str, Path]) -> dict[str, Path]:
+    """Resolve BIDS sidecar paths for an ecephys LFP file."""
+    lfp_path = Path(lfp_path)
+    stem = lfp_path.name.replace("_ecephys.lfp", "")
+    base = lfp_path.with_name(stem)
+    return {
+        "json": base.with_name(stem + "_ecephys.json"),
+        "channels": base.with_name(stem + "_channels.tsv"),
+        # electrodes sidecar in this repo drops the recording entity.
+        "electrodes": base.with_name((stem + "_electrodes.tsv").replace("_recording-lf", "")),
+    }
+
+
+def load_ecephys_metadata(lfp_path, sidecars=None) -> dict:
     """
     Read BIDS JSON, channels.tsv, and electrodes.tsv.
     Returns a dictionary of everything needed downstream.
     """
-    lfp_path = Path(lfp_path)
-
-    stem = lfp_path.name.replace("_ecephys.lfp", "")
-    base = lfp_path.with_name(stem)
-
-    json_path = base.with_name(stem + "_ecephys.json")
-    ch_path = base.with_name(stem + "_channels.tsv")
-    elec_path = base.with_name((stem + "_electrodes.tsv").replace("_recording-lf", ""))
+    if sidecars is None:
+        sidecars = resolve_ecephys_sidecars(lfp_path)
+    json_path = sidecars["json"]
+    ch_path = sidecars["channels"]
+    elec_path = sidecars["electrodes"]
 
     with open(json_path) as f:
         meta = json.load(f)
@@ -59,17 +69,18 @@ def load_ecephys_metadata(lfp_path):
     }
 
 
-def from_file(dat_file: Union[str, Path], as_float=False) -> xr.DataArray:
+def from_file(dat_file: Union[str, Path], sidecars=None, as_float=False) -> xr.DataArray:
     """
     Creates a memory-mapped (dask) array from a .dat file, reshaped to (num_channels, num_samples).
 
     Parameters:
             - dat_file (str): Path to the .dat file.
+            - sidecars (dict, optional): Dictionary with paths to sidecar files. If None, will attempt to resolve based on dat_file name.
 
     Returns:
             - xr.DataArray: Dask-backed DataArray with dimensions ('AP', 'ML', 'time') and attribute 'fs'.
     """
-    metadata = load_ecephys_metadata(dat_file)
+    metadata = load_ecephys_metadata(dat_file, sidecars=sidecars)
     memmap_array = np.memmap(dat_file, dtype=metadata["dtype"], mode="r")
     arr = memmap_array.reshape(-1, metadata["nch"])
     dask_array = da.from_array(arr, asarray=False, fancy=False)

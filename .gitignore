@@ -1,18 +1,44 @@
 # ---------------------------
-# Python
+# Python bytecode / cache
 # ---------------------------
-__pycache__/
-*.pyc
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+
+# compiled extensions
 *.so
+
+# packaging
+*.egg
 *.egg-info/
 .eggs/
-*.egg
+dist/
+build/
+
+# logs / temp
 *.log
 *.tmp
 
-# add sphinx build
+# ---------------------------
+# Testing / coverage
+# ---------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---------------------------
+# Notebooks
+# ---------------------------
+.ipynb_checkpoints/
+
+# ---------------------------
+# Docs
+# ---------------------------
 docs/build/
+docs/source/api/generated/
+
+# ---------------------------
+# OS
+# ---------------------------
+.DS_Store

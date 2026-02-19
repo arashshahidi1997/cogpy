@@ -1,3 +1,24 @@
+"""
+Interactive 4D orthogonal slicer (core variant).
+
+This module defines :class:`~cogpy.core.plot.orthoslicer.OrthoSlicer`, a small
+Panel/HoloViews viewer for a 4D ``xarray.DataArray`` that you conceptually treat
+as ``(t, z, y, x)``:
+
+- ``view_xy``: show an XY image at the current (t, z)
+- ``view_tz``: show a TZ image at the current (x, y)
+
+What makes this *core* variant different from the other orthoslicer modules in
+this package:
+
+- It focuses on the basic interaction model: tap-to-move crosshairs + optional
+  Datashader rasterization for large arrays.
+- It does **not** try to persist zoom/pan state across updates (see
+  ``orthoslicer_zoom.py``) and it does **not** provide a linked time-window
+  RangeTool (see ``orthoslicer_rangercopy.py`` / ``orthoslicer_ranger.py``).
+- It does not add local-mesh / faceting helpers (see ``orthoslicer_facet.py``).
+"""
+
 import numpy as np
 import xarray as xr
 import holoviews as hv

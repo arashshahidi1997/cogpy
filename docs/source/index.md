@@ -9,13 +9,18 @@ Python package for ECoG processing, snakemake workflows, and related utilities m
 readme
 ```
 
-## Tutorials
-
 ```{toctree}
 :maxdepth: 1
 :caption: Tutorials
 
 tutorials/index
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Explanation
+
+explanation/architecture
 ```
 
 ```{toctree}

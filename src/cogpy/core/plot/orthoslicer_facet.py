@@ -1,3 +1,23 @@
+"""
+Interactive 4D orthogonal slicer with local neighborhood / faceting helpers.
+
+This module defines a class named :class:`~cogpy.core.plot.orthoslicer_facet.OrthoSlicer`
+that is very similar to the core implementation in ``orthoslicer.py`` (XY and
+TZ orthoslices with tap-to-update crosshairs and optional Datashader), but adds
+utilities intended for “look around where I am” workflows:
+
+- ``local_coord_mesh``: build a small coordinate mesh centered on the current
+  (x, y, z, t) using :func:`~cogpy.core.plot.utils.xarr.spaced_sample_around_coord`.
+- ``get_facet_indices``: choose a grid of (t, z) sampling points near the
+  current selection (useful for building small facet grids / montages).
+
+Compared to the other orthoslicer modules:
+
+- It does **not** persist zoom state (see ``orthoslicer_zoom.py``).
+- It does **not** provide a linked RangeTool time-window selector (see
+  ``orthoslicer_rangercopy.py`` / ``orthoslicer_ranger.py``).
+"""
+
 import numpy as np
 import xarray as xr
 import holoviews as hv

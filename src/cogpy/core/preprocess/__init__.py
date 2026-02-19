@@ -11,7 +11,9 @@ __getattr__, __dir__, __all__ = attach(
         "filtx",
         "interpolate",
         "linenoise",
+        "linenoise_io",
         "resample",
+        "badchannel",
     ],
 )
 
@@ -24,5 +26,7 @@ if TYPE_CHECKING:
         filtx,
         interpolate,
         linenoise,
+        linenoise_io,
         resample,
+        badchannel,
     )

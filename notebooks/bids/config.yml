@@ -1,0 +1,62 @@
+bids_dir: '/storage2/arash/projects/pixecog/raw'
+bids_derivatives: 'derivatives'
+
+# snakebids configurations
+pybids_inputs:
+  # neuropixels: ecephys
+  ecephys:
+    filters:
+      suffix: 'ecephys'
+      extension: '.lfp'
+      # datatype: 'ecephys', BEP032 not yet integrated in pybids
+    wildcards:
+      - subject
+      - session
+      - task # values: free, pre, post, track
+      - acquisition  # values: lshank, bshank, bshift
+      - recording
+  # ecog: ieeg
+  ieeg:
+    filters:
+      suffix: 'ieeg'
+      extension: '.lfp'
+      datatype: 'ieeg'
+    wildcards:
+      - subject
+      - session
+      - task
+
+products:
+  hpclayers:
+    base_input: "ecephys"
+    bids:
+      root: "hpclayers"
+      datatype: "ecephys"
+    default_output: "mat"
+    outputs:
+      mat: { suffix: "ecephys", extension: ".mat" }
+      log: { suffix: "ecephys", extension: ".log" }
+
+  coupling:
+    bids:
+      root: "coupling"
+      subject: "{subject}"
+      session: "{session}"
+      task: "{task}"
+    outputs:
+      csv: { suffix: "coupling", extension: ".csv" }
+
+  ecephys:
+    base_input: "ecephys"
+    bids:
+      root: ""          # raw dataset
+      datatype: "ecephys"
+
+    outputs:
+      lfp:        { suffix: "ecephys", extension: ".lfp" }
+      json:       { suffix: "ecephys", extension: ".json" }
+
+      channels:   { suffix: "channels",   extension: ".tsv", recording: 'lf' }
+      electrodes: { suffix: "electrodes", extension: ".tsv", recording: null }
+
+      xml:        { suffix: "ecephys", extension: ".xml" }  # optional

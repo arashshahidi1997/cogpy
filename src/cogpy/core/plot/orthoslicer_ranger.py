@@ -1,3 +1,27 @@
+"""
+Interactive orthoslicer with a linked time-window selector (experimental).
+
+This module defines :class:`~cogpy.core.plot.orthoslicer_ranger.OrthoSlicerRanger`,
+which extends the basic “XY + TZ orthoslice” idea by adding a RangeTool-based
+time-window selection:
+
+- A 1D ``rangeslider_sig`` curve (typically a summary over time) acts as the
+  RangeTool *source*.
+- The TZ view acts as the RangeTool *target* so the selected x-range maps to a
+  ``t_window`` parameter.
+
+How it differs from the other orthoslicer modules:
+
+- Unlike ``orthoslicer.py`` / ``orthoslicer_facet.py``, it introduces a linked
+  x-range interaction (RangeToolLink) to pick a time window.
+- Unlike ``orthoslicer_zoom.py``, the primary focus is time-window selection,
+  not persisting general zoom state.
+- This file appears to be an *in-progress* refactor: ``panel_app()`` references
+  ``view_source`` / ``view_target`` methods that are not implemented here.
+  For a more robust implementation of the same concept, prefer
+  ``orthoslicer_rangercopy.py``.
+"""
+
 import numpy as np
 import xarray as xr
 import holoviews as hv
