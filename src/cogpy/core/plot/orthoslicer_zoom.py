@@ -1,3 +1,45 @@
+"""
+Interactive 4D orthogonal slicer with persistent zoom state.
+
+This module defines :class:`~cogpy.core.plot.orthoslicer_zoom.OrthoSlicer`, a
+variant of the core orthoslicer (XY and TZ orthoslices with tap-to-update
+crosshairs and optional Datashader rasterization) that additionally **persists
+zoom/pan state** across parameter updates.
+
+How it differs from the other orthoslicer modules:
+
+- Adds HoloViews ``RangeXY`` streams to record the visible ranges for each view
+  (``xy_xlim/xy_ylim`` and ``tz_xlim/tz_ylim``), then reapplies them via
+  ``xlim``/``ylim`` options on re-render.
+- Includes small helpers/UI to reset XY/TZ zoom back to full extent.
+- Does not include the RangeTool-linked time-window selector found in
+  ``orthoslicer_rangercopy.py``.
+
+Example
+-------
+>>> import holoviews as hv
+>>> import panel as pn
+>>> import xarray as xr
+>>> import numpy as np
+>>> from cogpy.datasets.tensor import make_dataset
+>>> from cogpy.core.plot.orthoslicer_zoom import OrthoSlicer
+>>>
+>>> pn.extension()
+>>> hv.extension("bokeh")
+>>>
+>>> da = make_dataset()
+>>> da = xr.concat([da] * 100, dim="time")
+>>> fs = float(da["time"].values[1] - da["time"].values[0])
+>>> da = da.assign_coords({"time": fs * np.arange(da.sizes["time"])})
+>>>
+>>> dx = ("ml", hv.Dimension("x", label="Medial-Lateral", unit="mm"))
+>>> dy = ("ap", hv.Dimension("y", label="Anterior-Posterior", unit="mm"))
+>>> dt = ("time", hv.Dimension("t", label="Time", unit="s"))
+>>> dz = ("freq", hv.Dimension("z", label="Frequency", unit="Hz"))
+>>> slicer = OrthoSlicer(da, dt=dt, dz=dz, dy=dy, dx=dx)
+>>> slicer.panel_app().show()
+"""
+
 import numpy as np
 import xarray as xr
 import holoviews as hv
@@ -400,28 +442,3 @@ class OrthoSlicer(param.Parameterized):
         )
         left_col = pn.Column(xy_pane, sizing_mode="stretch_width")
         return pn.Row(left_col, right_col, sizing_mode="stretch_width")
-
-
-"""
-import holoviews as hv
-from src.plot.orthoslicer_facet import OrthoSlicer
-import panel as pn
-import xarray as xr
-import numpy as np
-import pandas as pd
-from orthoslicer_example import make_dataset
-pn.extension()
-
-da = make_dataset()
-da = xr.concat([da]*100, dim='time')
-fs = da['time'].values[1] - da['time'].values[0]
-da = da.assign_coords({'time': fs * np.arange(da.sizes['time'])})
-
-dx = ('ml', hv.Dimension('x', label='Medial-Lateral', unit='mm'))
-dy = ('ap', hv.Dimension('y', label='Anterior-Posterior', unit='mm'))
-dt = ('time', hv.Dimension('t', label='Time', unit='s'))
-dz = ('freq', hv.Dimension('z', label='Frequency', unit='Hz'))
-slicer = OrthoSlicer(da, dt=dt, dz=dz, dy=dy, dx=dx)
-
-# slicer.panel_app().show()    
-"""

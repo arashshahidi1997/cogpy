@@ -9,6 +9,8 @@ __getattr__, __dir__, __all__ = attach(
         "orthoslicer_facet",
         "orthoslicer_ranger",
         "orthoslicer_rangercopy",
+        "orthoslicer_bursts",
+        "orthoslicer_bursts_timeseries",
         "orthoslicer_zoom",
         "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
         "specgram_plot",
@@ -30,6 +32,8 @@ if TYPE_CHECKING:
         orthoslicer_facet,
         orthoslicer_ranger,
         orthoslicer_rangercopy,
+        orthoslicer_bursts,
+        orthoslicer_bursts_timeseries,
         orthoslicer_zoom,
         specgram_plot,
         time_player,

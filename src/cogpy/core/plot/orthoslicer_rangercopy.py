@@ -1,23 +1,52 @@
 """
-Interactive orthoslicer with a linked time-window selector (stabilized).
+Interactive orthoslicer with a linked time-window view (no RangeTool).
 
 This module defines :class:`~cogpy.core.plot.orthoslicer_rangercopy.OrthoSlicerRanger`,
-a more reliable version of the RangeTool-linked orthoslicer concept.
+a stabilized orthoslicer concept that shows a 1D time summary curve underneath
+the time–frequency view with a shared time axis.
 
 Key differences vs. ``orthoslicer_ranger.py``:
 
-- The RangeTool plumbing is built once in ``_build_core()`` using stable
-  HoloViews ``DynamicMap`` objects and streams, instead of being recreated inside
-  the view functions on every parameter update.
-- ``RangeToolLink`` is kept alive as an instance attribute to avoid garbage
-  collection surprises.
+- The core plotting plumbing is built once in ``_build_core()`` using stable
+  HoloViews ``DynamicMap`` objects and streams, instead of being recreated
+  inside the view functions on every parameter update.
 - ``panel_app()`` uses ``view_tz`` / ``view_xy`` consistently.
 
 Compared to the other orthoslicer modules:
 
-- Adds a linked time-window selector (``t_window``) via RangeToolLink.
+- Adds a linked time-window (``t_window``) that tracks the visible TZ x-range.
 - Does not focus on general zoom persistence (see ``orthoslicer_zoom.py``) or
   faceting/local sampling helpers (see ``orthoslicer_facet.py``).
+
+Example
+-------
+>>> import numpy as np
+>>> import xarray as xr
+>>> import holoviews as hv
+>>> import panel as pn
+>>> from cogpy.datasets.tensor import make_dataset
+>>> from cogpy.core.plot.orthoslicer_rangercopy import OrthoSlicerRanger
+>>>
+>>> pn.extension()
+>>> hv.extension("bokeh")
+>>>
+>>> da = make_dataset()
+>>> da = xr.concat([da] * 100, dim="time")
+>>> fs = float(da["time"].values[1] - da["time"].values[0])
+>>> da = da.assign_coords({"time": fs * np.arange(da.sizes["time"])})
+>>>
+>>> dx = ("ml", hv.Dimension("x", label="Medial-Lateral", unit="mm"))
+>>> dy = ("ap", hv.Dimension("y", label="Anterior-Posterior", unit="mm"))
+>>> dt = ("time", hv.Dimension("t", label="Time", unit="s"))
+>>> dz = ("freq", hv.Dimension("z", label="Frequency", unit="Hz"))
+>>>
+>>> # 1D signal plotted under the TZ view (defaults to a mean if omitted)
+>>> rangeslider_sig = da.mean(dim=("freq", "ap", "ml"))
+>>>
+>>> slicer = OrthoSlicerRanger(
+...     da, rangeslider_sig=rangeslider_sig, dt=dt, dz=dz, dy=dy, dx=dx
+... )
+>>> slicer.panel_app().show()
 """
 
 import numpy as np
@@ -28,7 +57,6 @@ import param
 import datashader as ds
 from holoviews.operation.datashader import rasterize
 from holoviews import streams
-from holoviews.plotting.links import RangeToolLink
 
 # If you have this locally, keep it; otherwise replace with your own time player
 from ..plot.time_player import PlayerWithRealTime
@@ -75,6 +103,14 @@ class OrthoSlicerRanger(param.Parameterized):
     z = param.Number(label="Z")
     clim = param.Range(label="Color Limits")
     t_window = param.Range(label="Time window")  # selection on X (time)
+    tz_logy = param.Boolean(default=False, label="Log Frequency Axis")
+
+    # plot sizing (used for both HoloViews opts and datashader rasterization)
+    tz_width = param.Integer(default=400, bounds=(200, None), label="TZ Width")
+    tz_height = param.Integer(default=300, bounds=(200, None), label="TZ Height")
+    xy_width = param.Integer(default=400, bounds=(200, None), label="XY Width")
+    xy_height = param.Integer(default=300, bounds=(200, None), label="XY Height")
+    ranger_height = param.Integer(default=120, bounds=(60, None), label="Ranger Height")
 
     # layout toggles
     merge_tools = param.Boolean(default=False)
@@ -167,8 +203,14 @@ class OrthoSlicerRanger(param.Parameterized):
             # fallback: build a simple mean signal over the volume
             self.rangeslider_sig = self.array.mean(dim=("z", "y", "x"))
         if isinstance(self.rangeslider_sig, xr.DataArray):
-            t_renamer = {self.dt[0]: self._rename_map.get(self.dt[0], "t")}
-            self.rangeslider_sig = self.rangeslider_sig.rename(t_renamer)
+            # If user provided a signal in original coordinates, rename its time dim.
+            # If we created it from the standardized array, it's already on "t".
+            if self.dt is not None:
+                src_t = self.dt[0]
+                if src_t in self.rangeslider_sig.dims:
+                    self.rangeslider_sig = self.rangeslider_sig.rename(
+                        {src_t: self._rename_map.get(src_t, "t")}
+                    )
 
         # update param labels from hvdims (nice display names)
         for dim in ("t", "z", "x", "y"):
@@ -214,16 +256,30 @@ class OrthoSlicerRanger(param.Parameterized):
 
     def _build_core(self):
         # 1) params stream -> drives everything
-        self._tz_params = streams.Params(
-            self, parameters=["x", "y", "t", "z", "clim", "use_datashader"]
-        )
+        tz_param_names = [
+            "x",
+            "y",
+            "t",
+            "z",
+            "clim",
+            "use_datashader",
+            "tz_logy",
+            "tz_width",
+            "tz_height",
+        ]
+        # Be robust to older class objects in long-running notebook kernels where
+        # parameters may not exist yet.
+        tz_param_names = [p for p in tz_param_names if p in self.param]
+        self._tz_params = streams.Params(self, parameters=tz_param_names)
 
         # 2) STABLE DynamicMaps (never recreate in views)
         self._tz_img_dm = hv.DynamicMap(self._tz_img, streams=[self._tz_params])
         self._tz_xhair_dm = hv.DynamicMap(self._tz_crosshair, streams=[self._tz_params])
+        # Target displayed in the UI (use this as the canonical source for links/streams)
+        self._tz_target_dm = self._tz_img_dm * self._tz_xhair_dm
 
         # 3) Track visible x-range; keep t_window in sync
-        self._rx = streams.RangeX(source=self._tz_img_dm)
+        self._rx = streams.RangeX(source=self._tz_target_dm)
 
         def _on_range_x(x_range):
             if x_range:
@@ -232,18 +288,13 @@ class OrthoSlicerRanger(param.Parameterized):
 
         self._rx.add_subscriber(lambda **kw: _on_range_x(kw.get("x_range")))
 
-        # 4) One static curve instance (source for RangeTool)
+        # 4) One static curve instance (plotted under TZ; shared time axis)
         self._range_curve = hv.Curve(self.rangeslider_sig, kdims=["t"]).opts(
-            width=400, height=120, tools=[]
+            width=int(self.tz_width), height=int(self.ranger_height), tools=[]
         )
 
-        # 5) One RangeToolLink (keep a reference so it’s not GC’d)
-        self._rtl = RangeToolLink(
-            self._range_curve, self._tz_img_dm, axes=["x"], boundsx=self.t_window
-        )
-
-        # 6) Tap bound to the STABLE DynamicMap
-        self.tap_tz = streams.Tap(source=self._tz_img_dm, x=None, y=None)
+        # 5) Tap bound to the STABLE DynamicMap
+        self.tap_tz = streams.Tap(source=self._tz_target_dm, x=None, y=None)
         self.tap_tz.add_subscriber(self._on_tap_tz)
 
     # ----------------------------- core plots --------------------------------
@@ -266,7 +317,7 @@ class OrthoSlicerRanger(param.Parameterized):
 
     def _tz_img(self, **_):
         """Return ONLY the TZ image for linking & tapping (no crosshair here)."""
-        width, height = 400, 300
+        width, height = int(self.tz_width), int(self.tz_height)
 
         img = self.array.sel(x=self.x, y=self.y, method="nearest")
         base = hv.Image(
@@ -290,24 +341,36 @@ class OrthoSlicerRanger(param.Parameterized):
             width=width,
             height=height,
             framewise=False,  # keep ranges stable across frames
+            logy=bool(self.tz_logy),
             tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
             active_tools=["tap"],
         )
 
     # --------------------------- public HV views ------------------------------
-    @param.depends("t", "z", "x", "y", "clim", "use_datashader", "t_window")
+    @param.depends(
+        "t",
+        "z",
+        "x",
+        "y",
+        "clim",
+        "use_datashader",
+        "t_window",
+        "tz_width",
+        "ranger_height",
+    )
     def view_tz(self):
-        # Keep RangeTool bounds synced to the persisted param
-        if hasattr(self, "_rtl"):
-            tb = self.param["t_window"].bounds
-            self._rtl.boundsx = _clip_pair(*self.t_window, tb)
-
-        # Render stable DMs; DO NOT recreate streams or RangeTool here
-        return (self._tz_img_dm * self._tz_xhair_dm + self._range_curve).cols(1)
+        # Render stable DMs; do not recreate streams here.
+        # Plot the 1D time-summary curve with the same x-window.
+        curve = self._range_curve.opts(
+            width=int(self.tz_width),
+            height=int(self.ranger_height),
+            xlim=self.t_window,
+        )
+        return (self._tz_target_dm + curve).cols(1).opts(shared_axes=True)
 
     @param.depends("t", "z", "x", "y", "clim", "use_datashader")
     def view_xy(self):
-        width, height = 400, 300
+        width, height = int(self.xy_width), int(self.xy_height)
         img = self.array.sel(t=self.t, z=self.z, method="nearest")
         base = hv.Image(
             img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim]
@@ -348,16 +411,30 @@ class OrthoSlicerRanger(param.Parameterized):
         z_vals = list(map(float, self.array.z.values))
 
         # param controls (x, y, z, clim, datashader)
+        control_params = [
+            "x",
+            "y",
+            "z",
+            "clim",
+            "use_datashader",
+            "tz_logy",
+            "merge_tools",
+        ]
+        control_params = [p for p in control_params if p in self.param]
+        widgets = {
+            "x": pn.widgets.DiscreteSlider(options=x_vals, name=self.ox),
+            "y": pn.widgets.DiscreteSlider(options=y_vals, name=self.oy),
+            "z": pn.widgets.DiscreteSlider(options=z_vals, name=self.oz),
+            "clim": pn.widgets.RangeSlider,
+            "use_datashader": pn.widgets.Checkbox,
+        }
+        if "tz_logy" in control_params:
+            widgets["tz_logy"] = pn.widgets.Checkbox
+
         self.param_controls = pn.Param(
             self,
-            parameters=["x", "y", "z", "clim", "use_datashader", "merge_tools"],
-            widgets={
-                "x": pn.widgets.DiscreteSlider(options=x_vals, name=self.ox),
-                "y": pn.widgets.DiscreteSlider(options=y_vals, name=self.oy),
-                "z": pn.widgets.DiscreteSlider(options=z_vals, name=self.oz),
-                "clim": pn.widgets.RangeSlider,
-                "use_datashader": pn.widgets.Checkbox,
-            },
+            parameters=control_params,
+            widgets=widgets,
             show_name=False,
             width=400,
         )

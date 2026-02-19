@@ -480,13 +480,13 @@ class OrthoSlicer(param.Parameterized):
 
 """
 import holoviews as hv
-from src.plot.orthoslicer_facet import OrthoSlicer
 import panel as pn
 import xarray as xr
 import numpy as np
-import pandas as pd
-from src.datasets.tensor import make_dataset
+from cogpy.core.plot.orthoslicer_facet import OrthoSlicer
+from cogpy.datasets.tensor import make_dataset
 pn.extension()
+hv.extension("bokeh")
 
 da = make_dataset()
 da = xr.concat([da]*100, dim='time')

@@ -168,8 +168,12 @@ class OrthoSlicerRanger(param.Parameterized):
             # fallback: build a simple mean signal over the volume
             self.rangeslider_sig = self.array.mean(dim=("z", "y", "x"))
         if isinstance(self.rangeslider_sig, xr.DataArray):
-            t_renamer = {self.dt[0]: self._rename_map.get(self.dt[0], "t")}
-            self.rangeslider_sig = self.rangeslider_sig.rename(t_renamer)
+            if self.dt is not None:
+                src_t = self.dt[0]
+                if src_t in self.rangeslider_sig.dims:
+                    self.rangeslider_sig = self.rangeslider_sig.rename(
+                        {src_t: self._rename_map.get(src_t, "t")}
+                    )
 
         # update param labels from hvdims (nice display names)
         for dim in ("t", "z", "x", "y"):
