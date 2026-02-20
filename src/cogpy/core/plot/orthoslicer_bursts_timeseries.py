@@ -47,34 +47,15 @@ import numpy as np
 import holoviews as hv
 import panel as pn
 import param
-from holoviews.operation.datashader import rasterize
-from holoviews.plotting.links import RangeToolLink
 from holoviews import streams
 
 from .orthoslicer_bursts import OrthoSlicerRangerBursts
 from .orthoslicer_rangercopy import _clip_pair
+from .multichannel_timeseries import multichannel_timeseries_view
 
 
 hv.extension("bokeh")
 pn.extension()
-
-
-def _zscore(x: np.ndarray, axis: int = 0) -> np.ndarray:
-    x = np.asarray(x, dtype=float)
-    mu = np.nanmean(x, axis=axis, keepdims=True)
-    sd = np.nanstd(x, axis=axis, keepdims=True)
-    sd = np.where(sd == 0, 1.0, sd)
-    return (x - mu) / sd
-
-
-def _downsample_xy(t: np.ndarray, y: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
-    if max_points is None or max_points <= 0:
-        return t, y
-    n = int(t.size)
-    if n <= max_points:
-        return t, y
-    step = int(np.ceil(n / max_points))
-    return t[::step], y[::step]
 
 
 class OrthoSlicerRangerBurstsTimeseries(OrthoSlicerRangerBursts):
@@ -153,79 +134,58 @@ class OrthoSlicerRangerBurstsTimeseries(OrthoSlicerRangerBursts):
         """
         # Extract time series per channel at the current frequency slice.
         slab = self.array.sel(z=self.z, method="nearest")  # dims: (t, y, x)
-        t = np.asarray(slab.t.values, dtype=float).reshape(-1)
+        t_full = np.asarray(slab.t.values, dtype=float).reshape(-1)
 
         yx = self._selected_yx_indices()
         if len(yx) == 0:
-            return hv.Text(0.5, 0.5, "No channels selected").opts(height=self.ts_height, width=self.tz_width)
+            return hv.Text(0.5, 0.5, "No channels selected").opts(height=self.ts_height, width=self.xy_width)
+
+        # Downsample once and apply consistently across channels.
+        if self.max_trace_points is not None and int(self.max_trace_points) > 0 and t_full.size > int(self.max_trace_points):
+            step = int(np.ceil(t_full.size / int(self.max_trace_points)))
+        else:
+            step = 1
+        t = t_full[::step]
 
         # shape (time, channel)
-        traces = []
+        traces: list[np.ndarray] = []
         for (r, c) in yx:
-            v = np.asarray(slab.isel(y=r, x=c).values, dtype=float).reshape(-1)
-            tt, vv = _downsample_xy(t, v, int(self.max_trace_points))
-            traces.append(vv)
-        x_tch = np.stack(traces, axis=1)
+            v = np.asarray(slab.isel(y=r, x=c).values, dtype=float).reshape(-1)[::step]
+            traces.append(v)
+        x_tch = np.stack(traces, axis=1) if len(traces) else np.zeros((t.size, 0), dtype=float)
 
         labels = self._selected_channel_labels(yx)
 
-        time_dim = hv.Dimension("Time (s)", unit="s")
-        vdim = hv.Dimension("Value", unit="a.u.")
-        ch_dim = hv.Dimension("Channel", unit="")
-
-        curves = []
-        for i, lab in enumerate(labels):
-            ds = hv.Dataset((t, x_tch[:, i]), [time_dim, vdim])
-            curve = hv.Curve(ds, time_dim, vdim, label=lab).opts(
-                subcoordinate_y=True,
-                color="black",
-                line_width=1,
-                line_alpha=0.7,
-                tools=["hover"],
-            )
-            curves.append(curve)
-
-        overlay = hv.Overlay(curves, "Channel").opts(
-            xlabel=time_dim.pprint_label,
-            ylabel="Channel (stacked)",
-            show_legend=False,
-            height=int(self.ts_height),
-            width=int(self.tz_width),
-            title=f"Time series @ {self._fmt_val('z', self.z)}",
-        )
-
-        # Minimap image (channel × time)
-        zimg = _zscore(x_tch, axis=0).T  # (channel, time)
-        y_positions = np.arange(zimg.shape[0], dtype=float)
-        minimap = rasterize(
-            hv.Image((t, y_positions, zimg), [time_dim, ch_dim], vdim)
-        ).opts(
-            cmap="RdBu_r",
-            xlabel="",
-            ylabel="",
-            alpha=0.7,
-            height=int(self.ts_minimap_height),
-            width=int(self.tz_width),
-            toolbar="disable",
-            cnorm="eq_hist",
-        )
-
-        # Link minimap RangeTool to overlay x-range and keep references alive.
+        # Build view using the shared multichannel helper.
         tb = self.param["t_window"].bounds
         boundsx = _clip_pair(*self.t_window, tb)
-        self._ts_rtl = RangeToolLink(minimap, overlay, axes=["x"], boundsx=boundsx)
-
-        # Keep t_window in sync with the RangeTool selection itself (source plot),
-        # not the target plot x-range. This avoids RangeToolLink <-> RangeX loops.
-        self._ts_bx = streams.BoundsX(source=minimap, boundsx=boundsx)
+        parts = multichannel_timeseries_view(
+            t,
+            x_tch,
+            title=f"Time series @ {self._fmt_val('z', self.z)}",
+            channel_labels=labels,
+            ylabel="Channel (stacked)",
+            boundsx=boundsx,
+            width=int(self.xy_width),
+            overlay_height=int(self.ts_height),
+            minimap_height=int(self.ts_minimap_height),
+            responsive=True,
+            return_parts=True,
+        )
+        layout = parts["layout"]
+        minimap = parts["minimap"]
+        self._ts_rtl = parts["rtlink"]  # keep alive
 
         def _on_ts_bounds(boundsx_):
             if boundsx_:
                 self.t_window = _clip_pair(float(boundsx_[0]), float(boundsx_[1]), tb)
 
+        # Keep t_window in sync with the RangeTool selection itself (source plot),
+        # not the target plot x-range. This avoids RangeToolLink <-> RangeX loops.
+        self._ts_bx = streams.BoundsX(source=minimap, boundsx=boundsx)
         self._ts_bx.add_subscriber(lambda **kw: _on_ts_bounds(kw.get("boundsx")))
 
-        return (overlay + minimap).cols(1)
+        return layout
 
     def timeseries_controls(self):
         return pn.Param(
@@ -247,6 +207,14 @@ class OrthoSlicerRangerBurstsTimeseries(OrthoSlicerRangerBursts):
         """
         Panel app laid out like :meth:`~cogpy.core.plot.orthoslicer_bursts.OrthoSlicerRangerBursts.panel_app`
         with an additional multichannel time-series panel.
+
+        Layout
+        ------
+        - Optional collapsible left sidebar ("Controls")
+        - Three main columns:
+          1) TZ
+          2) XY + burst navigator/table
+          3) Multichannel time-series (selected subgrid)
         """
         tz_total_height = int(
             self.tz_height
@@ -274,47 +242,84 @@ class OrthoSlicerRangerBurstsTimeseries(OrthoSlicerRangerBursts):
             pn.pane.Markdown("### Burst"),
             self.burst_nav(),
             self.bursts_table(),
-            sizing_mode="fixed",
             width=int(self.xy_width),
         )
 
         ts_panel = pn.Column(
-            pn.pane.Markdown("### Time Series (selected subgrid)"),
-            self.timeseries_controls(),
-            pn.pane.HoloViews(self.view_timeseries, sizing_mode="stretch_width"),
-            sizing_mode="fixed",
+            pn.pane.HoloViews(
+                self.view_timeseries,
+                width=int(self.xy_width),
+                sizing_mode="fixed",
+            ),
             width=int(self.xy_width),
         )
 
-        left_col = pn.Column(
+        tz_col = pn.Column(
             pn.pane.Markdown("### TZ"),
             tz_pane,
-            pn.Column(
-                self.controls_panel(),
-                sizing_mode="fixed",
-                width=int(self.tz_width),
-            ),
-            sizing_mode="fixed",
             width=int(self.tz_width),
             margin=0,
         )
-        right_col = pn.Column(
+        xy_col = pn.Column(
             pn.pane.Markdown("### XY"),
             xy_pane,
             pn.layout.Divider(),
             bursts_panel,
-            pn.layout.Divider(),
-            ts_panel,
-            sizing_mode="fixed",
             width=int(self.xy_width),
             margin=0,
         )
-        return pn.Row(
-            left_col,
-            right_col,
-            sizing_mode="fixed",
+
+        ts_controls = pn.Card(
+            pn.Column(
+                pn.pane.Markdown("Select a subgrid of channels (y,x)."),
+                self.timeseries_controls(),
+            ),
+            title="Time Series",
+            collapsible=True,
+            collapsed=False,
+            width=360,
+        )
+
+        controls_sidebar = pn.Column(
+            pn.Card(
+                self.controls_panel(),
+                title="Slicer",
+                collapsible=True,
+                collapsed=False,
+                width=360,
+            ),
+            ts_controls,
+            width=380,
+        )
+        controls_sidebar.visible = False
+
+        controls_toggle = pn.widgets.Toggle(name="Controls", value=False, button_type="primary", width=110)
+
+        def _set_sidebar_visible(event):
+            controls_sidebar.visible = bool(event.new)
+
+        controls_toggle.param.watch(_set_sidebar_visible, "value")
+
+        header = pn.Row(controls_toggle, pn.Spacer())
+
+        main = pn.Row(
+            tz_col,
+            xy_col,
+            pn.Column(
+                pn.pane.Markdown("### Time Series (selected subgrid)"),
+                ts_panel,
+                width=int(self.xy_width),
+                margin=0,
+            ),
             margin=0,
             styles={"gap": "12px"},
+        )
+
+        return pn.Column(
+            header,
+            pn.Row(controls_sidebar, main, margin=0, styles={"gap": "12px"}),
+            sizing_mode="stretch_both",
+            margin=0,
         )
 
 

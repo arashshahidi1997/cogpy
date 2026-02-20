@@ -147,10 +147,20 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
                 self._jump_to_burst(self.burst_id)
 
         self.param.watch(self._on_burst_id, "burst_id")
+        self.param.watch(self._on_follow_burst, "follow_burst")
         self._build_tz_display()
         self._build_tz_time_panels()
         # Refresh stable layout to include extra panels.
         self._tz_layout = self._build_tz_layout()
+
+    def _on_follow_burst(self, event) -> None:
+        if not bool(event.new):
+            return
+        if self.burst_id is None or len(self.bursts) == 0:
+            return
+        # When follow_burst is enabled, immediately jump (and recenter time window)
+        # to the currently selected burst.
+        self._jump_to_burst(int(self.burst_id))
 
     def _build_tz_display(self) -> None:
         """
@@ -194,8 +204,10 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         panel_param_names = [p for p in panel_param_names if p in self.param]
         self._tz_panel_params = streams.Params(self, parameters=panel_param_names)
 
-        self._burst_trace_dm = hv.DynamicMap(self._burst_trace_curve, streams=[self._tz_panel_params])
-        self._burst_rate_dm = hv.DynamicMap(self._burst_rate_curve, streams=[self._tz_panel_params])
+        self._tz_track_dms = {
+            "burst_trace": hv.DynamicMap(self._burst_trace_curve, streams=[self._tz_panel_params]),
+            "burst_rate": hv.DynamicMap(self._burst_rate_curve, streams=[self._tz_panel_params]),
+        }
 
     def _burst_trace_curve(self, **_):
         if "burst_trace" not in list(getattr(self, "tz_time_panels", [])):
@@ -276,12 +288,13 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         return curve.opts(xlim=xlim)
 
     def _tz_extra_panels(self):
-        panels = []
-        if getattr(self, "_burst_trace_dm", None) is not None:
-            panels.append(self._burst_trace_dm)
-        if getattr(self, "_burst_rate_dm", None) is not None:
-            panels.append(self._burst_rate_dm)
-        return panels
+        track_dms = getattr(self, "_tz_track_dms", {}) or {}
+        out = []
+        for track_id in list(getattr(self, "tz_time_panels", [])):
+            dm = track_dms.get(track_id)
+            if dm is not None:
+                out.append(dm)
+        return out
 
     def _all_bursts_points_tz(self):
         if not bool(getattr(self, "show_all_bursts_tz", True)) or len(self.bursts) == 0:
@@ -314,7 +327,7 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
 
     def _jump_to_burst(self, burst_id: int) -> None:
         row = self._burst_row(int(burst_id))
-        self.param.update(
+        updates = dict(
             x=float(row["x"]),
             y=float(row["y"]),
             t=float(row["t"]),
@@ -324,10 +337,15 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         # selection (and TZ x-range) jumps to the burst time.
         if bool(getattr(self, "follow_burst", False)):
             tb = self.param["t_window"].bounds
-            w = float(self.t_window[1] - self.t_window[0])
-            w = w if w > 0 else (tb[1] - tb[0]) * 0.1
             tc = float(row["t"])
-            self.t_window = _clip_pair(tc - 0.5 * w, tc + 0.5 * w, tb)
+            if bool(getattr(self, "reset_zoom_on_navigation", False)):
+                updates["t_window"] = self._default_window_around(tc)
+            else:
+                w = float(self.t_window[1] - self.t_window[0])
+                w = w if w > 0 else (tb[1] - tb[0]) * 0.1
+                updates["t_window"] = _clip_pair(tc - 0.5 * w, tc + 0.5 * w, tb)
+
+        self.param.update(**updates)
 
     def _on_burst_id(self, event) -> None:
         if event.new is None or len(self.bursts) == 0:
@@ -343,7 +361,7 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         return hv.Points(
             [(self.burst_x, self.burst_y)],
             kdims=[self.hvdims["x"], self.hvdims["y"]],
-        ).opts(color="red", marker="circle", size=10, line_width=2, alpha=0.9)
+        ).opts(color="red", marker="circle", size=10, line_width=2, alpha=0.9, tools=[])
 
     def _burst_point_tz(self):
         if self.burst_id is None or self.burst_t is None or self.burst_z is None:
@@ -351,7 +369,7 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         return hv.Points(
             [(self.burst_t, self.burst_z)],
             kdims=[self.hvdims["t"], self.hvdims["z"]],
-        ).opts(color="red", marker="circle", size=10, line_width=2, alpha=0.9)
+        ).opts(color="red", marker="circle", size=10, line_width=2, alpha=0.9, tools=[])
 
     # --------------------------- views ---------------------------
     @param.depends(

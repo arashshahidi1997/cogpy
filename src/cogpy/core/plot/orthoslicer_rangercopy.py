@@ -167,6 +167,30 @@ class OrthoSlicerRanger(param.Parameterized):
         doc="Low/high percentiles for XY autoscaling.",
     )
 
+    # Navigation + zoom policy
+    nav_step_s = param.Number(
+        default=0.25,
+        bounds=(0.0, None),
+        label="Step (s)",
+        doc="Time step for navigation buttons/shortcuts.",
+    )
+    default_window_fraction = param.Number(
+        default=0.25,
+        bounds=(0.01, 1.0),
+        label="Default window frac",
+        doc="Fraction of full time range used by Reset view.",
+    )
+    reset_zoom_on_navigation = param.Boolean(
+        default=False,
+        label="Reset view on nav",
+        doc="If True, navigation resets t_window around the new time.",
+    )
+    enable_shortcuts = param.Boolean(
+        default=False,
+        label="Keyboard shortcuts",
+        doc="If True, enable basic keyboard shortcuts when running as a Panel server.",
+    )
+
     # plot sizing (used for both HoloViews opts and datashader rasterization)
     tz_width = param.Integer(default=400, bounds=(200, None), label="TZ Width")
     tz_height = param.Integer(default=300, bounds=(200, None), label="TZ Height")
@@ -213,6 +237,11 @@ class OrthoSlicerRanger(param.Parameterized):
         # tap streams
         self.tap_xy = streams.Tap()  # we'll set .source later in view_xy
         self.tap_tz = streams.Tap()
+
+        # Navigation history (t_window snapshots)
+        self._t_window_history: list[tuple[float, float]] = []
+        self._t_window_history_idx: int = -1
+        self._shortcuts_registered: bool = False
 
         # Bind tap_tz immediately to the stable DynamicMap (we'll create it in _build_core)
         # self.tap_tz = None  # will be created in _build_core
@@ -304,6 +333,7 @@ class OrthoSlicerRanger(param.Parameterized):
         # initial window using percentiles, but CLIP it
         t0, t1 = np.percentile(self.array.t.values, [10, 30])
         self.t_window = _clip_pair(float(t0), float(t1), t_bounds)
+        self._push_window_history(self.t_window)
 
     def _set_contrast_limits(self):
         vmin, vmax = self.bounds["val"]
@@ -611,14 +641,134 @@ class OrthoSlicerRanger(param.Parameterized):
                 z=nearest_sel(self.array.z, y),
             )
 
+    # ------------------------- navigation helpers ---------------------------
+    def _t_bounds(self) -> tuple[float, float]:
+        return tuple(map(float, self.param["t"].bounds))
+
+    def _default_window_around(self, t_center: float) -> tuple[float, float]:
+        t0, t1 = self._t_bounds()
+        width = float(self.default_window_fraction) * float(t1 - t0)
+        width = max(width, (t1 - t0) * 1e-9)
+        return _clip_pair(float(t_center) - 0.5 * width, float(t_center) + 0.5 * width, (t0, t1))
+
+    def _push_window_history(self, t_window: tuple[float, float]) -> None:
+        tw = (float(t_window[0]), float(t_window[1]))
+        if self._t_window_history_idx >= 0 and self._t_window_history:
+            cur = self._t_window_history[self._t_window_history_idx]
+            if abs(cur[0] - tw[0]) < 1e-12 and abs(cur[1] - tw[1]) < 1e-12:
+                return
+        if self._t_window_history_idx < len(self._t_window_history) - 1:
+            self._t_window_history = self._t_window_history[: self._t_window_history_idx + 1]
+        self._t_window_history.append(tw)
+        self._t_window_history_idx = len(self._t_window_history) - 1
+
+    def history_back(self) -> None:
+        if self._t_window_history_idx <= 0:
+            return
+        self._t_window_history_idx -= 1
+        self.t_window = self._t_window_history[self._t_window_history_idx]
+
+    def history_forward(self) -> None:
+        if self._t_window_history_idx >= len(self._t_window_history) - 1:
+            return
+        self._t_window_history_idx += 1
+        self.t_window = self._t_window_history[self._t_window_history_idx]
+
+    def goto(self, t: float) -> None:
+        self.t = nearest_sel(self.array.t, float(t))
+        if bool(self.reset_zoom_on_navigation):
+            self.t_window = self._default_window_around(float(self.t))
+        self._push_window_history(self.t_window)
+
+    def advance(self, dt: float | None = None) -> None:
+        step = float(self.nav_step_s if dt is None else dt)
+        self.goto(float(self.t) + step)
+
+    def back(self, dt: float | None = None) -> None:
+        step = float(self.nav_step_s if dt is None else dt)
+        self.goto(float(self.t) - step)
+
+    def reset_view(self) -> None:
+        self.t_window = self._default_window_around(float(self.t))
+        self._push_window_history(self.t_window)
+
+    # ------------------------- UI helpers ---------------------------
+    def _help_markdown(self) -> str:
+        return (
+            "### Help\n"
+            "- **XY**: click to move (x,y) crosshair.\n"
+            "- **TZ**: click to move (t,z) crosshair.\n"
+            "- **Range selector**: drag/resize the box on the overview curve to change the TZ time window.\n"
+            "- **Navigation**: Prev/Next step by `Step (s)`.\n"
+            "- **Shortcuts** (optional): left/right arrows step time, `r` resets view, `b` goes back in history.\n"
+        )
+
+    def _nav_controls(self):
+        back_btn = pn.widgets.Button(name="◀", width=40)
+        fwd_btn = pn.widgets.Button(name="▶", width=40)
+        prev_btn = pn.widgets.Button(name="Prev", width=60)
+        next_btn = pn.widgets.Button(name="Next", width=60)
+        reset_btn = pn.widgets.Button(name="Reset view", button_type="primary", width=110)
+
+        back_btn.on_click(lambda _e: self.history_back())
+        fwd_btn.on_click(lambda _e: self.history_forward())
+        prev_btn.on_click(lambda _e: self.back())
+        next_btn.on_click(lambda _e: self.advance())
+        reset_btn.on_click(lambda _e: self.reset_view())
+
+        return pn.Row(
+            back_btn,
+            fwd_btn,
+            prev_btn,
+            next_btn,
+            pn.Param(self, parameters=["nav_step_s", "reset_zoom_on_navigation"], show_name=False, width=260),
+            reset_btn,
+        )
+
+    def _maybe_register_shortcuts(self):
+        if not bool(self.enable_shortcuts) or self._shortcuts_registered:
+            return
+        try:
+            if pn.state.curdoc is None:
+                return
+
+            def _on_key(event):
+                key = event.key
+                if key == "ArrowLeft":
+                    self.back()
+                elif key == "ArrowRight":
+                    self.advance()
+                elif key in ("r", "R"):
+                    self.reset_view()
+                elif key in ("b", "B"):
+                    self.history_back()
+
+            pn.state.on_keydown(_on_key)
+            self._shortcuts_registered = True
+        except Exception:
+            return
+
     # ------------------------------ panel app --------------------------------
     def controls_panel(self):
+        help_card = pn.Card(
+            pn.pane.Markdown(self._help_markdown()),
+            title="Help",
+            collapsible=True,
+            collapsed=True,
+            sizing_mode="stretch_width",
+        )
         return pn.Column(
             pn.pane.Markdown("### Time"),
             self.t_player_widget.view,
             pn.layout.Divider(),
+            pn.pane.Markdown("### Navigation"),
+            self._nav_controls(),
+            pn.layout.Divider(),
             pn.pane.Markdown("### Controls"),
             self.param_controls,
+            pn.layout.Divider(),
+            pn.Param(self, parameters=["enable_shortcuts"], show_name=False, width=200),
+            help_card,
         )
 
     def panel_app(self):
@@ -628,6 +778,7 @@ class OrthoSlicerRanger(param.Parameterized):
         └─ Controls (bottom)
         Right: XY orthoslice
         """
+        self._maybe_register_shortcuts()
         tz_pane = pn.pane.HoloViews(self._tz_layout, width=400, height=420, sizing_mode="fixed")
         xy_pane = pn.pane.HoloViews(
             self.view_xy, width=400, height=300, sizing_mode="fixed"

@@ -5,6 +5,7 @@ __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
         "frame_plot",
+        "multichannel_timeseries",
         "orthoslicer",
         "orthoslicer_facet",
         "orthoslicer_ranger",
@@ -16,6 +17,7 @@ __getattr__, __dir__, __all__ = attach(
         "specgram_plot",
         "time_player",
         "time_plot",
+        "xarray_hv",
         "xarr_plot",
     ],
 )
@@ -28,6 +30,7 @@ __getattr__, __dir__, __all__ = attach(
 if TYPE_CHECKING:
     from . import (
         frame_plot,
+        multichannel_timeseries,
         orthoslicer,
         orthoslicer_facet,
         orthoslicer_ranger,
@@ -38,5 +41,6 @@ if TYPE_CHECKING:
         specgram_plot,
         time_player,
         time_plot,
+        xarray_hv,
         xarr_plot,
     )
