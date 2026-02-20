@@ -245,113 +245,108 @@ class OrthoSlicerRangerBurstsTimeseries(OrthoSlicerRangerBursts):
 
     def panel_app(self):
         """
-        GUI-like Panel app with tabs and collapsible side panels.
-
-        Tabs:
-        - Slicer: TZ + XY views
-        - Time Series: stacked traces + minimap RangeTool
-        - Bursts: navigator + table
-
-        Side panels:
-        - Controls (collapsible)
-        - Subgrid selection (collapsible)
+        Panel app laid out like :meth:`~cogpy.core.plot.orthoslicer_bursts.OrthoSlicerRangerBursts.panel_app`
+        with an additional multichannel time-series panel.
         """
-        # --- main panes ---
+        tz_total_height = int(
+            self.tz_height
+            + self.ranger_height
+            + (self.tz_trace_height if "burst_trace" in list(getattr(self, "tz_time_panels", [])) else 1)
+            + (self.tz_rate_height if "burst_rate" in list(getattr(self, "tz_time_panels", [])) else 1)
+            + 120
+        )
+        xy_total_height = int(self.xy_height + 80)
+
         tz_pane = pn.pane.HoloViews(
-            self.view_tz,
-            sizing_mode="stretch_width",
-            height=int(self.tz_height + self.ranger_height + 80),
+            self._tz_layout,
+            width=int(self.tz_width),
+            height=tz_total_height,
+            sizing_mode="fixed",
         )
         xy_pane = pn.pane.HoloViews(
             self.view_xy,
-            sizing_mode="stretch_width",
-            height=int(self.xy_height + 80),
+            width=int(self.xy_width),
+            height=xy_total_height,
+            sizing_mode="fixed",
         )
-        slicer_tab = pn.Row(
-            pn.Column(pn.pane.Markdown("### TZ"), tz_pane, sizing_mode="stretch_both"),
-            pn.Column(pn.pane.Markdown("### XY"), xy_pane, sizing_mode="stretch_both"),
-            sizing_mode="stretch_both",
+
+        bursts_panel = pn.Column(
+            pn.pane.Markdown("### Burst"),
+            self.burst_nav(),
+            self.bursts_table(),
+            sizing_mode="fixed",
+            width=int(self.xy_width),
+        )
+
+        ts_panel = pn.Column(
+            pn.pane.Markdown("### Time Series (selected subgrid)"),
+            self.timeseries_controls(),
+            pn.pane.HoloViews(self.view_timeseries, sizing_mode="stretch_width"),
+            sizing_mode="fixed",
+            width=int(self.xy_width),
+        )
+
+        left_col = pn.Column(
+            pn.pane.Markdown("### TZ"),
+            tz_pane,
+            pn.Column(
+                self.controls_panel(),
+                sizing_mode="fixed",
+                width=int(self.tz_width),
+            ),
+            sizing_mode="fixed",
+            width=int(self.tz_width),
+            margin=0,
+        )
+        right_col = pn.Column(
+            pn.pane.Markdown("### XY"),
+            xy_pane,
+            pn.layout.Divider(),
+            bursts_panel,
+            pn.layout.Divider(),
+            ts_panel,
+            sizing_mode="fixed",
+            width=int(self.xy_width),
+            margin=0,
+        )
+        return pn.Row(
+            left_col,
+            right_col,
+            sizing_mode="fixed",
+            margin=0,
             styles={"gap": "12px"},
         )
 
-        ts_tab = pn.Column(
-            pn.pane.Markdown("### Time Series (selected subgrid)"),
-            pn.pane.HoloViews(self.view_timeseries, sizing_mode="stretch_width"),
-            sizing_mode="stretch_both",
-        )
 
-        bursts_tab = pn.Column(
-            pn.pane.Markdown("### Burst Navigator"),
-            self.burst_nav(),
-            pn.layout.Divider(),
-            pn.pane.Markdown("### Bursts Table"),
-            self.bursts_table(),
-            sizing_mode="stretch_both",
-        )
+def main() -> None:
+    """
+    Debug entrypoint: run a small demo app.
 
-        tabs = pn.Tabs(
-            ("Slicer", slicer_tab),
-            ("Time Series", ts_tab),
-            ("Bursts", bursts_tab),
-            dynamic=True,
-            sizing_mode="stretch_both",
-        )
+    This intentionally mirrors the docstring example but lives in a callable so
+    it can be used via ``python -m cogpy.core.plot.orthoslicer_bursts_timeseries``.
+    """
+    from cogpy.datasets.tensor import make_flat_blob_dataset, detect_bursts_hmaxima
 
-        # --- sidebar (collapsible cards) ---
-        controls_card = pn.Card(
-            super().controls_panel(),
-            title="Controls",
-            collapsible=True,
-            collapsed=False,
-            sizing_mode="stretch_width",
-        )
-        subgrid_card = pn.Card(
-            pn.Column(
-                pn.pane.Markdown("Select a subgrid of channels (y,x)."),
-                self.timeseries_controls(),
-                sizing_mode="stretch_width",
-            ),
-            title="Subgrid",
-            collapsible=True,
-            collapsed=False,
-            sizing_mode="stretch_width",
-        )
-        bursts_card = pn.Card(
-            pn.Column(
-                pn.pane.Markdown("Burst controls (optional)"),
-                pn.Param(self, parameters=["follow_burst"], show_name=False),
-                sizing_mode="stretch_width",
-            ),
-            title="Bursts",
-            collapsible=True,
-            collapsed=True,
-            sizing_mode="stretch_width",
-        )
+    pn.extension()
+    hv.extension("bokeh")
 
-        sidebar = pn.Column(
-            controls_card,
-            subgrid_card,
-            bursts_card,
-            sizing_mode="fixed",
-            width=380,
-        )
+    da = make_flat_blob_dataset(duration=2.0, nt=80, n_peaks=5, seed=0)
+    bursts = detect_bursts_hmaxima(da, h_quantile=0.99)
 
-        sidebar_toggle = pn.widgets.Toggle(
-            name="Controls",
-            value=True,
-            button_type="primary",
-            width=110,
-        )
-        sidebar_toggle.link(sidebar, value="visible")
+    dx = ("ml", hv.Dimension("x", label="Medial-Lateral", unit="mm"))
+    dy = ("ap", hv.Dimension("y", label="Anterior-Posterior", unit="mm"))
+    dt = ("time", hv.Dimension("t", label="Time", unit="s"))
+    dz = ("freq", hv.Dimension("z", label="Frequency", unit="Hz"))
 
-        header = pn.Row(
-            sidebar_toggle,
-            pn.Spacer(),
-            sizing_mode="stretch_width",
-        )
+    slicer = OrthoSlicerRangerBurstsTimeseries(da, bursts=bursts, dt=dt, dz=dz, dy=dy, dx=dx)
+    slicer.tz_logy = True
 
-        return pn.Column(
-            header,
-            pn.Row(sidebar, tabs, sizing_mode="stretch_both", styles={"gap": "12px"}),
-            sizing_mode="stretch_both",
-        )
+    # Debug: print tap events to the console.
+    slicer.tap_xy.add_subscriber(lambda **kw: print("tap_xy", kw))
+    slicer.tap_tz.add_subscriber(lambda **kw: print("tap_tz", kw))
+
+    slicer.panel_app().show()
+
+
+if __name__ == "__main__":
+    main()

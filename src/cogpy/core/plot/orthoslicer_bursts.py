@@ -79,6 +79,8 @@ import pandas as pd
 import holoviews as hv
 import panel as pn
 import param
+from holoviews import streams
+import numpy as np
 
 from .orthoslicer_rangercopy import OrthoSlicerRanger, _clip_pair
 
@@ -96,6 +98,32 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         default=False,
         label="Follow burst",
         doc="If True, selecting a burst also jumps the slicer crosshair to it.",
+    )
+    show_all_bursts_tz = param.Boolean(
+        default=True,
+        label="Show bursts (TZ)",
+        doc="If True, show all burst (t,z) peaks on the TZ plot, regardless of current (x,y).",
+    )
+
+    tz_time_panels = param.ListSelector(
+        default=["burst_trace", "burst_rate"],
+        objects=["burst_trace", "burst_rate"],
+        label="TZ time panels",
+        doc="Additional time plots to show under the overview curve.",
+    )
+    tz_trace_height = param.Integer(default=140, bounds=(60, None), label="Trace height")
+    tz_rate_height = param.Integer(default=140, bounds=(60, None), label="Rate height")
+    burst_trace_bandwidth_hz = param.Number(
+        default=0.0,
+        bounds=(0.0, None),
+        label="Trace BW (Hz)",
+        doc="If >0, mean over z in [burst_z±BW/2] to approximate a bandpassed energy trace.",
+    )
+    burst_rate_sigma_s = param.Number(
+        default=0.15,
+        bounds=(0.0, None),
+        label="Rate σ (s)",
+        doc="Gaussian smoothing sigma for burst rate over time (seconds). 0 disables smoothing.",
     )
 
     burst_x = param.Number(allow_None=True, default=None)
@@ -119,6 +147,152 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
                 self._jump_to_burst(self.burst_id)
 
         self.param.watch(self._on_burst_id, "burst_id")
+        self._build_tz_display()
+        self._build_tz_time_panels()
+        # Refresh stable layout to include extra panels.
+        self._tz_layout = self._build_tz_layout()
+
+    def _build_tz_display(self) -> None:
+        """
+        Build a stable TZ overlay DynamicMap including the burst marker.
+
+        Using a stable DynamicMap here keeps Bokeh stream wiring (Tap/RangeX)
+        more reliable than dynamically multiplying Element overlays inside
+        `view_tz()` on each render.
+        """
+        burst_param_names = ["burst_id", "burst_t", "burst_z", "show_all_bursts_tz"]
+        burst_param_names = [p for p in burst_param_names if p in self.param]
+        self._burst_params = streams.Params(self, parameters=burst_param_names)
+        self._all_bursts_point_dm = hv.DynamicMap(
+            lambda **_: self._all_bursts_points_tz(), streams=[self._burst_params]
+        )
+        self._burst_point_dm = hv.DynamicMap(
+            lambda **_: self._burst_point_tz(), streams=[self._burst_params]
+        )
+        # Layer order: image + crosshair (parent) -> all bursts -> selected burst.
+        self._tz_display_dm = (
+            self._tz_display_dm * self._all_bursts_point_dm * self._burst_point_dm
+        )
+        # Rebuild the stable TZ layout now that we've extended _tz_display_dm.
+        self._tz_layout = self._build_tz_layout()
+
+    def _build_tz_time_panels(self) -> None:
+        panel_param_names = [
+            "burst_id",
+            "burst_x",
+            "burst_y",
+            "burst_t",
+            "burst_z",
+            "tz_time_panels",
+            "t_window",
+            "tz_width",
+            "tz_trace_height",
+            "tz_rate_height",
+            "burst_trace_bandwidth_hz",
+            "burst_rate_sigma_s",
+        ]
+        panel_param_names = [p for p in panel_param_names if p in self.param]
+        self._tz_panel_params = streams.Params(self, parameters=panel_param_names)
+
+        self._burst_trace_dm = hv.DynamicMap(self._burst_trace_curve, streams=[self._tz_panel_params])
+        self._burst_rate_dm = hv.DynamicMap(self._burst_rate_curve, streams=[self._tz_panel_params])
+
+    def _burst_trace_curve(self, **_):
+        if "burst_trace" not in list(getattr(self, "tz_time_panels", [])):
+            return hv.Curve([]).opts(height=1, width=int(self.tz_width), toolbar="disable")
+        if self.burst_x is None or self.burst_y is None or self.burst_z is None:
+            return hv.Text(0.5, 0.5, "No selected burst").opts(height=int(self.tz_trace_height), width=int(self.tz_width))
+
+        bw = float(getattr(self, "burst_trace_bandwidth_hz", 0.0) or 0.0)
+        if bw > 0:
+            z0 = float(self.burst_z) - bw / 2.0
+            z1 = float(self.burst_z) + bw / 2.0
+            slab = self.array.sel(x=self.burst_x, y=self.burst_y, method="nearest").sel(z=slice(z0, z1)).mean("z")
+            title = f"Band energy @ (x,y)=({self._fmt_val('x', self.burst_x)}, {self._fmt_val('y', self.burst_y)}), z∈[{z0:.2f},{z1:.2f}]"
+        else:
+            slab = self.array.sel(x=self.burst_x, y=self.burst_y, z=self.burst_z, method="nearest")
+            title = f"Trace @ (x,y,z)=({self._fmt_val('x', self.burst_x)}, {self._fmt_val('y', self.burst_y)}, {self._fmt_val('z', self.burst_z)})"
+
+        t = np.asarray(slab.t.values, dtype=float).reshape(-1)
+        v = np.asarray(slab.values, dtype=float).reshape(-1)
+        curve = hv.Curve((t, v), kdims=[self.hvdims["t"]], vdims=[self.vdim]).opts(
+            width=int(self.tz_width),
+            height=int(self.tz_trace_height),
+            title=title,
+            tools=["pan", "wheel_zoom", "reset"],
+            active_tools=["wheel_zoom"],
+            framewise=False,
+        )
+        if self.burst_t is not None:
+            curve = curve * hv.VLine(float(self.burst_t)).opts(color="red", line_width=2, alpha=0.8)
+
+        tb = self.param["t_window"].bounds
+        xlim = _clip_pair(*self.t_window, tb)
+        return curve.opts(xlim=xlim)
+
+    def _burst_rate_curve(self, **_):
+        if "burst_rate" not in list(getattr(self, "tz_time_panels", [])):
+            return hv.Curve([]).opts(height=1, width=int(self.tz_width), toolbar="disable")
+        if len(self.bursts) == 0 or "t" not in self.bursts.columns:
+            return hv.Text(0.5, 0.5, "No bursts").opts(height=int(self.tz_rate_height), width=int(self.tz_width))
+
+        tgrid = np.asarray(self.array.t.values, dtype=float).reshape(-1)
+        if tgrid.size < 2:
+            return hv.Curve([]).opts(height=1, width=int(self.tz_width), toolbar="disable")
+        dt = float(np.nanmedian(np.diff(tgrid)))
+        dt = dt if dt > 0 else 1.0
+
+        # Histogram bursts onto the array time grid.
+        bt = np.asarray(self.bursts["t"].values, dtype=float).reshape(-1)
+        idx = np.searchsorted(tgrid, bt, side="left")
+        idx = np.clip(idx, 0, tgrid.size - 1)
+        counts = np.zeros_like(tgrid, dtype=float)
+        np.add.at(counts, idx, 1.0)
+
+        # Convert to rate (bursts per second) and smooth.
+        rate = counts / dt
+        sigma_s = float(getattr(self, "burst_rate_sigma_s", 0.0) or 0.0)
+        if sigma_s > 0:
+            sigma = max(1e-9, sigma_s / dt)
+            rad = int(max(3, np.ceil(4.0 * sigma)))
+            x = np.arange(-rad, rad + 1, dtype=float)
+            k = np.exp(-0.5 * (x / sigma) ** 2)
+            k = k / np.sum(k)
+            rate = np.convolve(rate, k, mode="same")
+
+        curve = hv.Curve((tgrid, rate), kdims=[self.hvdims["t"]], vdims=[hv.Dimension("rate", label="Burst rate", unit="1/s")]).opts(
+            width=int(self.tz_width),
+            height=int(self.tz_rate_height),
+            title="Burst rate (smoothed)",
+            tools=["pan", "wheel_zoom", "reset"],
+            active_tools=["wheel_zoom"],
+            framewise=False,
+        )
+        if self.burst_t is not None:
+            curve = curve * hv.VLine(float(self.burst_t)).opts(color="red", line_width=2, alpha=0.6)
+
+        tb = self.param["t_window"].bounds
+        xlim = _clip_pair(*self.t_window, tb)
+        return curve.opts(xlim=xlim)
+
+    def _tz_extra_panels(self):
+        panels = []
+        if getattr(self, "_burst_trace_dm", None) is not None:
+            panels.append(self._burst_trace_dm)
+        if getattr(self, "_burst_rate_dm", None) is not None:
+            panels.append(self._burst_rate_dm)
+        return panels
+
+    def _all_bursts_points_tz(self):
+        if not bool(getattr(self, "show_all_bursts_tz", True)) or len(self.bursts) == 0:
+            return hv.Points([])
+        pts = hv.Points(
+            self.bursts[["t", "z"]],
+            kdims=[self.hvdims["t"], self.hvdims["z"]],
+        )
+        # Important: keep this layer passive (no tools) so it doesn't interfere
+        # with the Tap stream bound to the TZ image layer.
+        return pts.opts(color="#ffb000", size=6, alpha=0.45, line_width=0, tools=[])
 
     # --------------------------- burst helpers ---------------------------
     def _burst_row(self, burst_id: int) -> pd.Series:
@@ -146,6 +320,14 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
             t=float(row["t"]),
             z=float(row["z"]),
         )
+        # If following bursts, also recenter the time window so the RangeTool
+        # selection (and TZ x-range) jumps to the burst time.
+        if bool(getattr(self, "follow_burst", False)):
+            tb = self.param["t_window"].bounds
+            w = float(self.t_window[1] - self.t_window[0])
+            w = w if w > 0 else (tb[1] - tb[0]) * 0.1
+            tc = float(row["t"])
+            self.t_window = _clip_pair(tc - 0.5 * w, tc + 0.5 * w, tb)
 
     def _on_burst_id(self, event) -> None:
         if event.new is None or len(self.bursts) == 0:
@@ -180,26 +362,14 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         "clim",
         "use_datashader",
         "t_window",
+        "tz_width",
+        "ranger_height",
         "burst_id",
         "burst_t",
         "burst_z",
     )
     def view_tz(self):
-        tz_overlay = self._tz_target_dm * self._burst_point_tz()
-        # The displayed object is an overlay; ensure Tap listens on that exact object.
-        # Otherwise the Tap stream may remain bound to the underlying target DynamicMap
-        # and clicks won't propagate in some Panel/HoloViews compositions.
-        self.tap_tz.source = tz_overlay
-        # Keep t_window syncing tied to the actually displayed object.
-        if hasattr(self, "_rx"):
-            self._rx.source = tz_overlay
-
-        curve = self._range_curve.opts(
-            width=int(self.tz_width),
-            height=int(self.ranger_height),
-            xlim=self.t_window,
-        )
-        return (tz_overlay + curve).cols(1).opts(shared_axes=True)
+        return self._tz_layout
 
     @param.depends(
         "t",
@@ -257,7 +427,7 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         return pn.Row(
             pn.Param(
                 self,
-                parameters=["burst_id", "follow_burst"],
+                parameters=["burst_id", "follow_burst", "show_all_bursts_tz"],
                 show_name=False,
                 width=240,
             ),
@@ -269,13 +439,33 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
     def controls_panel(self):
         return pn.Column(
             super().controls_panel(),
+            pn.layout.Divider(),
+            pn.pane.Markdown("### Time Panels"),
+            pn.Param(
+                self,
+                parameters=[
+                    "tz_time_panels",
+                    "tz_trace_height",
+                    "tz_rate_height",
+                    "burst_trace_bandwidth_hz",
+                    "burst_rate_sigma_s",
+                ],
+                show_name=False,
+                width=int(self.tz_width),
+            ),
         )
 
     def panel_app(self):
-        tz_total_height = int(self.tz_height + self.ranger_height + 80)
+        tz_total_height = int(
+            self.tz_height
+            + self.ranger_height
+            + (self.tz_trace_height if "burst_trace" in list(self.tz_time_panels) else 1)
+            + (self.tz_rate_height if "burst_rate" in list(self.tz_time_panels) else 1)
+            + 120
+        )
         xy_total_height = int(self.xy_height + 80)
         tz_pane = pn.pane.HoloViews(
-            self.view_tz,
+            self._tz_layout,
             width=int(self.tz_width),
             height=tz_total_height,
             sizing_mode="fixed",
@@ -319,3 +509,45 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
             margin=0,
             styles={"gap": "12px"},
         )
+
+
+def main() -> None:
+    """
+    Debug entrypoint: run a small demo app.
+
+    This intentionally mirrors the docstring example but lives in a callable so
+    it can be used via ``python -m cogpy.core.plot.orthoslicer_bursts``.
+    """
+    from cogpy.datasets.tensor import make_flat_blob_dataset, detect_bursts_hmaxima
+
+    pn.extension()
+    hv.extension("bokeh")
+
+    da = make_flat_blob_dataset(
+        duration=2.0,
+        nt=80,
+        n_peaks=5,
+        peak_dist="uniform",
+        blob_sigma_idx=(0.8, 0.8, 2.0, 0.8),
+        blob_amp=10.0,
+        seed=0,
+    )
+    bursts = detect_bursts_hmaxima(da, h_quantile=0.99)
+
+    dx = ("ml", hv.Dimension("x", label="Medial-Lateral", unit="mm"))
+    dy = ("ap", hv.Dimension("y", label="Anterior-Posterior", unit="mm"))
+    dt = ("time", hv.Dimension("t", label="Time", unit="s"))
+    dz = ("freq", hv.Dimension("z", label="Frequency", unit="Hz"))
+
+    slicer = OrthoSlicerRangerBursts(da, bursts=bursts, dt=dt, dz=dz, dy=dy, dx=dx)
+    slicer.tz_logy = True
+
+    # Debug: print tap events to the console.
+    slicer.tap_xy.add_subscriber(lambda **kw: print("tap_xy", kw))
+    slicer.tap_tz.add_subscriber(lambda **kw: print("tap_tz", kw))
+
+    slicer.panel_app().show()
+
+
+if __name__ == "__main__":
+    main()

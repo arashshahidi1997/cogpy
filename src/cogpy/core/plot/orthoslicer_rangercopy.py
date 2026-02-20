@@ -57,6 +57,7 @@ import param
 import datashader as ds
 from holoviews.operation.datashader import rasterize
 from holoviews import streams
+from holoviews.plotting.links import RangeToolLink
 
 # If you have this locally, keep it; otherwise replace with your own time player
 from ..plot.time_player import PlayerWithRealTime
@@ -78,6 +79,42 @@ def _clip_pair(lo, hi, bounds):
 
 def nearest_sel(dimx, val):
     return dimx.sel({dimx.name: val}, method="nearest").item()
+
+
+def _safe_quantile_clim(values: np.ndarray, qlo: float, qhi: float, fallback):
+    vals = np.asarray(values, dtype=float)
+    if vals.size == 0:
+        return fallback
+    try:
+        lo, hi = np.nanpercentile(vals, [qlo, qhi])
+        lo, hi = float(lo), float(hi)
+    except Exception:
+        return fallback
+    if not np.isfinite(lo) or not np.isfinite(hi):
+        return fallback
+    if lo == hi:
+        eps = abs(lo) * 1e-9 if lo != 0 else 1e-9
+        hi = lo + eps
+    return (lo, hi)
+
+
+def _set_active_scroll_wheel_zoom(plot, _element):
+    """
+    Make scroll-wheel zoom the active scroll tool without disabling Tap.
+
+    Bokeh distinguishes between "active_tap" and "active_scroll". HoloViews'
+    `active_tools` doesn't reliably configure scroll vs. tap when both are listed,
+    so we set the scroll tool explicitly via a hook.
+    """
+    try:
+        from bokeh.models import WheelZoomTool
+
+        fig = plot.state
+        wz = next((t for t in fig.toolbar.tools if isinstance(t, WheelZoomTool)), None)
+        if wz is not None:
+            fig.toolbar.active_scroll = wz
+    except Exception:
+        return
 
 
 class OrthoSlicerRanger(param.Parameterized):
@@ -104,6 +141,31 @@ class OrthoSlicerRanger(param.Parameterized):
     clim = param.Range(label="Color Limits")
     t_window = param.Range(label="Time window")  # selection on X (time)
     tz_logy = param.Boolean(default=False, label="Log Frequency Axis")
+    use_range_tool = param.Boolean(default=True, label="Range Selector")
+
+    # Adaptive color scaling (separate for TZ vs XY)
+    tz_autoscale = param.Boolean(
+        default=False,
+        label="Auto clim (TZ)",
+        doc="Autoscale TZ color limits from current TZ slice quantiles.",
+    )
+    xy_autoscale = param.Boolean(
+        default=False,
+        label="Auto clim (XY)",
+        doc="Autoscale XY color limits from current XY slice quantiles.",
+    )
+    tz_clim_quantiles = param.Range(
+        default=(2.0, 98.0),
+        bounds=(0.0, 100.0),
+        label="TZ quantiles (%)",
+        doc="Low/high percentiles for TZ autoscaling.",
+    )
+    xy_clim_quantiles = param.Range(
+        default=(2.0, 98.0),
+        bounds=(0.0, 100.0),
+        label="XY quantiles (%)",
+        doc="Low/high percentiles for XY autoscaling.",
+    )
 
     # plot sizing (used for both HoloViews opts and datashader rasterization)
     tz_width = param.Integer(default=400, bounds=(200, None), label="TZ Width")
@@ -264,6 +326,8 @@ class OrthoSlicerRanger(param.Parameterized):
             "clim",
             "use_datashader",
             "tz_logy",
+            "tz_autoscale",
+            "tz_clim_quantiles",
             "tz_width",
             "tz_height",
         ]
@@ -273,13 +337,16 @@ class OrthoSlicerRanger(param.Parameterized):
         self._tz_params = streams.Params(self, parameters=tz_param_names)
 
         # 2) STABLE DynamicMaps (never recreate in views)
+        #
+        # IMPORTANT: Bind interactive streams (Tap/RangeX) to a *single Element*
+        # DynamicMap (the image). Using an Overlay/Layout as a stream source is
+        # fragile in HoloViews and can cause Tap events to never reach Python.
         self._tz_img_dm = hv.DynamicMap(self._tz_img, streams=[self._tz_params])
         self._tz_xhair_dm = hv.DynamicMap(self._tz_crosshair, streams=[self._tz_params])
-        # Target displayed in the UI (use this as the canonical source for links/streams)
-        self._tz_target_dm = self._tz_img_dm * self._tz_xhair_dm
+        self._tz_display_dm = self._tz_img_dm * self._tz_xhair_dm
 
         # 3) Track visible x-range; keep t_window in sync
-        self._rx = streams.RangeX(source=self._tz_target_dm)
+        self._rx = streams.RangeX(source=self._tz_img_dm)
 
         def _on_range_x(x_range):
             if x_range:
@@ -288,14 +355,75 @@ class OrthoSlicerRanger(param.Parameterized):
 
         self._rx.add_subscriber(lambda **kw: _on_range_x(kw.get("x_range")))
 
-        # 4) One static curve instance (plotted under TZ; shared time axis)
+        # 4) Static curve – one Bokeh figure, never recreated.
+        #    DO NOT set xlim here: shared_axes=True in the Layout links the
+        #    x-ranges of both Bokeh figures entirely in the browser.  As soon
+        #    as you set an explicit xlim the Bokeh range is locked and the
+        #    shared-axes link stops working.
         self._range_curve = hv.Curve(self.rangeslider_sig, kdims=["t"]).opts(
-            width=int(self.tz_width), height=int(self.ranger_height), tools=[]
+            width=int(self.tz_width),
+            height=int(self.ranger_height),
+            tools=[],
+            default_tools=[],
+            framewise=False,
         )
+        if bool(getattr(self, "use_range_tool", False)):
+            # In RangeTool mode, keep the overview curve full-range so the
+            # selector box remains meaningful.
+            self._range_curve = self._range_curve.opts(xlim=self.param["t"].bounds)
 
-        # 5) Tap bound to the STABLE DynamicMap
-        self.tap_tz = streams.Tap(source=self._tz_target_dm, x=None, y=None)
+        # 5) Optional RangeToolLink: pick a time window on the curve and link it
+        #    to the TZ image x-range. Keep a reference to avoid GC.
+        self._rtl = None
+        if bool(getattr(self, "use_range_tool", False)):
+            self._rtl = RangeToolLink(
+                self._range_curve,
+                self._tz_img_dm,
+                axes=["x"],
+                boundsx=self.t_window,
+            )
+            # Keep the selector bounds synced to the current t_window param even
+            # though the layout is stable and view_tz() is non-reactive.
+            def _sync_bounds(_event=None):
+                tb = self.param["t_window"].bounds
+                self._rtl.boundsx = _clip_pair(*self.t_window, tb)
+
+            self.param.watch(lambda _e: _sync_bounds(), "t_window")
+
+        # 6) Tap bound to the clickable image layer (not the overlay)
+        self.tap_tz = streams.Tap(source=self._tz_img_dm, x=None, y=None)
         self.tap_tz.add_subscriber(self._on_tap_tz)
+
+        # 7) Build the stable TZ composite once. The DynamicMaps update in-place
+        # (crosshair, image slices, etc.) without needing Panel to replace the
+        # underlying Bokeh model (which can break stream callbacks).
+        self._tz_layout = self._build_tz_layout()
+
+    def _build_tz_layout(self):
+        """
+        Build the TZ composite (TZ view + overview curve) as a stable object.
+
+        Returning brand-new Layout objects on every param update can lead Panel
+        to replace the Bokeh model repeatedly. That replacement is a common
+        source of broken HoloViews streams/callbacks (e.g., Tap/RangeX), showing
+        up as 'NoneType has no attribute comm' in Bokeh/holoviews callbacks.
+        """
+        panels = [self._tz_display_dm, self._range_curve]
+        panels.extend(self._tz_extra_panels())
+
+        layout = hv.Layout(panels).cols(1)
+
+        if getattr(self, "_rtl", None) is not None and bool(getattr(self, "use_range_tool", False)):
+            # RangeTool mode: selector box on the curve controls TZ x-range.
+            # Merge toolbars so RangeTool stays attached to the curve only.
+            return layout.opts(merge_tools=True)
+
+        # Shared-axes mode: curve mirrors TZ x-range client-side (no selector).
+        return layout.opts(shared_axes=True)
+
+    def _tz_extra_panels(self):
+        """Extra time panels shown underneath the overview curve."""
+        return []
 
     # ----------------------------- core plots --------------------------------
     def _fmt_val(self, dim, val):
@@ -324,6 +452,11 @@ class OrthoSlicerRanger(param.Parameterized):
             img, kdims=[self.hvdims["t"], self.hvdims["z"]], vdims=[self.vdim]
         )
 
+        clim = self.clim
+        if bool(getattr(self, "tz_autoscale", False)):
+            qlo, qhi = self.tz_clim_quantiles
+            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
+
         if self.use_datashader:
             base = rasterize(
                 base,
@@ -337,13 +470,15 @@ class OrthoSlicerRanger(param.Parameterized):
             cmap="Viridis",
             colorbar=True,
             title=self._title_tz(),
-            clim=self.clim,
+            clim=clim,
             width=width,
             height=height,
             framewise=False,  # keep ranges stable across frames
             logy=bool(self.tz_logy),
             tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
+            # Keep tap active for crosshair movement; configure scroll-wheel zoom via hook.
             active_tools=["tap"],
+            hooks=[_set_active_scroll_wheel_zoom],
         )
 
     # --------------------------- public HV views ------------------------------
@@ -354,27 +489,23 @@ class OrthoSlicerRanger(param.Parameterized):
         "y",
         "clim",
         "use_datashader",
-        "t_window",
         "tz_width",
         "ranger_height",
     )
     def view_tz(self):
-        # Render stable DMs; do not recreate streams here.
-        # Plot the 1D time-summary curve with the same x-window.
-        curve = self._range_curve.opts(
-            width=int(self.tz_width),
-            height=int(self.ranger_height),
-            xlim=self.t_window,
-        )
-        return (self._tz_target_dm + curve).cols(1).opts(shared_axes=True)
+        return self._tz_layout
 
-    @param.depends("t", "z", "x", "y", "clim", "use_datashader")
+    @param.depends("t", "z", "x", "y", "clim", "use_datashader", "xy_autoscale", "xy_clim_quantiles")
     def view_xy(self):
         width, height = int(self.xy_width), int(self.xy_height)
         img = self.array.sel(t=self.t, z=self.z, method="nearest")
         base = hv.Image(
             img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim]
         )
+        clim = self.clim
+        if bool(getattr(self, "xy_autoscale", False)):
+            qlo, qhi = self.xy_clim_quantiles
+            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
         if self.use_datashader:
             base = rasterize(
                 base,
@@ -388,7 +519,7 @@ class OrthoSlicerRanger(param.Parameterized):
             colorbar=True,
             framewise=True,
             title=self._title_xy(),
-            clim=self.clim,
+            clim=clim,
             width=width,
             height=height,
             tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
@@ -416,6 +547,10 @@ class OrthoSlicerRanger(param.Parameterized):
             "y",
             "z",
             "clim",
+            "tz_autoscale",
+            "tz_clim_quantiles",
+            "xy_autoscale",
+            "xy_clim_quantiles",
             "use_datashader",
             "tz_logy",
             "merge_tools",
@@ -426,6 +561,10 @@ class OrthoSlicerRanger(param.Parameterized):
             "y": pn.widgets.DiscreteSlider(options=y_vals, name=self.oy),
             "z": pn.widgets.DiscreteSlider(options=z_vals, name=self.oz),
             "clim": pn.widgets.RangeSlider,
+            "tz_autoscale": pn.widgets.Checkbox,
+            "xy_autoscale": pn.widgets.Checkbox,
+            "tz_clim_quantiles": pn.widgets.RangeSlider,
+            "xy_clim_quantiles": pn.widgets.RangeSlider,
             "use_datashader": pn.widgets.Checkbox,
         }
         if "tz_logy" in control_params:
@@ -489,9 +628,7 @@ class OrthoSlicerRanger(param.Parameterized):
         └─ Controls (bottom)
         Right: XY orthoslice
         """
-        tz_pane = pn.pane.HoloViews(
-            self.view_tz, width=400, height=420, sizing_mode="fixed"
-        )
+        tz_pane = pn.pane.HoloViews(self._tz_layout, width=400, height=420, sizing_mode="fixed")
         xy_pane = pn.pane.HoloViews(
             self.view_xy, width=400, height=300, sizing_mode="fixed"
         )
