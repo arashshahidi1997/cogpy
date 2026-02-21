@@ -2,6 +2,213 @@ import panel as pn
 import param
 
 
+class TimeHair(param.Parameterized):
+    """
+    Clickable time hair (vertical line) for HoloViews plots.
+
+    Attach to a ``hv.Curve`` (or any element with a time kdim) to add a movable
+    vertical line that follows click/tap events. The selected time is stored in
+    ``.t`` and can be linked to other widgets/logic via Param watchers.
+    """
+
+    t = param.Parameter(default=None, doc="Selected time coordinate.")
+    snap = param.Boolean(
+        default=True,
+        doc="If True, snap taps to the nearest available time coordinate.",
+    )
+
+    def __init__(self, *, t=None, snap=True, snap_values=None, **params):
+        super().__init__(**params)
+        self.t = t
+        self.snap = bool(snap)
+        self._snap_values = snap_values  # optional explicit snapping grid
+        self._tap_streams = []
+
+    @staticmethod
+    def _dimension_names(element) -> list[str]:
+        names = []
+        for d in getattr(element, "kdims", []) + getattr(element, "vdims", []):
+            names.append(getattr(d, "name", str(d)))
+        return names
+
+    @staticmethod
+    def _build_snapper(values):
+        import numpy as np
+
+        vals = np.asarray(values)
+        if vals.size == 0:
+            return None
+
+        if vals.dtype == object:
+            # Try to coerce common cases (python datetime, floats-as-objects).
+            try:
+                vals = vals.astype("datetime64[ns]")
+            except Exception:
+                try:
+                    vals = vals.astype(float)
+                except Exception:
+                    return None
+
+        # Work with a sorted view for fast nearest lookup.
+        if np.issubdtype(vals.dtype, np.datetime64):
+            order = np.argsort(vals.astype("datetime64[ns]").astype("int64"))
+        else:
+            order = np.argsort(vals.astype(float))
+        vals_sorted = vals[order]
+
+        if np.issubdtype(vals_sorted.dtype, np.datetime64):
+            key = vals_sorted.astype("datetime64[ns]").astype("int64")
+
+            def snap(x):
+                try:
+                    x64 = np.datetime64(x, "ns").astype("int64")
+                except Exception:
+                    return x
+                idx = int(np.searchsorted(key, x64))
+                if idx <= 0:
+                    return vals_sorted[0]
+                if idx >= key.size:
+                    return vals_sorted[-1]
+                return vals_sorted[idx - 1] if (x64 - key[idx - 1]) <= (key[idx] - x64) else vals_sorted[idx]
+
+            return snap
+
+        key = vals_sorted.astype(float)
+
+        def snap(x):
+            try:
+                xf = float(x)
+            except Exception:
+                return x
+            idx = int(np.searchsorted(key, xf))
+            if idx <= 0:
+                return float(vals_sorted[0])
+            if idx >= key.size:
+                return float(vals_sorted[-1])
+            return float(vals_sorted[idx - 1]) if (xf - key[idx - 1]) <= (key[idx] - xf) else float(vals_sorted[idx])
+
+        return snap
+
+    def _infer_snap_values(self, obj, time_kdim: str):
+        if self._snap_values is not None:
+            return self._snap_values
+
+        import holoviews as hv
+
+        # Find the first element that actually has the requested kdim.
+        for el in obj.traverse(lambda x: x, specs=hv.Element):
+            kdim_names = [getattr(d, "name", str(d)) for d in getattr(el, "kdims", [])]
+            if time_kdim in kdim_names:
+                try:
+                    vals = el.dimension_values(time_kdim)
+                except Exception:
+                    continue
+                # Avoid pathological memory use for huge arrays.
+                if getattr(vals, "size", 0) and int(vals.size) <= 2_000_000:
+                    self._snap_values = vals
+                    return vals
+        return None
+
+    def attach(
+        self,
+        obj,
+        *,
+        time_kdim: str = "time",
+        ensure_tap_tools: bool = True,
+        tools: list[str] | None = None,
+        active_tools: list[str] | None = None,
+        line_color: str = "white",
+        line_width: int = 2,
+        line_alpha: float = 0.9,
+    ):
+        """
+        Return a new HoloViews object with an interactive time hair.
+
+        Parameters
+        ----------
+        obj
+            A ``hv.Element`` (e.g. ``hv.Curve``) or a container (``Layout``,
+            ``Overlay``, ``DynamicMap``) containing elements with ``time_kdim``.
+        time_kdim
+            Name of the time key dimension to attach tap behavior to.
+        ensure_tap_tools
+            If True, applies a basic toolset including ``tap`` so clicks work
+            even if the incoming element did not declare tools.
+        """
+        import holoviews as hv
+        from holoviews import streams
+
+        snap_values = self._infer_snap_values(obj, time_kdim) if bool(self.snap) else None
+        snapper = self._build_snapper(snap_values) if snap_values is not None and bool(self.snap) else None
+
+        if self.t is None and snap_values is not None and getattr(snap_values, "size", 0):
+            self.t = snap_values[0].item() if hasattr(snap_values[0], "item") else snap_values[0]
+
+        params_stream = streams.Params(self, ["t"])
+
+        def _hair(t=None, **_):
+            if t is None:
+                # Hidden placeholder to keep overlay type stable.
+                return hv.VLine(0).opts(alpha=0.0, line_width=0)
+            return hv.VLine(t).opts(
+                color=str(line_color),
+                line_width=int(line_width),
+                alpha=float(line_alpha),
+            )
+
+        hair_dm = hv.DynamicMap(_hair, streams=[params_stream])
+
+        if tools is None:
+            tools = ["tap", "pan", "wheel_zoom", "box_zoom", "reset"]
+        if active_tools is None:
+            active_tools = ["tap"]
+
+        def _on_tap(**kwargs):
+            x = kwargs.get("x")
+            if x is None:
+                return
+            self.t = snapper(x) if snapper is not None else x
+
+        def _decorate(el):
+            kdim_names = [getattr(d, "name", str(d)) for d in getattr(el, "kdims", [])]
+            if time_kdim not in kdim_names:
+                return el
+
+            el2 = el
+            if bool(ensure_tap_tools):
+                el2 = el2.opts(tools=list(tools), active_tools=list(active_tools))
+
+            tap = streams.Tap(source=el2, x=None, y=None)
+            tap.add_subscriber(_on_tap)
+            self._tap_streams.append(tap)
+            return el2 * hair_dm
+
+        if isinstance(obj, hv.Element):
+            return _decorate(obj)
+        return obj.map(_decorate, specs=hv.Element)
+
+
+def add_time_hair(
+    obj,
+    *,
+    time_kdim: str = "time",
+    t=None,
+    snap: bool = True,
+    return_controller: bool = False,
+    **attach_kwargs,
+):
+    """
+    Convenience wrapper around :class:`TimeHair`.
+
+    Returns
+    -------
+    hv object (and optionally the TimeHair controller)
+    """
+    controller = TimeHair(t=t, snap=snap)
+    out = controller.attach(obj, time_kdim=time_kdim, **attach_kwargs)
+    return (out, controller) if bool(return_controller) else out
+
+
 class PlayerWithRealTime(param.Parameterized):
     interval = param.Integer(default=200, bounds=(50, 2000), doc="ms per step")
     speed = param.Number(default=5, bounds=(0.1, 20), doc="Real-time speed multiplier")
