@@ -107,6 +107,27 @@ def compute_feature_maps_for_window(
     return out
 
 
+def compute_raw_feature_maps_for_window(
+    block: np.ndarray,
+    *,
+    specs: list[FeatureSpec] = DEFAULT_FEATURE_SPECS,
+    adjacency: Any,
+) -> dict[str, np.ndarray]:
+    neighbors = neighbors_from_adjacency(adjacency, n_nodes=int(np.prod(block.shape[:2])))
+    out: dict[str, np.ndarray] = {}
+
+    for spec in specs:
+        if spec.name == "anticorrelation":
+            out[spec.name] = spatial_anticorrelation(block, neighbors=neighbors)
+            continue
+
+        raw = _raw_feature(block, spec.name).astype(np.float64, copy=False)
+        flat = raw.reshape(-1)
+
+        out[spec.name] = raw
+
+    return out
+    
 def compute_features_sliding(
     x: np.ndarray,
     *,
@@ -114,6 +135,7 @@ def compute_features_sliding(
     window_step: int,
     specs: list[FeatureSpec] = DEFAULT_FEATURE_SPECS,
     adjacency: Any,
+    raw=False
 ) -> tuple[np.ndarray, list[str], np.ndarray]:
     if x.ndim != 3:
         raise ValueError("Expected x shaped (AP, ML, time)")
@@ -135,7 +157,10 @@ def compute_features_sliding(
     for widx in iterator:
         start = int(widx * window_step)
         block = x[:, :, start : start + window_size]
-        maps = compute_feature_maps_for_window(block, specs=specs, adjacency=adjacency)
+        if raw:
+            maps = compute_raw_feature_maps_for_window(block, specs=specs, adjacency=adjacency)
+        else:
+            maps = compute_feature_maps_for_window(block, specs=specs, adjacency=adjacency)
         for fidx, name in enumerate(feature_names):
             feat[fidx, :, :, widx] = maps[name].astype(np.float32, copy=False)
 

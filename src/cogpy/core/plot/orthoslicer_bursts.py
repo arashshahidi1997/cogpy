@@ -95,9 +95,9 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
     ranger_height = param.Integer(default=120, bounds=(60, None), label="Ranger Height")
 
     follow_burst = param.Boolean(
-        default=False,
+        default=True,
         label="Follow burst",
-        doc="If True, selecting a burst also jumps the slicer crosshair to it.",
+        doc="If True, selecting a burst jumps the (x,y,z) crosshairs to it and recenters the time window around the burst time (without changing `t`).",
     )
     show_all_bursts_tz = param.Boolean(
         default=True,
@@ -330,20 +330,19 @@ class OrthoSlicerRangerBursts(OrthoSlicerRanger):
         updates = dict(
             x=float(row["x"]),
             y=float(row["y"]),
-            t=float(row["t"]),
             z=float(row["z"]),
         )
-        # If following bursts, also recenter the time window so the RangeTool
-        # selection (and TZ x-range) jumps to the burst time.
-        if bool(getattr(self, "follow_burst", False)):
-            tb = self.param["t_window"].bounds
-            tc = float(row["t"])
-            if bool(getattr(self, "reset_zoom_on_navigation", False)):
-                updates["t_window"] = self._default_window_around(tc)
-            else:
-                w = float(self.t_window[1] - self.t_window[0])
-                w = w if w > 0 else (tb[1] - tb[0]) * 0.1
-                updates["t_window"] = _clip_pair(tc - 0.5 * w, tc + 0.5 * w, tb)
+        # Recenter the time window so the RangeTool selection (and TZ x-range)
+        # jumps to the burst time, but do not force the global time cursor `t`
+        # to jump as well.
+        tb = self.param["t_window"].bounds
+        tc = float(row["t"])
+        if bool(getattr(self, "reset_zoom_on_navigation", False)):
+            updates["t_window"] = self._default_window_around(tc)
+        else:
+            w = float(self.t_window[1] - self.t_window[0])
+            w = w if w > 0 else (tb[1] - tb[0]) * 0.1
+            updates["t_window"] = _clip_pair(tc - 0.5 * w, tc + 0.5 * w, tb)
 
         self.param.update(**updates)
 

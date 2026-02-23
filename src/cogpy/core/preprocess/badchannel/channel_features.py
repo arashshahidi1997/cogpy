@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import numpy as np
 import scipy.ndimage as nd
+import xarray as xr
+
+from cogpy.core.utils.sliding_core import running_blockwise_xr, running_reduce_xr
 
 EPS = 1e-12
 
@@ -59,3 +62,159 @@ def temporal_mean_laplacian(arr: np.ndarray) -> np.ndarray:
         mode="mirror",
     )
     return np.mean(np.abs(a_laplacian), axis=-1)
+
+
+DEFAULT_FEATURES: tuple[str, ...] = (
+    "relative_variance",
+    "deviation",
+    "amplitude",
+    "time_derivative",
+    "hurst_exponent",
+    "kurtosis",
+)
+
+
+def _feature_func(name: str):
+    if name == "relative_variance":
+        return relative_variance
+    if name == "deviation":
+        return deviation
+    if name == "amplitude":
+        return amplitude
+    if name == "time_derivative":
+        return time_derivative
+    if name == "hurst_exponent":
+        return hurst_exponent
+    if name == "kurtosis":
+        return kurtosis
+    if name == "temporal_mean_laplacian":
+        return temporal_mean_laplacian
+    raise KeyError(f"Unknown feature: {name}")
+
+
+def extract_channel_features_xr(
+    xsig: xr.DataArray,
+    *,
+    features: list[str] | tuple[str, ...] | None = None,
+    time_dim: str = "time",
+    window_size: int | None = None,
+    window_step: int | None = None,
+    out_dim: str = "time_win",
+    center_method: str = "midpoint",
+    progress: bool = True,
+) -> xr.Dataset:
+    """Extract per-channel temporal features into an ``xr.Dataset``.
+
+    Parameters
+    ----------
+    xsig
+        Input signal. Common ECoG schemas are supported, e.g. dims:
+        - ``(time, ch)``
+        - ``(time, AP, ML)``
+        The feature functions reduce along ``time_dim``.
+    features
+        Names of features to compute. Defaults to ``DEFAULT_FEATURES``.
+        Include ``"temporal_mean_laplacian"`` only for grid signals that include
+        ``AP`` and ``ML`` dims.
+    window_size, window_step
+        If both are provided, computes *windowed* features over sliding windows,
+        returning variables with ``out_dim`` instead of ``time_dim``.
+        If omitted, computes one feature map over the full recording.
+    out_dim
+        Name of the window/time output dimension when windowing.
+    center_method
+        Passed to sliding_core window center helpers, default ``"midpoint"``.
+    progress
+        Progress bar toggle (only affects blockwise features when windowing).
+    """
+    if not isinstance(xsig, xr.DataArray):
+        raise TypeError("extract_channel_features_xr expects an xarray.DataArray")
+    if time_dim not in xsig.dims:
+        raise ValueError(f"time_dim={time_dim!r} not in xsig.dims={tuple(xsig.dims)}")
+
+    feats = list(DEFAULT_FEATURES if features is None else features)
+    if window_size is None and window_step is not None:
+        raise ValueError("Provide both window_size and window_step, or neither.")
+    if window_size is not None and window_step is None:
+        raise ValueError("Provide both window_size and window_step, or neither.")
+
+    ds_vars: dict[str, xr.DataArray] = {}
+    for name in feats:
+        func = _feature_func(name)
+
+        if window_size is None:
+            if name == "temporal_mean_laplacian":
+                if "AP" not in xsig.dims or "ML" not in xsig.dims:
+                    raise ValueError("temporal_mean_laplacian requires dims ('AP','ML',time).")
+                da = xr.apply_ufunc(
+                    temporal_mean_laplacian,
+                    xsig,
+                    input_core_dims=[["AP", "ML", time_dim]],
+                    output_core_dims=[["AP", "ML"]],
+                    vectorize=True,
+                    dask="parallelized",
+                    output_dtypes=[np.float64],
+                )
+            else:
+                axis = xsig.get_axis_num(time_dim)
+
+                def _wrapped(x: np.ndarray, *, axis: int = -1) -> np.ndarray:
+                    return func(x, axis=axis)
+
+                da = xr.apply_ufunc(
+                    _wrapped,
+                    xsig,
+                    input_core_dims=[[time_dim]],
+                    output_core_dims=[[]],
+                    vectorize=True,
+                    kwargs={"axis": axis},
+                    dask="parallelized",
+                    output_dtypes=[np.float64],
+                )
+            da.name = name
+            ds_vars[name] = da
+            continue
+
+        # windowed features
+        if name == "temporal_mean_laplacian":
+            da = running_blockwise_xr(
+                xsig,
+                int(window_size),
+                int(window_step),
+                temporal_mean_laplacian,
+                run_dim=time_dim,
+                out_dim=out_dim,
+                center_method=center_method,
+                progress=bool(progress),
+            )
+        else:
+            da = running_reduce_xr(
+                xsig,
+                int(window_size),
+                int(window_step),
+                lambda a, axis=-1: func(a, axis=axis),
+                run_dim=time_dim,
+                out_dim=out_dim,
+                center_method=center_method,
+            )
+        da.name = name
+        ds_vars[name] = da
+
+    ds = xr.Dataset(ds_vars)
+    ds.attrs.update(dict(xsig.attrs))
+    ds.attrs.update(
+        {
+            "time_dim": str(time_dim),
+            "features": list(feats),
+        }
+    )
+    if window_size is not None:
+        ds.attrs.update(
+            {
+                "window_size": int(window_size),
+                "window_step": int(window_step),
+                "out_dim": str(out_dim),
+                "center_method": str(center_method),
+            }
+        )
+    return ds

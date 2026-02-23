@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 import zarr
+from typing import Any
 from functools import partial
 from pathlib import Path
 from dask.diagnostics import ProgressBar
@@ -32,6 +33,201 @@ FEATURE_NAMES = [
     "hurst_exponent",
     "temporal_mean_laplacian",
 ]
+
+def _stack_channel_dims(
+    da: xr.DataArray,
+    *,
+    time_dim: str,
+    ch_dim: str = "ch",
+    spatial_dims: tuple[str, ...] = ("AP", "ML"),
+) -> xr.DataArray:
+    """Return a view with dims ``(time_dim, ch_dim)`` when possible."""
+    if time_dim not in da.dims:
+        raise ValueError(f"time_dim={time_dim!r} not in da.dims={tuple(da.dims)}")
+
+    if ch_dim in da.dims:
+        out = da.transpose(time_dim, ch_dim)
+        return out
+
+    stack_dims = [d for d in spatial_dims if d in da.dims]
+    if len(stack_dims) == 0:
+        # last resort: stack everything except time_dim
+        stack_dims = [d for d in da.dims if d != time_dim]
+    if len(stack_dims) == 0:
+        raise ValueError("Cannot infer channel dims to stack.")
+
+    out = da.stack({ch_dim: tuple(stack_dims)}).transpose(time_dim, ch_dim)
+    return out
+
+
+def feature_distribution_image(
+    da: xr.DataArray,
+    *,
+    time_dim: str = "time_win",
+    ch_dim: str = "ch",
+    spatial_dims: tuple[str, ...] = ("AP", "ML"),
+    bins: int = 80,
+    bin_range: tuple[float, float] | None = None,
+    density: bool = True,
+    title: str | None = None,
+    width: int = 450,
+    height: int = 350,
+) -> "Any":
+    """Visualize per-channel feature distributions as an ``hv.Image``.
+
+    Each row corresponds to a channel and contains a 1D histogram over time.
+
+    Parameters
+    ----------
+    da
+        Feature DataArray. Common shapes:
+        - ``(time_win, AP, ML)``
+        - ``(time_win, ch)``
+    time_dim
+        The dimension over which the distribution is computed.
+    bins, bin_range, density
+        Passed to ``np.histogram``.
+    """
+    import holoviews as hv
+
+    hv.extension("bokeh", logo=False)
+
+    x = _stack_channel_dims(da, time_dim=time_dim, ch_dim=ch_dim, spatial_dims=spatial_dims)
+    vals = np.asarray(x.values)  # (time, ch)
+    if vals.ndim != 2:
+        raise ValueError(f"Expected stacked array as (time, ch), got {vals.shape}")
+    n_time, n_ch = vals.shape
+
+    if bin_range is None:
+        finite = vals[np.isfinite(vals)]
+        if finite.size == 0:
+            bin_range = (0.0, 1.0)
+        else:
+            vmin = float(np.nanmin(finite))
+            vmax = float(np.nanmax(finite))
+            if not np.isfinite(vmin) or not np.isfinite(vmax) or vmin == vmax:
+                vmin, vmax = 0.0, 1.0
+            bin_range = (vmin, vmax)
+
+    edges = np.linspace(float(bin_range[0]), float(bin_range[1]), int(bins) + 1)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+
+    H = np.zeros((n_ch, int(bins)), dtype=float)
+    for i in range(n_ch):
+        h, _ = np.histogram(vals[:, i], bins=edges, density=bool(density))
+        H[i, :] = h
+
+    img = hv.Image(
+        (centers, np.arange(n_ch, dtype=int), H),
+        kdims=[hv.Dimension("value_bin"), hv.Dimension("ch")],
+        vdims=[hv.Dimension("density" if density else "count")],
+    ).opts(
+        title=(title if title is not None else (da.name or "feature")),
+        xlabel="Value",
+        ylabel="Channel",
+        width=int(width),
+        height=int(height),
+        colorbar=True,
+        cmap="viridis",
+        toolbar="above",
+    )
+    return img
+
+
+def feature_distribution_images(
+    ds: xr.Dataset,
+    *,
+    features: list[str] | None = None,
+    time_dim: str = "time_win",
+    shared_axes: bool = False,
+    **kwargs,
+) -> "Any":
+    """Return a HoloViews layout of distribution images for a feature Dataset."""
+    import holoviews as hv
+
+    hv.extension("bokeh", logo=False)
+    names = list(ds.data_vars) if features is None else list(features)
+    imgs = [feature_distribution_image(ds[name], time_dim=time_dim, title=name, **kwargs) for name in names]
+    # Important: different features typically have different bin ranges. If axes
+    # are shared, images can render "empty" when their x-coordinates fall outside
+    # the shared range determined by another plot.
+    return hv.Layout(imgs).cols(1).opts(shared_axes=bool(shared_axes))
+
+
+def feature_grid_movie_holomap(
+    ds: xr.Dataset,
+    *,
+    features: list[str] | None = None,
+    time_dim: str = "time_win",
+    y_dim: str = "AP",
+    x_dim: str = "ML",
+    with_time_curve: bool = True,
+    normalize_index: bool = True,
+    width: int = 400,
+    height: int = 350,
+    curve_height: int = 120,
+    cmap: str = "viridis",
+    symmetric: bool = False,
+    colorbar: bool = True,
+    snap: bool = True,
+) -> Any:
+    """Return a HoloMap of grid movies for each feature in a Dataset.
+
+    This is intended for windowed feature datasets such as outputs of the
+    bad-channel feature pipeline where variables have dims like
+    ``(time_win, AP, ML)``.
+
+    Each HoloMap entry is either:
+    - a dynamic grid movie (when ``with_time_curve=False``), or
+    - a grid movie + linked time curve with a clickable time hair
+      (when ``with_time_curve=True``).
+    """
+    import holoviews as hv
+
+    hv.extension("bokeh", logo=False)
+
+    from cogpy.core.plot.xarray_hv import grid_movie, grid_movie_with_time_curve
+
+    names = list(ds.data_vars) if features is None else list(features)
+    items: dict[str, Any] = {}
+
+    for name in names:
+        if name not in ds:
+            raise KeyError(f"Feature {name!r} not found in dataset variables: {list(ds.data_vars)}")
+        da = ds[name]
+        if with_time_curve:
+            items[name] = grid_movie_with_time_curve(
+                da,
+                time_dim=time_dim,
+                y_dim=y_dim,
+                x_dim=x_dim,
+                normalize_index=bool(normalize_index),
+                title=name,
+                width=int(width),
+                height=int(height),
+                curve_height=int(curve_height),
+                cmap=str(cmap),
+                symmetric=bool(symmetric),
+                colorbar=bool(colorbar),
+                snap=bool(snap),
+                return_controller=False,
+            )
+        else:
+            # For a HoloMap, a pure DynamicMap movie is typically enough.
+            items[name] = grid_movie(
+                da,
+                y_dim=y_dim,
+                x_dim=x_dim,
+                normalize_index=bool(normalize_index),
+                title=name,
+                width=int(width),
+                height=int(height),
+                cmap=str(cmap),
+                symmetric=bool(symmetric),
+                colorbar=bool(colorbar),
+            )
+
+    return hv.HoloMap(items, kdims=[hv.Dimension("feature")])
 
 
 class ChannelFeatures:

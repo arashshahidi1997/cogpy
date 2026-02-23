@@ -429,6 +429,35 @@ class OrthoSlicerRanger(param.Parameterized):
         # underlying Bokeh model (which can break stream callbacks).
         self._tz_layout = self._build_tz_layout()
 
+        # ----------------------------- XY core -----------------------------
+        xy_param_names = [
+            "t",
+            "z",
+            "x",
+            "y",
+            "clim",
+            "use_datashader",
+            "xy_autoscale",
+            "xy_clim_quantiles",
+            "xy_width",
+            "xy_height",
+        ]
+        xy_param_names = [p for p in xy_param_names if p in self.param]
+        self._xy_params = streams.Params(self, parameters=xy_param_names)
+
+        # Stable XY DynamicMaps (image is the only clickable source).
+        self._xy_img_dm = hv.DynamicMap(self._xy_img, streams=[self._xy_params])
+        self._xy_xhair_dm = hv.DynamicMap(self._xy_crosshair, streams=[self._xy_params])
+        self._xy_display_dm = self._xy_img_dm * self._xy_xhair_dm
+
+        # Bind Tap to the clickable image layer once (never re-source in view_xy).
+        self.tap_xy = streams.Tap(source=self._xy_img_dm, x=None, y=None)
+        self.tap_xy.add_subscriber(self._on_tap_xy)
+
+        # Stable XY composite: histogram + crosshair overlay.
+        # NOTE: keep Tap bound to _xy_img_dm, not the composed layout.
+        self._xy_layout = (self._xy_img_dm.hist() * self._xy_xhair_dm)
+
     def _build_tz_layout(self):
         """
         Build the TZ composite (TZ view + overview curve) as a stable object.
@@ -511,6 +540,48 @@ class OrthoSlicerRanger(param.Parameterized):
             hooks=[_set_active_scroll_wheel_zoom],
         )
 
+    def _xy_crosshair(self, **_):
+        """Crosshair overlay for the XY view (does not affect axes or tools)."""
+        v = hv.VLine(self.x).opts(line_width=2, alpha=0.9, color="white")
+        h = hv.HLine(self.y).opts(line_width=2, alpha=0.9, color="white")
+        return v * h
+
+    def _xy_img(self, **_):
+        """Return ONLY the XY image for linking & tapping (no crosshair here)."""
+        width, height = int(self.xy_width), int(self.xy_height)
+
+        img = self.array.sel(t=self.t, z=self.z, method="nearest")
+        base = hv.Image(
+            img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim]
+        )
+
+        clim = self.clim
+        if bool(getattr(self, "xy_autoscale", False)):
+            qlo, qhi = self.xy_clim_quantiles
+            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
+
+        if self.use_datashader:
+            base = rasterize(
+                base,
+                aggregator=ds.mean("val"),
+                width=width,
+                height=height,
+                dynamic=False,
+            )
+
+        return base.opts(
+            cmap="Viridis",
+            colorbar=True,
+            framewise=False,
+            title=self._title_xy(),
+            clim=clim,
+            width=width,
+            height=height,
+            tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
+            active_tools=["tap"],
+            hooks=[_set_active_scroll_wheel_zoom],
+        )
+
     # --------------------------- public HV views ------------------------------
     @param.depends(
         "t",
@@ -525,44 +596,8 @@ class OrthoSlicerRanger(param.Parameterized):
     def view_tz(self):
         return self._tz_layout
 
-    @param.depends("t", "z", "x", "y", "clim", "use_datashader", "xy_autoscale", "xy_clim_quantiles")
     def view_xy(self):
-        width, height = int(self.xy_width), int(self.xy_height)
-        img = self.array.sel(t=self.t, z=self.z, method="nearest")
-        base = hv.Image(
-            img, kdims=[self.hvdims["x"], self.hvdims["y"]], vdims=[self.vdim]
-        )
-        clim = self.clim
-        if bool(getattr(self, "xy_autoscale", False)):
-            qlo, qhi = self.xy_clim_quantiles
-            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
-        if self.use_datashader:
-            base = rasterize(
-                base,
-                aggregator=ds.mean("val"),
-                width=width,
-                height=height,
-                dynamic=False,
-            )
-        base = base.opts(
-            cmap="Viridis",
-            colorbar=True,
-            framewise=True,
-            title=self._title_xy(),
-            clim=clim,
-            width=width,
-            height=height,
-            tools=["tap", "pan", "wheel_zoom", "box_zoom", "reset"],
-            active_tools=["tap"],
-        )
-        cross = hv.VLine(self.x).opts(
-            color="white", line_width=1, alpha=0.8
-        ) * hv.HLine(self.y).opts(color="white", line_width=1, alpha=0.8)
-
-        # bind tap to THIS base each re-render
-        self.tap_xy.source = base
-
-        return base.hist() * cross
+        return self._xy_layout
 
     # ------------------------------- controls --------------------------------
     def _set_controls(self):
@@ -610,10 +645,6 @@ class OrthoSlicerRanger(param.Parameterized):
 
         # time player (kept bi-directional with self.t)
         self._set_t_player()
-
-        # tap callbacks
-        self.tap_xy.add_subscriber(self._on_tap_xy)
-        self.tap_tz.add_subscriber(self._on_tap_tz)
 
     def _set_t_player(self):
         self.t_player_widget = PlayerWithRealTime(

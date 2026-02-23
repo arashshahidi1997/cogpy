@@ -209,6 +209,139 @@ def add_time_hair(
     return (out, controller) if bool(return_controller) else out
 
 
+class AxisHair(param.Parameterized):
+    """Clickable 1D hair (vertical or horizontal) for HoloViews plots.
+
+    This is a generalization of :class:`TimeHair` that can attach to any kdim
+    and can draw either a vertical (x) or horizontal (y) line. Clicking/tapping
+    updates ``.value``.
+    """
+
+    value = param.Parameter(default=None, doc="Selected coordinate value.")
+    snap = param.Boolean(
+        default=True,
+        doc="If True, snap taps to the nearest available coordinate value.",
+    )
+    orientation = param.ObjectSelector(
+        default="v",
+        objects=["v", "h"],
+        doc="Hair orientation: 'v' uses tap.x and draws VLine; 'h' uses tap.y and draws HLine.",
+    )
+
+    def __init__(self, *, value=None, snap=True, orientation="v", snap_values=None, **params):
+        super().__init__(**params)
+        self.value = value
+        self.snap = bool(snap)
+        self.orientation = str(orientation)
+        self._snap_values = snap_values
+        self._tap_streams = []
+
+    def _infer_snap_values(self, obj, kdim: str):
+        if self._snap_values is not None:
+            return self._snap_values
+
+        import holoviews as hv
+
+        for el in obj.traverse(lambda x: x, specs=hv.Element):
+            kdim_names = [getattr(d, "name", str(d)) for d in getattr(el, "kdims", [])]
+            if kdim not in kdim_names:
+                continue
+            try:
+                vals = el.dimension_values(kdim)
+            except Exception:
+                continue
+            if getattr(vals, "size", 0) and int(vals.size) <= 2_000_000:
+                self._snap_values = vals
+                return vals
+        return None
+
+    def attach(
+        self,
+        obj,
+        *,
+        kdim: str,
+        ensure_tap_tools: bool = True,
+        tools: list[str] | None = None,
+        active_tools: list[str] | None = None,
+        line_color: str = "white",
+        line_width: int = 2,
+        line_alpha: float = 0.9,
+    ):
+        import holoviews as hv
+        from holoviews import streams
+
+        if tools is None:
+            tools = ["tap", "pan", "wheel_zoom", "box_zoom", "reset"]
+        if active_tools is None:
+            active_tools = ["tap"]
+
+        snap_values = self._infer_snap_values(obj, kdim) if bool(self.snap) else None
+        snapper = (
+            TimeHair._build_snapper(snap_values)
+            if snap_values is not None and bool(self.snap)
+            else None
+        )
+
+        if self.value is None and snap_values is not None and getattr(snap_values, "size", 0):
+            self.value = snap_values[0].item() if hasattr(snap_values[0], "item") else snap_values[0]
+
+        params_stream = streams.Params(self, ["value"])
+
+        def _hair(value=None, **_):
+            if value is None:
+                placeholder = hv.VLine(0) if self.orientation == "v" else hv.HLine(0)
+                return placeholder.opts(alpha=0.0, line_width=0)
+            if self.orientation == "v":
+                el = hv.VLine(value)
+            else:
+                el = hv.HLine(value)
+            return el.opts(color=str(line_color), line_width=int(line_width), alpha=float(line_alpha))
+
+        hair_dm = hv.DynamicMap(_hair, streams=[params_stream])
+
+        tap_key = "x" if self.orientation == "v" else "y"
+
+        def _on_tap(**kwargs):
+            v = kwargs.get(tap_key)
+            if v is None:
+                return
+            self.value = snapper(v) if snapper is not None else v
+
+        def _decorate(el):
+            kdim_names = [getattr(d, "name", str(d)) for d in getattr(el, "kdims", [])]
+            if kdim not in kdim_names:
+                return el
+
+            el2 = el
+            if bool(ensure_tap_tools):
+                el2 = el2.opts(tools=list(tools), active_tools=list(active_tools))
+
+            tap = streams.Tap(source=el2, x=None, y=None)
+            tap.add_subscriber(_on_tap)
+            self._tap_streams.append(tap)
+            return el2 * hair_dm
+
+        if isinstance(obj, hv.Element):
+            return _decorate(obj)
+        return obj.map(_decorate, specs=hv.Element)
+
+
+def add_axis_hair(
+    obj,
+    *,
+    kdim: str,
+    value=None,
+    snap: bool = True,
+    orientation: str = "v",
+    return_controller: bool = False,
+    **attach_kwargs,
+):
+    """Convenience wrapper around :class:`AxisHair`."""
+    controller = AxisHair(value=value, snap=snap, orientation=orientation)
+    out = controller.attach(obj, kdim=kdim, **attach_kwargs)
+    return (out, controller) if bool(return_controller) else out
+
+
 class PlayerWithRealTime(param.Parameterized):
     interval = param.Integer(default=200, bounds=(50, 2000), doc="ms per step")
     speed = param.Number(default=5, bounds=(0.1, 20), doc="Real-time speed multiplier")
