@@ -145,6 +145,14 @@ def ieeg_viewer(
     >>> viewer = ieeg_viewer(sig, initial_window_s=5, n_channels_default=16)
     >>> viewer.servable()
     """
+    # Make the viewer usable without requiring callers to remember
+    # `pn.extension()` / `hv.extension("bokeh")` first.
+    try:
+        pn.extension()
+        hv.extension("bokeh")
+    except Exception:
+        pass
+
     # ------------------------------------------------------------------
     # 1. Validate dimensions
     # ------------------------------------------------------------------
@@ -176,7 +184,8 @@ def ieeg_viewer(
     # ------------------------------------------------------------------
     # 3. Channel label index  (label string ↔ row index in sig_z)
     # ------------------------------------------------------------------
-    ch_labels   = [str(v) for v in ch_vals]
+    # Ensure uniqueness even if `str(v)` collides.
+    ch_labels   = [f"{i}:{ch_vals[i]}" for i in range(n_ch)]
     label_to_ix = {lbl: i for i, lbl in enumerate(ch_labels)}
     default_sel = ch_labels[:min(n_channels_default, n_ch)]
 
@@ -243,18 +252,27 @@ def ieeg_viewer(
         ch_ixs    = [label_to_ix[lbl] for lbl in labels]
         n_visible = len(ch_ixs)
 
+        palette = None
+        try:
+            from bokeh.palettes import Category20  # type: ignore
+
+            palette = list(Category20[20]) if isinstance(Category20, dict) else list(Category20)
+        except Exception:
+            palette = None
+
         curves = []
         for rank, ch in enumerate(ch_ixs):
             y_win      = sig_z[ch, i0:i1]
             t_ds, y_ds = _downsample(t_win, y_win, detail_px)
             offset     = (n_visible - 1 - rank) * offset_scale
+            color = palette[rank % len(palette)] if palette else None
             curves.append(
                 hv.Curve(
                     (t_ds, y_ds + offset),
                     kdims=time_dim,
                     vdims="amp",
                     label=ch_labels[ch],
-                ).opts(color=hv.Cycle("Category20"), line_width=1)
+                ).opts(color=color, line_width=1)
             )
 
         if not curves:
@@ -282,7 +300,7 @@ def ieeg_viewer(
 
     detail_dmap = hv.DynamicMap(_build_detail, streams=[range_stream])
 
-    # Channel selection change → retrigger the existing x_range
+    # Channel selection change -> re-emit the current x_range to refresh detail.
     ch_select.param.watch(
         lambda *_: range_stream.trigger([range_stream]), "value"
     )
@@ -299,8 +317,17 @@ def ieeg_viewer(
     def _on_window(event):
         lo, hi = range_stream.x_range or (t0_full, t0_full + initial_window_s)
         center = (lo + hi) / 2
-        half   = event.new / 2
-        range_stream.event(x_range=(center - half, center + half))
+        span = min(float(event.new), t1_full - t0_full)
+        half = span / 2
+
+        new_lo = max(t0_full, center - half)
+        new_hi = min(t1_full, center + half)
+
+        if new_hi - new_lo < 1e-9:
+            new_lo = max(t0_full, t1_full - span)
+            new_hi = min(t1_full, new_lo + span)
+
+        range_stream.event(x_range=(new_lo, new_hi))
 
     window_slider.param.watch(_on_window, "value")
 
