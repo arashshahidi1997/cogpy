@@ -1,3 +1,10 @@
+"""Legacy channel-feature orchestration module.
+
+Status: LEGACY (compatibility surface).
+Canonical implementation for new code lives under
+`cogpy.core.preprocess.badchannel.*`.
+"""
+
 import numpy as np
 import xarray as xr
 import zarr

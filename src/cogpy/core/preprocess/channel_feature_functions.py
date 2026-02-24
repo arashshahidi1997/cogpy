@@ -1,11 +1,15 @@
 """
 Module: channel_features_nanmedian.
-Status: DEPRECATE
+Status: DEPRECATED (legacy compatibility only)
 Last Updated: 2025-08-26
 Author: Arash Shahidi, A.Shahidi@campus.lmu.de
 
 Summary:
         This module provides functionality for extracting channel features from neural data, with a focus on handling NaN values.
+        Canonical replacements live under:
+            - `cogpy.core.preprocess.badchannel.channel_features`
+            - `cogpy.core.preprocess.badchannel.spatial`
+            - `cogpy.core.preprocess.badchannel.pipeline`
 
 Functions:
         - anticorrelation

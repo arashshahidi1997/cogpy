@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
+import numpy as np
 import xarray as xr
-
 from ..core.burst.blob_detection import detect_hmaxima
 
 
@@ -524,3 +524,26 @@ class AROscillatorGrid:
         bursts_df = pd.DataFrame(peaks)[["burst_id", "x", "y", "t", "z", "value"]].copy()
 
         return cls(raw=raw_da, spectrogram=spec, bursts=bursts_df, fs=float(fs))
+
+
+def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000):
+    sig = xr.DataArray(
+        np.random.randn(nchannel, ntime),  # (channel, time)
+        dims=["channel", "time"],
+        coords={
+            "channel": [f"ch{i}" for i in range(16)],
+            "time": np.arange(1000_000) / 1000,  # 1000 Hz sampling rate → seconds
+        },
+        name="Example iEEG signal",
+    )
+    # apply smoothing
+    from scipy.ndimage import gaussian_filter1d
+    sig_smooth = xr.apply_ufunc(
+        lambda x: gaussian_filter1d(x, sigma=5),  # Adjust sigma for desired smoothing
+        sig,
+        input_core_dims=[["time"]],
+        output_core_dims=[["time"]],
+        vectorize=True,
+        dask="parallelized",
+    )
+    return sig_smooth

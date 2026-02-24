@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 import scipy.ndimage as nd
+from scipy import signal
 import xarray as xr
 
 from cogpy.core.utils.sliding_core import running_blockwise_xr, running_reduce_xr
@@ -21,6 +22,10 @@ def relative_variance(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
 
 def deviation(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
     return np.nanmean(arr, axis=axis)
+
+
+def standard_deviation(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
+    return np.nanstd(arr, axis=axis)
 
 
 def amplitude(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
@@ -48,6 +53,69 @@ def kurtosis(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
     m4 = np.nanmean(centered**4, axis=axis)
     return m4 / ((m2**2) + EPS)
 
+
+def noise_to_signal(
+    arr: np.ndarray,
+    fs: float,
+    *,
+    axis: int = -1,
+    low_freq: tuple[float, float] = (0.1, 30.0),
+    high_freq: tuple[float, float] = (30.0, 80.0),
+    nperseg: int = 256,
+) -> np.ndarray:
+    """High-band to low-band power ratio using Welch PSD.
+
+    Parameters
+    ----------
+    arr
+        Array shaped ``(..., time)``.
+    fs
+        Sampling rate in Hz.
+    axis
+        Time axis.
+    low_freq, high_freq
+        Frequency bands in Hz used for denominator and numerator.
+    nperseg
+        Welch segment length.
+    """
+    x = np.asarray(arr, dtype=np.float64)
+    if x.size == 0:
+        raise ValueError("noise_to_signal received an empty array.")
+    if fs <= 0:
+        raise ValueError(f"fs must be positive, got {fs}.")
+
+    freq, psd = signal.welch(x, fs=float(fs), axis=axis, nperseg=int(nperseg))
+    low_mask = (freq >= float(low_freq[0])) & (freq <= float(low_freq[1]))
+    high_mask = (freq >= float(high_freq[0])) & (freq <= float(high_freq[1]))
+    if not np.any(low_mask):
+        raise ValueError(f"low_freq band {low_freq} is outside Welch frequency grid.")
+    if not np.any(high_mask):
+        raise ValueError(f"high_freq band {high_freq} is outside Welch frequency grid.")
+
+    axis_psd = axis if axis >= 0 else (psd.ndim + axis)
+    low = np.nanmean(np.take(psd, np.where(low_mask)[0], axis=axis_psd), axis=axis_psd)
+    high = np.nanmean(np.take(psd, np.where(high_mask)[0], axis=axis_psd), axis=axis_psd)
+    return high / (low + EPS)
+
+
+def snr(
+    arr: np.ndarray,
+    fs: float,
+    *,
+    axis: int = -1,
+    low_freq: tuple[float, float] = (0.1, 30.0),
+    high_freq: tuple[float, float] = (30.0, 80.0),
+    nperseg: int = 256,
+) -> np.ndarray:
+    """Alias for `noise_to_signal`."""
+    return noise_to_signal(
+        arr,
+        fs,
+        axis=axis,
+        low_freq=low_freq,
+        high_freq=high_freq,
+        nperseg=nperseg,
+    )
 
 def temporal_mean_laplacian(arr: np.ndarray) -> np.ndarray:
     """Legacy feature used by the current preprocess pipeline.
@@ -79,6 +147,8 @@ def _feature_func(name: str):
         return relative_variance
     if name == "deviation":
         return deviation
+    if name == "standard_deviation":
+        return standard_deviation
     if name == "amplitude":
         return amplitude
     if name == "time_derivative":

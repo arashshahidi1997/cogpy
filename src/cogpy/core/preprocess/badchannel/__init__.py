@@ -9,6 +9,7 @@ from .pipeline import (
     compute_feature_maps_for_window,
     compute_features_sliding,
     compute_features_sliding_legacy,
+    normalize_features_from_raw,
     window_centers,
 )
 
@@ -27,6 +28,6 @@ __all__ = [
     "compute_feature_maps_for_window",
     "compute_features_sliding",
     "compute_features_sliding_legacy",
+    "normalize_features_from_raw",
     "window_centers",
 ]
-

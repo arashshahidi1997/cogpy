@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
+        # Legacy compatibility surfaces (prefer `badchannel` for new code):
         "channel_feature_functions",
         "channel_feature",
         "detect_bads",

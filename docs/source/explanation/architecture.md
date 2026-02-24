@@ -64,6 +64,25 @@ Snakemake rules should:
 - Use `cogpy.core` for transformations.
 - Avoid custom per-pipeline logic when a shared IO helper exists.
 
+## Preprocess Channel Features
+
+For channel-feature workflows, prefer the canonical badchannel stack:
+
+- Raw feature functions and xarray wrappers:
+  - `cogpy.core.preprocess.badchannel.channel_features`
+- Spatial normalization and sliding feature-map orchestration:
+  - `cogpy.core.preprocess.badchannel.pipeline`
+  - `cogpy.core.preprocess.badchannel.spatial`
+- Outlier labeling:
+  - `cogpy.core.preprocess.badchannel.badlabel`
+
+Legacy compatibility modules remain available, but are not the design target for
+new code:
+
+- `cogpy.core.preprocess.channel_feature_functions` (deprecated)
+- `cogpy.core.preprocess.channel_feature` (legacy)
+- `cogpy.core.preprocess.detect_bads` (legacy)
+
 ## Open Questions
 
 - Standardize attribute names for sampling rate and channel labels.

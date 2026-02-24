@@ -1,3 +1,10 @@
+"""Legacy bad-channel detector pipeline.
+
+Status: LEGACY (compatibility surface).
+Canonical implementation for new code lives under
+`cogpy.core.preprocess.badchannel.badlabel`.
+"""
+
 # static TLS
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
