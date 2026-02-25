@@ -7,7 +7,9 @@ __getattr__, __dir__, __all__ = attach(
         "grid_indexing",
         "frame_plot",
         "ieeg_toolkit_app",
+        "linked_views",
         "multichannel_timeseries",
+        "theme",
         "orthoslicer",
         "orthoslicer_facet",
         "orthoslicer_ranger",
@@ -18,6 +20,7 @@ __getattr__, __dir__, __all__ = attach(
         "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
         "specgram_plot",
         "spectrogram_bursts_app",
+        "topomap",
         "time_player",
         "time_plot",
         "xarray_hv",

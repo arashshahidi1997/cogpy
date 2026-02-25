@@ -71,7 +71,7 @@ def ieeg_grid_bundle(
     n_ap = int(sig_apml.sizes["AP"])
     n_ml = int(sig_apml.sizes["ML"])
 
-    sig_tc = sig_apml.stack(channel=("AP", "ML"))  # ("time","channel")
+    sig_tc = sig_apml.stack(channel=("AP", "ML")).reset_index("channel")  # ("time","channel"), with AP/ML coords
     sig_tc = sig_tc.transpose("time", "channel")
     sig_tc.name = "ieeg_tc"
     sig_tc.attrs.update(sig_grid.attrs)

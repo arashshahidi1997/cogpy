@@ -17,6 +17,7 @@ def test_example_ieeg_grid_schema_and_determinism():
 
 def test_ieeg_grid_bundle_indexing_coherence():
     from cogpy.datasets.gui_bundles import ieeg_grid_bundle
+    from cogpy.datasets.schemas import validate_ieeg_time_channel
 
     bundle = ieeg_grid_bundle(mode="small", seed=0)
 
@@ -24,6 +25,7 @@ def test_ieeg_grid_bundle_indexing_coherence():
     assert tuple(bundle.sig_apml.dims) == ("time", "AP", "ML")
     assert tuple(bundle.sig_tc.dims) == ("time", "channel")
     assert bundle.rms_apml.shape == (bundle.n_ap, bundle.n_ml)
+    validate_ieeg_time_channel(bundle.sig_tc)
 
     # Check that a few (ap,ml) positions map to the same time series in stacked view.
     pairs = [(0, 0), (1, 2), (bundle.n_ap - 1, bundle.n_ml - 1)]
@@ -41,4 +43,3 @@ def test_spectrogram_bursts_bundle_schema(kind):
     bundle = spectrogram_bursts_bundle(mode="small", seed=0, kind=kind)
     assert set(["burst_id", "x", "y", "t", "z", "value"]).issubset(set(bundle.bursts.columns))
     assert set(["ml", "ap", "time", "freq"]).issubset(set(bundle.spec.dims))
-

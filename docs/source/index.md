@@ -24,6 +24,7 @@ explanation/architecture
 explanation/datasets/index
 explanation/plot/ieeg-toolkit
 explanation/plot/ieeg-toolkit-spec
+explanation/plot/topomap
 ```
 
 ```{toctree}

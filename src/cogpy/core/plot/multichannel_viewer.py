@@ -29,16 +29,13 @@ from holoviews.plotting.links import RangeToolLink
 import panel as pn
 from tsdownsample import MinMaxLTTBDownsampler
 
+from .theme import BG, BG_PANEL, BLUE, PALETTE, TEXT
+
 __all__ = ["MultichannelViewer"]
 
 _ds = MinMaxLTTBDownsampler()
 
-_PALETTE = [
-    "#4fc3f7", "#81c784", "#ffb74d", "#e57373", "#ba68c8",
-    "#4dd0e1", "#aed581", "#ffd54f", "#ff8a65", "#f06292",
-    "#4db6ac", "#dce775", "#a1887f", "#90a4ae", "#fff176",
-    "#ce93d8", "#80cbc4", "#ef9a9a", "#80deea", "#c5e1a5",
-]
+_PALETTE = PALETTE
 
 
 def _make_contiguous(a: np.ndarray) -> np.ndarray:
@@ -159,6 +156,13 @@ class MultichannelViewer:
         if self._built:
             return self._layout
 
+        # Ensure a plotting backend is loaded before applying .opts(...)
+        # (HoloViews raises if no extension has been loaded yet).
+        try:
+            hv.extension("bokeh")
+        except Exception:  # noqa: BLE001
+            pass
+
         self._range_stream = streams.RangeX(
             x_range=(self._t0, self._t0 + self._iw)
         )
@@ -170,7 +174,7 @@ class MultichannelViewer:
             (t_ov, y_ov), kdims=self._tdim, vdims="amp"
         ).opts(
             width=self._w, height=self._oh,
-            color="#4a90d9", line_width=0.8,
+            color=BLUE, line_width=0.8,
             xlabel="", ylabel="",
             toolbar=None, default_tools=[],
             title="Overview  —  drag to navigate",
@@ -197,14 +201,14 @@ class MultichannelViewer:
         self._window_slider.param.watch(self._on_window, "value")
 
         self._layout = pn.Column(
-            pn.pane.Markdown(f"## {self._title}", styles={"color": "#cdd6f4"}),
+            pn.pane.Markdown(f"## {self._title}", styles={"color": TEXT}),
             pn.Row(
                 self._window_slider,
-                styles={"background": "#1e1e2e", "padding": "8px", "border-radius": "6px"},
+                styles={"background": BG_PANEL, "padding": "8px", "border-radius": "6px"},
             ),
             self._detail_dmap,
             self._overview,
-            styles={"background": "#181825", "padding": "16px"},
+            styles={"background": BG, "padding": "16px"},
         )
 
         self._built = True
@@ -257,6 +261,8 @@ class MultichannelViewer:
                 yticks=yticks,
                 title=self._title,
                 framewise=True,
+                # Allow y-tick labels to change when channels change.
+                shared_axes=False,
             )
         )
 

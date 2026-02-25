@@ -48,14 +48,16 @@ from bokeh.models import ColumnDataSource, HoverTool, TapTool
 from bokeh.plotting import figure
 
 from .channel_grid import ChannelGrid
+from .theme import BG, BORDER, TEAL, TEXT, TEXT_MED, style_figure
+from .topomap import TopoMap
 
 __all__ = ["ChannelGridWidget"]
 
 _COL_UNSELECTED = "#2c2c3e"
-_COL_SELECTED   = "#4fc3f7"
+_COL_SELECTED   = TEAL
 _COL_BORDER     = "#1a1a2e"
-_COL_TEXT       = "#cdd6f4"
-_BG             = "#181825"
+_COL_TEXT       = TEXT
+_BG             = BG
 
 
 class ChannelGridWidget(param.Parameterized):
@@ -95,6 +97,7 @@ class ChannelGridWidget(param.Parameterized):
         cell_size: int = 28,
         cell_values: np.ndarray | None = None,
         bad_mask: np.ndarray | None = None,
+        topomap: TopoMap | None = None,
         # atlas
         ap_coords: np.ndarray | None = None,
         ml_coords: np.ndarray | None = None,
@@ -107,7 +110,8 @@ class ChannelGridWidget(param.Parameterized):
         super().__init__(**params)
 
         self._cell_size   = cell_size
-        self._cell_values = self._validate_cell_values(cell_values, self.grid.n_ap, self.grid.n_ml)
+        self._topomap     = topomap
+        self._cell_values = None if topomap is not None else self._validate_cell_values(cell_values, self.grid.n_ap, self.grid.n_ml)
         self._bad_mask    = self._validate_bad_mask(bad_mask, self.grid.n_ap, self.grid.n_ml)
 
         # atlas
@@ -124,6 +128,16 @@ class ChannelGridWidget(param.Parameterized):
         self.grid.param.watch(self._on_grid_change, "selected")
         self.grid.param.watch(self._on_mode_change, "mode")
 
+        if self._topomap is None:
+            self._source.selected.on_change("indices", self._on_tap)
+        else:
+            if int(self._topomap.n_ap) != int(self.grid.n_ap) or int(self._topomap.n_ml) != int(self.grid.n_ml):
+                raise ValueError(
+                    "topomap shape must match grid shape: "
+                    f"grid=({self.grid.n_ap},{self.grid.n_ml}) topomap=({self._topomap.n_ap},{self._topomap.n_ml})"
+                )
+            self._topomap.on_tap(self._on_topomap_tap)
+
     # ------------------------------------------------------------------ #
     # Constructors                                                         #
     # ------------------------------------------------------------------ #
@@ -135,6 +149,7 @@ class ChannelGridWidget(param.Parameterized):
         cell_size: int = 28,
         cell_values: np.ndarray | None = None,
         bad_mask: np.ndarray | None = None,
+        topomap: TopoMap | None = None,
         ap_coords: np.ndarray | None = None,
         ml_coords: np.ndarray | None = None,
         atlas_image: np.ndarray | None = None,
@@ -147,11 +162,34 @@ class ChannelGridWidget(param.Parameterized):
             cell_size=cell_size,
             cell_values=cell_values,
             bad_mask=bad_mask,
+            topomap=topomap,
             ap_coords=ap_coords,
             ml_coords=ml_coords,
             atlas_image=atlas_image,
             atlas_mode=atlas_mode,
             bl_distance=bl_distance,
+        )
+
+    @classmethod
+    def from_topomap(
+        cls,
+        topomap: TopoMap,
+        grid: ChannelGrid,
+        *,
+        cell_size: int = 28,
+        bad_mask: np.ndarray | None = None,
+    ) -> "ChannelGridWidget":
+        """
+        Construct a widget whose background is driven by the provided TopoMap.
+        """
+        return cls(
+            grid.n_ap,
+            grid.n_ml,
+            grid=grid,
+            cell_size=cell_size,
+            cell_values=None,
+            bad_mask=bad_mask,
+            topomap=topomap,
         )
 
     # ------------------------------------------------------------------ #
@@ -161,11 +199,14 @@ class ChannelGridWidget(param.Parameterized):
         return pn.Column(
             self._controls,
             pn.pane.Bokeh(self._fig),
-            styles={"background": _BG, "padding": "10px", "border-radius": "8px"},
+            styles={"background": BG, "padding": "10px", "border-radius": "8px"},
         )
 
     def update_cell_values(self, values: np.ndarray) -> None:
         """Push a new per-electrode background array and redraw."""
+        if self._topomap is not None:
+            self._topomap.update(values)
+            return
         self._cell_values = self._validate_cell_values(values, self.grid.n_ap, self.grid.n_ml)
         self._patch_colors()
 
@@ -183,19 +224,51 @@ class ChannelGridWidget(param.Parameterized):
         cv  = self._cell_values
         bad = self._bad_mask
 
-        aps, mls, colors, alphas, labels, bad_alpha = [], [], [], [], [], []
+        aps, mls, ap_idx, ml_idx, colors, alphas, labels, bad_alpha = [], [], [], [], [], [], [], []
+
+        # TopoMap-wired mode draws overlays in physical coords (ap/ml) but uses
+        # integer indices for selection logic.
+        if self._topomap is not None:
+            ap_coords = np.asarray(self._topomap.ap_coords, dtype=float)
+            ml_coords = np.asarray(self._topomap.ml_coords, dtype=float)
+            ap_step = float(np.median(np.abs(np.diff(ap_coords)))) if len(ap_coords) > 1 else 1.0
+            ml_step = float(np.median(np.abs(np.diff(ml_coords)))) if len(ml_coords) > 1 else 1.0
+            self._overlay_ap_step = ap_step
+            self._overlay_ml_step = ml_step
+
         for ap in range(g.n_ap):
             for ml in range(g.n_ml):
                 selected = (ap, ml) in sel
-                aps.append(ap)
-                mls.append(ml)
-                colors.append(_COL_SELECTED if selected else _COL_UNSELECTED)
-                alphas.append(self._cell_alpha(ap, ml, selected, cv))
+                ap_idx.append(ap)
+                ml_idx.append(ml)
+
+                if self._topomap is None:
+                    aps.append(ap)
+                    mls.append(ml)
+                    colors.append(_COL_SELECTED if selected else _COL_UNSELECTED)
+                    alphas.append(self._cell_alpha(ap, ml, selected, cv))
+                else:
+                    aps.append(float(self._topomap.ap_coords[ap]))
+                    mls.append(float(self._topomap.ml_coords[ml]))
+                    colors.append(_COL_SELECTED)
+                    alphas.append(1.0 if selected else 0.0)
+
                 labels.append(f"AP={ap}, ML={ml}")
                 is_bad = bool(bad[ap, ml]) if bad is not None else False
                 bad_alpha.append(1.0 if is_bad else 0.0)
 
-        return ColumnDataSource(dict(ap=aps, ml=mls, color=colors, alpha=alphas, label=labels, bad_alpha=bad_alpha))
+        return ColumnDataSource(
+            dict(
+                ap=aps,
+                ml=mls,
+                ap_idx=ap_idx,
+                ml_idx=ml_idx,
+                color=colors,
+                alpha=alphas,
+                label=labels,
+                bad_alpha=bad_alpha,
+            )
+        )
 
     def _cell_alpha(self, ap, ml, selected, cv):
         if selected:
@@ -213,6 +286,42 @@ class ChannelGridWidget(param.Parameterized):
         pw = g.n_ml * cs + 50
         ph = g.n_ap * cs + 50
 
+        if self._topomap is not None:
+            fig = self._topomap.figure
+            fig.width = pw
+            fig.height = ph
+
+            ap_step = float(getattr(self, "_overlay_ap_step", 1.0))
+            ml_step = float(getattr(self, "_overlay_ml_step", 1.0))
+
+            # Selected-only overlay (unselected alpha=0).
+            fig.rect(
+                x="ml",
+                y="ap",
+                width=0.88 * ml_step,
+                height=0.88 * ap_step,
+                source=self._source,
+                fill_color=_COL_SELECTED,
+                fill_alpha="alpha",
+                line_color=_COL_BORDER,
+                line_width=1.5,
+            )
+
+            # Bad-channel overlay (X marker) — alpha toggled by bad_alpha.
+            fig.scatter(
+                x="ml",
+                y="ap",
+                source=self._source,
+                marker="x",
+                size=12,
+                line_color="#f38ba8",
+                line_width=2,
+                fill_alpha=0.0,
+                line_alpha="bad_alpha",
+            )
+
+            return fig
+
         fig = figure(
             width=pw, height=ph,
             x_range=(-0.5, g.n_ml - 0.5),
@@ -220,17 +329,7 @@ class ChannelGridWidget(param.Parameterized):
             tools="tap",
             toolbar_location=None,
         )
-        fig.background_fill_color      = _BG
-        fig.border_fill_color          = _BG
-        fig.grid.visible               = False
-        fig.axis.axis_line_color       = "#3a3a5c"
-        fig.axis.major_tick_line_color = "#3a3a5c"
-        fig.axis.minor_tick_line_color = None
-        fig.axis.major_label_text_color     = _COL_TEXT
-        fig.axis.major_label_text_font_size = "9px"
-        fig.xaxis.axis_label = "ML"
-        fig.yaxis.axis_label = "AP"
-        fig.axis.axis_label_text_color = _COL_TEXT
+        style_figure(fig, xlabel="ML", ylabel="AP", toolbar=False)
 
         # Atlas background (drawn before electrode rects so it sits behind)
         self._maybe_add_atlas(fig)
@@ -259,9 +358,28 @@ class ChannelGridWidget(param.Parameterized):
         )
 
         fig.add_tools(HoverTool(tooltips=[("", "@label")]))
-        self._source.selected.on_change("indices", self._on_tap)
+        # Tap wiring handled in __init__ depending on whether topomap is used.
 
         return fig
+
+    def _on_topomap_tap(self, info: dict) -> None:
+        ap = int(info["ap_idx"])
+        ml = int(info["ml_idx"])
+        g = self.grid
+
+        mode = g.mode
+        if mode == "row":
+            g.row = ap
+            self._row_slider.value = ap
+        elif mode == "column":
+            g.column = ml
+            self._col_slider.value = ml
+        elif mode == "sparse":
+            pass
+        elif mode == "neighborhood":
+            g.neighborhood_center = (ap, ml)
+        elif mode == "manual":
+            g.toggle_manual(ap, ml)
 
     def _maybe_add_atlas(self, fig: figure) -> None:
         """Overlay atlas image if provided."""
@@ -353,7 +471,7 @@ class ChannelGridWidget(param.Parameterized):
         )
         self._n_selected_md = pn.pane.Markdown(
             self._selected_label(),
-            styles={"color": _COL_TEXT, "font-size": "11px"},
+            styles={"color": TEXT, "font-size": TEXT_MED},
         )
 
         # Wire secondary widgets → grid
@@ -374,7 +492,7 @@ class ChannelGridWidget(param.Parameterized):
         )
 
     def _secondary_for_mode(self, mode: str) -> pn.viewable.Viewable:
-        dim = {"color": _COL_TEXT, "font-size": "11px"}
+        dim = {"color": TEXT, "font-size": TEXT_MED}
         if mode == "row":
             return self._row_slider
         if mode == "column":
@@ -446,10 +564,14 @@ class ChannelGridWidget(param.Parameterized):
 
         color_patches = []
         alpha_patches = []
-        for i, (ap, ml) in enumerate(zip(src["ap"], src["ml"])):
+        for i, (ap, ml) in enumerate(zip(src["ap_idx"], src["ml_idx"])):
             selected = (int(ap), int(ml)) in sel
-            color_patches.append((i, _COL_SELECTED if selected else _COL_UNSELECTED))
-            alpha_patches.append((i, self._cell_alpha(int(ap), int(ml), selected, cv)))
+            if self._topomap is None:
+                color_patches.append((i, _COL_SELECTED if selected else _COL_UNSELECTED))
+                alpha_patches.append((i, self._cell_alpha(int(ap), int(ml), selected, cv)))
+            else:
+                color_patches.append((i, _COL_SELECTED))
+                alpha_patches.append((i, 1.0 if selected else 0.0))
 
         self._source.patch({"color": color_patches, "alpha": alpha_patches})
 
@@ -460,7 +582,7 @@ class ChannelGridWidget(param.Parameterized):
         if bad is None:
             patches = [(i, 0.0) for i in range(len(src["ap"]))]
         else:
-            for i, (ap, ml) in enumerate(zip(src["ap"], src["ml"])):
+            for i, (ap, ml) in enumerate(zip(src["ap_idx"], src["ml_idx"])):
                 patches.append((i, 1.0 if bool(bad[int(ap), int(ml)]) else 0.0))
         self._source.patch({"bad_alpha": patches})
 

@@ -10,6 +10,7 @@ These entities are *not* file formats; they are in-memory objects used by `cogpy
 - **Deterministic**: generators accept a `seed` and are stable over time.
 - **Small + large modes**: same schema, different sizes.
 - **Self-documenting failures**: runtime validators raise clear `ValueError`s with hints (see `cogpy.datasets.schemas`).
+- **Coercion at boundaries**: a `coerce_*` layer fixes “almost-right” inputs (dim permutations, missing `fs`) before validating.
 
 ## Non-goals (for this layer)
 
@@ -82,7 +83,12 @@ Time × channel representation derived from `IEEGGridTimeSeries` for stacked-tra
 
 **Coords**
 - `time`: seconds, 1D
-- `channel`: a MultiIndex over `(AP, ML)` when created via `stack(channel=("AP","ML"))`
+- **Canonical (recommended)**: `channel` is a flat integer coordinate and `AP` and `ML` are 1D coords aligned to `channel` (created via `stack(...).reset_index("channel")`).
+- Allowed fallback: `channel` is a MultiIndex over `(AP, ML)` when created via `stack(channel=("AP","ML"))`.
+
+**Runtime helpers**
+- `validate_ieeg_time_channel(da)` validates either canonical form.
+- `coerce_ieeg_time_channel(da)` converts MultiIndex to the canonical reset-index form.
 
 ---
 
