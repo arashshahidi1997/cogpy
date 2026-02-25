@@ -19,6 +19,7 @@ dependencies = [
   "scipy",
   "pandas",
   "scikit-learn",
+  "lazy_loader",
   "xarray",
   "tqdm",
   "numba",

@@ -28,7 +28,8 @@ def from_file(
     dat_file: Union[str, Path], 
     meta_file: Union[str, Path] = None, 
     grid: bool = False, 
-    as_float: bool = False
+    as_float: bool = False,
+    matlab_column_major: bool = True,
 ) -> xr.DataArray:
     
     dat_file = Path(dat_file)
@@ -47,38 +48,60 @@ def from_file(
         # Ensure we have the dimensions needed for reshaping
         if not (metadata.nrow and metadata.ncol):
             raise ValueError("Grid reshape requested but RowCount/ColumnCount missing from metadata.")
-            
-        # Reshape: (Samples, ML, AP) based on your original logic
-        arr = memmap_array.reshape(-1, metadata.ncol, metadata.nrow)
-        dask_array = da.from_array(arr, chunks="auto") # Let dask optimize chunks
+
+        n_ap = int(metadata.nrow)
+        n_ml = int(metadata.ncol)
+        n_ch = n_ap * n_ml
+        if memmap_array.size % n_ch != 0:
+            raise ValueError(
+                f"File size not divisible by n_ch={n_ch} (nrow*ncol). "
+                f"Got {memmap_array.size} elements."
+            )
+        n_time = int(memmap_array.size // n_ch)
+
+        # NeuroScope/Matlab-native convention: 2D (time, channel) stored column-major.
+        # Reshape to (time, channel) first, then map channel -> (ML, AP) with ML-major order.
+        order = "F" if matlab_column_major else "C"
+        arr_tc = memmap_array.reshape((n_time, n_ch), order=order)
+        # channel index = ml * n_ap + ap  -> (time, ML, AP)
+        arr = arr_tc.reshape((n_time, n_ml, n_ap), order="C")
+        dask_array = da.from_array(arr, chunks="auto")  # Let dask optimize chunks
         
-        time_coords = np.arange(arr.shape[0]) / metadata.fs
+        time_coords = np.arange(n_time) / metadata.fs
         
         # Use metadata coordinates if they exist, otherwise fallback to indices
-        ml_coords = metadata.ml_coords if metadata.ml_coords is not None else np.arange(metadata.ncol)
-        ap_coords = metadata.ap_coords if metadata.ap_coords is not None else np.arange(metadata.nrow)
+        ml_coords = metadata.ml_coords if metadata.ml_coords is not None else np.arange(n_ml)
+        ap_coords = metadata.ap_coords if metadata.ap_coords is not None else np.arange(n_ap)
 
         data_array = xr.DataArray(
             dask_array,
             dims=("time", "ML", "AP"),
             coords={"time": time_coords, "ML": ml_coords, "AP": ap_coords},
         )
-        data_array = data_array.transpose("AP", "ML", "time")
+        data_array.attrs["flat_order"] = "col-major"
     
     else:
         # Linear channel representation
-        arr = memmap_array.reshape(-1, metadata.nch)
+        n_ch = int(metadata.nch)
+        if memmap_array.size % n_ch != 0:
+            raise ValueError(
+                f"File size not divisible by nch={n_ch}. Got {memmap_array.size} elements."
+            )
+        n_time = int(memmap_array.size // n_ch)
+        order = "F" if matlab_column_major else "C"
+        arr = memmap_array.reshape((n_time, n_ch), order=order)
         dask_array = da.from_array(arr, chunks="auto")
         
-        time_coords = np.arange(arr.shape[0]) / metadata.fs
+        time_coords = np.arange(n_time) / metadata.fs
         data_array = xr.DataArray(
             dask_array,
             dims=("time", "ch"),
-            coords={"time": time_coords, "ch": np.arange(metadata.nch)},
+            coords={"time": time_coords, "ch": np.arange(n_ch)},
         )
         # Store grid info in attributes for later reconstruction
         data_array.attrs["ncol"] = metadata.ncol
         data_array.attrs["nrow"] = metadata.nrow
+        data_array.attrs["matlab_column_major"] = bool(matlab_column_major)
 
     data_array.attrs["fs"] = metadata.fs
     return data_array.astype(float) if as_float else data_array

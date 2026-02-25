@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import numpy as np
 import xarray as xr
+from scipy.ndimage import gaussian_filter1d
 from ..core.burst.blob_detection import detect_hmaxima
 
 
@@ -526,18 +527,17 @@ class AROscillatorGrid:
         return cls(raw=raw_da, spectrogram=spec, bursts=bursts_df, fs=float(fs))
 
 
-def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000):
+def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000, fs=1000):
     sig = xr.DataArray(
         np.random.randn(nchannel, ntime),  # (channel, time)
         dims=["channel", "time"],
         coords={
-            "channel": [f"ch{i}" for i in range(16)],
-            "time": np.arange(1000_000) / 1000,  # 1000 Hz sampling rate → seconds
+            "channel": [f"ch{i}" for i in range(nchannel)],
+            "time": np.arange(ntime) / fs,  # 1000 Hz sampling rate → seconds
         },
         name="Example iEEG signal",
     )
     # apply smoothing
-    from scipy.ndimage import gaussian_filter1d
     sig_smooth = xr.apply_ufunc(
         lambda x: gaussian_filter1d(x, sigma=5),  # Adjust sigma for desired smoothing
         sig,
@@ -547,3 +547,17 @@ def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000):
         dask="parallelized",
     )
     return sig_smooth
+
+def example_ieeg(nrows=16, ncols=16, ntime=1000_000):
+    nchannels = nrows * ncols
+    sig = example_smooth_multichannel_sigx(nchannel=nchannels, ntime=ntime).transpose("time", "channel")
+    # reshape into 16, 16 and add AP, ML 
+    ap_vals = np.linspace(-4, 1, nrows)
+    ml_vals = np.linspace(-4, 4, ncols)
+    sig_reshaped = xr.DataArray(
+        sig.data.reshape(ntime, ncols, nrows),  # (time, ml, ap) column major
+        dims=["time", "ML", "AP"],
+        coords={"time": sig.coords["time"], "AP": ap_vals, "ML": ml_vals},
+        name="Example iEEG signal",
+    )
+    return sig_reshaped

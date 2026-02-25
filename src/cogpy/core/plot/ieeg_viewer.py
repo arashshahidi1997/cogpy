@@ -1,356 +1,261 @@
 """
 ieeg_viewer.py
 ==============
-A self-contained Panel/HoloViews multichannel iEEG viewer.
+Grid-aware iEEG viewer built on top of MultichannelViewer.
+
+For a grid-unaware viewer use MultichannelViewer directly.
 
 Usage
 -----
+    # Standalone (no grid)
     from ieeg_viewer import ieeg_viewer
-    import panel as pn
+    viewer = ieeg_viewer(sig_tc)
+    viewer.panel().servable()
 
-    # sig: xr.DataArray with dims (channel, time) or (time, channel)
-    # time coordinate must be in seconds (float).
-    # channel coordinate can be any hashable values (int, str, tuple, …).
+    # Grid-wired
+    from channel_grid import ChannelGrid
+    grid = ChannelGrid(n_ap=16, n_ml=16)
+    viewer = ieeg_viewer(sig_tc, channel_grid=grid, n_ml=16)
+    viewer.panel().servable()
 
-    pn.extension()
-
-    viewer = ieeg_viewer(sig)
-    viewer.servable()        # inside `panel serve`
-    pn.serve(viewer)         # programmatic serve
-
-    # In a notebook:
-    pn.extension()
-    ieeg_viewer(sig)
-
-Example
--------
->>> from cogpy.core.plot.ieeg_viewer import ieeg_viewer
->>> from cogpy.datasets.tensor import example_smooth_multichannel_sigx
->>> ieeg_view = ieeg_viewer(sig, initial_window_s=5, n_channels_default=8)
->>> ieeg_view.servable()
+    # Full layout with grid widget
+    from channel_grid_widget import ChannelGridWidget
+    w = ChannelGridWidget.from_grid(grid)
+    pn.Row(w.panel(), viewer.panel()).servable()
 """
-
 from __future__ import annotations
 
 import numpy as np
-import holoviews as hv
-from holoviews import streams
-from holoviews.plotting.links import RangeToolLink
 import panel as pn
 import xarray as xr
-from tsdownsample import MinMaxLTTBDownsampler
+
+from .multichannel_viewer import MultichannelViewer
+from .grid_indexing import flat_indices_from_selected, apml_from_flat_index_order
 
 __all__ = ["ieeg_viewer"]
 
-# Module-level downsampler singleton (stateless for our use, safe to share)
-_ds = MinMaxLTTBDownsampler()
-
-
-# ---------------------------------------------------------------------------
-# Private helpers
-# ---------------------------------------------------------------------------
-
-def _downsample(
-    t: np.ndarray, y: np.ndarray, n_out: int
-) -> tuple[np.ndarray, np.ndarray]:
-    """MinMaxLTTB downsample; pass through if already small enough."""
-    if len(t) <= n_out:
-        return t, y
-    idx = _ds.downsample(t, y, n_out=n_out)
-    return t[idx], y[idx]
-
-
-def _find_indices(t_vals: np.ndarray, t0: float, t1: float) -> tuple[int, int]:
-    i0 = int(np.searchsorted(t_vals, t0, side="left"))
-    i1 = int(np.searchsorted(t_vals, t1, side="right"))
-    return max(i0, 0), min(i1, len(t_vals))
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 def ieeg_viewer(
     data: xr.DataArray,
     *,
-    # Dimension names
     time_dim: str = "time",
     channel_dim: str = "channel",
-    # Window settings
     initial_window_s: float = 10.0,
     min_window_s: float = 0.5,
     max_window_s: float = 120.0,
-    # Rendering budgets
     detail_px: int = 2000,
     overview_px: int = 10_000,
-    # Channel display
     n_channels_default: int = 8,
-    max_channels: int = 16,
     offset_scale: float = 3.0,
-    # Layout
     width: int = 1100,
     detail_height: int = 500,
     overview_height: int = 120,
     title: str | None = None,
-) -> pn.viewable.Viewable:
+    # Grid wiring
+    channel_grid=None,
+    n_ml: int | None = None,
+    flat_order: str = "row-major",
+) -> "IEEGViewer":
     """
-    Build an interactive multichannel iEEG viewer.
+    Build a grid-aware iEEG viewer.
 
     Parameters
     ----------
     data : xr.DataArray
-        Two-dimensional array with one time dimension and one channel
-        dimension.  Dimension order does not matter.  The time coordinate
-        must be numeric (seconds).  Channel coordinate values are used as
-        display labels and can be any type (int, str, tuple, …).
-        Dask-backed arrays are materialised once on first call.
-    time_dim : str
-        Name of the time dimension. Default ``"time"``.
-    channel_dim : str
-        Name of the channel dimension. Default ``"channel"``.
-    initial_window_s : float
-        Width of the detail window shown on first render, in seconds.
-    min_window_s : float
-        Lower bound of the window-width slider.
-    max_window_s : float
-        Upper bound of the window-width slider.
-    detail_px : int
-        Target number of Bokeh-rendered points *per channel* in the detail
-        pane.  MinMaxLTTB preserves visual extrema within this budget.
-    overview_px : int
-        Points in the static overview strip (mean across all channels,
-        computed once at startup).
-    n_channels_default : int
-        Number of channels selected by default (the first N).
-    max_channels : int
-        Maximum channels the MultiChoice widget allows simultaneously.
-    offset_scale : float
-        Vertical spacing between channel traces in z-score units.
-    width : int
-        Plot width in pixels.
-    detail_height : int
-        Detail pane height in pixels.
-    overview_height : int
-        Overview strip height in pixels.
-    title : str | None
-        Header text.  If None, auto-generated from ``data.name``.
+        Dims (channel, time) or (time, channel). Time in seconds.
+    channel_grid : ChannelGrid | None
+        When provided, channel display is driven by grid.selected.
+        Requires n_ml.
+    n_ml : int | None
+        Grid ML columns, for flat index computation (ap * n_ml + ml).
+    (all other params passed through to MultichannelViewer)
 
     Returns
     -------
-    pn.viewable.Viewable
-        A Panel Column.  Call ``.servable()`` or pass to ``pn.serve()``.
-
-    Examples
-    --------
-    >>> viewer = ieeg_viewer(sig, initial_window_s=5, n_channels_default=16)
-    >>> viewer.servable()
+    IEEGViewer
+        Has a .panel() method returning the Panel layout,
+        and .viewer attribute exposing the MultichannelViewer.
     """
-    # Make the viewer usable without requiring callers to remember
-    # `pn.extension()` / `hv.extension("bokeh")` first.
-    try:
-        pn.extension()
-        hv.extension("bokeh")
-    except Exception:
-        pass
+    if channel_grid is not None and n_ml is None:
+        raise ValueError("n_ml required when channel_grid is provided")
+    if channel_grid is not None and flat_order not in {"row-major", "col-major"}:
+        raise ValueError("flat_order must be 'row-major' or 'col-major'")
 
-    # ------------------------------------------------------------------
-    # 1. Validate dimensions
-    # ------------------------------------------------------------------
-    for dim, name in [(time_dim, "time_dim"), (channel_dim, "channel_dim")]:
+    for dim in (time_dim, channel_dim):
         if dim not in data.dims:
-            raise ValueError(
-                f"{name}={dim!r} not found in data.dims={tuple(data.dims)}"
-            )
+            raise ValueError(f"{dim!r} not in data.dims={tuple(data.dims)}")
 
-    # ------------------------------------------------------------------
-    # 2. Canonical shape (channel, time) → numpy, z-scored per channel
-    # ------------------------------------------------------------------
-    arr    = data.transpose(channel_dim, time_dim)
-    t_vals = np.asarray(arr[time_dim].values,    dtype=np.float64)
-    ch_vals = list(arr[channel_dim].values)       # original coordinate values
-    n_ch   = len(ch_vals)
+    # Canonical (channel, time) numpy
+    arr     = data.transpose(channel_dim, time_dim)
+    t_vals  = np.asarray(arr[time_dim].values, dtype=np.float64)
+    ch_vals = list(arr[channel_dim].values)
+    n_ch    = len(ch_vals)
 
-    # Materialise (triggers Dask compute exactly once)
-    raw: np.ndarray = np.asarray(arr.values, dtype=np.float64)  # (n_ch, n_time)
-
-    # Z-score so offset spacing is meaningful regardless of physical units
+    raw   = np.asarray(arr.values, dtype=np.float64)
     means = raw.mean(axis=1, keepdims=True)
-    stds  = raw.std(axis=1,  keepdims=True) + 1e-12
-    sig_z = (raw - means) / stds                  # (n_ch, n_time)
+    stds  = raw.std(axis=1, keepdims=True) + 1e-12
+    sig_z = np.ascontiguousarray((raw - means) / stds)
 
-    t0_full = float(t_vals[0])
-    t1_full = float(t_vals[-1])
+    ch_labels = [str(v) for v in ch_vals]
 
-    # ------------------------------------------------------------------
-    # 3. Channel label index  (label string ↔ row index in sig_z)
-    # ------------------------------------------------------------------
-    # Ensure uniqueness even if `str(v)` collides.
-    ch_labels   = [f"{i}:{ch_vals[i]}" for i in range(n_ch)]
-    label_to_ix = {lbl: i for i, lbl in enumerate(ch_labels)}
-    default_sel = ch_labels[:min(n_channels_default, n_ch)]
-
-    # ------------------------------------------------------------------
-    # 4. Overview strip  (static, computed once)
-    # ------------------------------------------------------------------
-    mean_sig = sig_z.mean(axis=0)
-    t_ov, y_ov = _downsample(t_vals, mean_sig, overview_px)
-
-    overview_curve = hv.Curve(
-        (t_ov, y_ov), kdims=time_dim, vdims="amp"
-    ).opts(
+    viewer = MultichannelViewer(
+        sig_z, t_vals, ch_labels,
+        initial_window_s=initial_window_s,
+        min_window_s=min_window_s,
+        max_window_s=max_window_s,
+        detail_px=detail_px,
+        overview_px=overview_px,
+        offset_scale=offset_scale,
         width=width,
-        height=overview_height,
-        color="#4a90d9",
-        line_width=0.8,
-        xlabel="",
-        ylabel="",
-        toolbar=None,
-        default_tools=[],
-        title="Overview  —  drag the box to navigate",
-        yaxis=None,
+        detail_height=detail_height,
+        overview_height=overview_height,
+        time_dim=time_dim,
+        title=title or f"{data.name or 'iEEG'}  ({n_ch} ch, {t_vals[-1]-t_vals[0]:.1f} s)",
     )
 
-    # ------------------------------------------------------------------
-    # 5. Widgets
-    # ------------------------------------------------------------------
-    ch_select = pn.widgets.MultiChoice(
-        name="Channels",
-        value=default_sel,
-        options=ch_labels,
-        max_items=max_channels,
-        sizing_mode="stretch_width",
+    # Default selection
+    viewer.show_channels(list(range(min(n_channels_default, n_ch))))
+
+    n_ap = int(getattr(channel_grid, "n_ap", 0)) if channel_grid is not None else None
+    return IEEGViewer(
+        viewer,
+        channel_grid=channel_grid,
+        n_ap=n_ap,
+        n_ml=n_ml,
+        n_ch=n_ch,
+        flat_order=flat_order,
     )
 
-    window_slider = pn.widgets.FloatSlider(
-        name="Window (s)",
-        value=initial_window_s,
-        start=min_window_s,
-        end=max_window_s,
-        step=0.5,
-        sizing_mode="fixed",
-        width=260,
-    )
 
-    # ------------------------------------------------------------------
-    # 6. Detail pane  (DynamicMap + RangeX stream)
-    # ------------------------------------------------------------------
-    range_stream = streams.RangeX(
-        x_range=(t0_full, t0_full + initial_window_s)
-    )
+class IEEGViewer:
+    """
+    Thin wrapper that owns the Panel layout and optional grid wiring.
+    Access the underlying MultichannelViewer via .viewer.
+    """
 
-    def _build_detail(x_range):
-        # Unpack time window from stream
-        if x_range is None or x_range == (None, None):
-            t0, t1 = t0_full, t0_full + initial_window_s
-        else:
-            t0 = max(float(x_range[0]), t0_full)
-            t1 = min(float(x_range[1]), t1_full)
+    def __init__(self, viewer: MultichannelViewer, *, channel_grid, n_ap, n_ml, n_ch, flat_order: str):
+        self.viewer = viewer
+        self._grid  = channel_grid
+        self._n_ap  = n_ap
+        self._n_ml  = n_ml
+        self._n_ch  = n_ch
+        self._flat_order = flat_order
+        self._built = False
 
-        i0, i1    = _find_indices(t_vals, t0, t1)
-        t_win     = t_vals[i0:i1]
-        labels    = ch_select.value or default_sel
-        ch_ixs    = [label_to_ix[lbl] for lbl in labels]
-        n_visible = len(ch_ixs)
+    def panel(self) -> pn.viewable.Viewable:
+        viewer_panel = self.viewer.panel()
 
-        palette = None
-        try:
-            from bokeh.palettes import Category20  # type: ignore
+        if self._grid is None:
+            return viewer_panel
 
-            palette = list(Category20[20]) if isinstance(Category20, dict) else list(Category20)
-        except Exception:
-            palette = None
-
-        curves = []
-        for rank, ch in enumerate(ch_ixs):
-            y_win      = sig_z[ch, i0:i1]
-            t_ds, y_ds = _downsample(t_win, y_win, detail_px)
-            offset     = (n_visible - 1 - rank) * offset_scale
-            color = palette[rank % len(palette)] if palette else None
-            curves.append(
-                hv.Curve(
-                    (t_ds, y_ds + offset),
-                    kdims=time_dim,
-                    vdims="amp",
-                    label=ch_labels[ch],
-                ).opts(color=color, line_width=1)
-            )
-
-        if not curves:
-            return hv.Overlay([hv.Curve([], kdims=time_dim, vdims="amp")])
-
-        # Channel name y-ticks aligned to trace offsets
-        yticks = [
-            ((n_visible - 1 - rank) * offset_scale, ch_labels[ch])
-            for rank, ch in enumerate(ch_ixs)
-        ]
-
-        return hv.Overlay(curves).opts(
-            hv.opts.Overlay(
-                width=width,
-                height=detail_height,
-                show_legend=False,
-                toolbar="above",
-                xlabel=f"{time_dim} (s)",
-                ylabel="",
-                yticks=yticks,
-                title="Detail  —  MinMaxLTTB",
-                framewise=True,   # recompute axis ranges every render
-            )
+        # Grid-wired controls
+        n_sel_md = pn.pane.Markdown(
+            f"**{self.viewer._n_ch}** channels",
+            styles={"color": "#cdd6f4", "font-size": "11px"},
+        )
+        apply_btn = pn.widgets.Button(
+            name="Apply selection", button_type="primary", width=140,
+        )
+        sort_sel = pn.widgets.Select(
+            name="Sort",
+            options=["none", "AP", "ML", "variance"],
+            value="none",
+            width=140,
         )
 
-    detail_dmap = hv.DynamicMap(_build_detail, streams=[range_stream])
+        # Track pending selection separately from applied
+        _pending: list[int] = list(self.viewer._active_ix)
 
-    # Channel selection change -> re-emit the current x_range to refresh detail.
-    ch_select.param.watch(
-        lambda *_: range_stream.trigger([range_stream]), "value"
-    )
+        def _flat(selected):
+            if self._n_ml is None:
+                return []
+            n_ap = self._n_ap
+            if n_ap is None or n_ap == 0:
+                # Best-effort fallback; needed for col-major mapping.
+                n_ap = int(getattr(self._grid, "n_ap", 0)) if self._grid is not None else 0
+            if n_ap <= 0:
+                raise ValueError("n_ap must be available when channel_grid is provided")
+            return flat_indices_from_selected(
+                selected,
+                n_ap=int(n_ap),
+                n_ml=int(self._n_ml),
+                order=str(self._flat_order),
+                n_ch=int(self._n_ch),
+            )
 
-    # Overview box drag → fires RangeX → _build_detail
-    RangeToolLink(
-        overview_curve,
-        detail_dmap,
-        axes=["x", "x"],
-        boundsx=(t0_full, t0_full + initial_window_s),
-    )
+        def _on_grid(event):
+            _pending[:] = _flat(event.new)
+            n_sel_md.object = (
+                f"**{len(_pending)}** pending  "
+                f"_(applied: {len(self.viewer._active_ix)})_"
+            )
 
-    # Window slider → keep center, resize box
-    def _on_window(event):
-        lo, hi = range_stream.x_range or (t0_full, t0_full + initial_window_s)
-        center = (lo + hi) / 2
-        span = min(float(event.new), t1_full - t0_full)
-        half = span / 2
+        self._grid.param.watch(_on_grid, "selected")
 
-        new_lo = max(t0_full, center - half)
-        new_hi = min(t1_full, center + half)
+        # Initialise pending from current grid state
+        _pending[:] = _flat(self._grid.selected)
 
-        if new_hi - new_lo < 1e-9:
-            new_lo = max(t0_full, t1_full - span)
-            new_hi = min(t1_full, new_lo + span)
+        def _sorted(indices: list[int]) -> list[int]:
+            key = str(sort_sel.value or "none")
+            if key == "none":
+                return list(indices)
+            if key == "AP":
+                if self._n_ap is None or self._n_ml is None:
+                    return list(indices)
+                return sorted(
+                    indices,
+                    key=lambda ix: apml_from_flat_index_order(
+                        int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                    ),
+                )
+            if key == "ML":
+                if self._n_ap is None or self._n_ml is None:
+                    return list(indices)
+                return sorted(
+                    indices,
+                    key=lambda ix: (
+                        apml_from_flat_index_order(
+                            int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                        )[1],
+                        apml_from_flat_index_order(
+                            int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                        )[0],
+                    ),
+                )
+            if key == "variance":
+                try:
+                    lo, hi = self.viewer._range_stream.x_range
+                    t0, t1 = float(lo), float(hi)
+                except Exception:  # noqa: BLE001
+                    t0, t1 = self.viewer._t0, self.viewer._t1
 
-        range_stream.event(x_range=(new_lo, new_hi))
+                # Compute variance over current window using precomputed z-scored numpy.
+                t_vals = self.viewer._t_vals
+                i0 = int(np.searchsorted(t_vals, t0, side="left"))
+                i1 = int(np.searchsorted(t_vals, t1, side="right"))
+                i0 = max(i0, 0)
+                i1 = min(i1, len(t_vals))
+                if i1 <= i0:
+                    i0, i1 = 0, len(t_vals)
+                sig = self.viewer._sig_z
+                v = np.var(sig[:, i0:i1], axis=1)
+                return sorted(indices, key=lambda ix: float(v[int(ix)]), reverse=True)
 
-    window_slider.param.watch(_on_window, "value")
+            return list(indices)
 
-    # ------------------------------------------------------------------
-    # 7. Layout
-    # ------------------------------------------------------------------
-    header = title or (
-        f"iEEG viewer  —  {data.name or 'signal'}  "
-        f"({n_ch} channels,  {t1_full - t0_full:.1f} s)"
-    )
+        def _on_apply(_):
+            self.viewer.show_channels(_sorted(list(_pending)))
+            n_sel_md.object = f"**{len(_pending)}** channels"
 
-    return pn.Column(
-        pn.pane.Markdown(f"## {header}", styles={"color": "#cdd6f4"}),
-        pn.Row(
-            ch_select,
-            window_slider,
-            styles={
-                "background": "#1e1e2e",
-                "padding": "8px",
-                "border-radius": "6px",
-            },
-        ),
-        detail_dmap,
-        overview_curve,
-        styles={"background": "#181825", "padding": "16px"},
-    )
+        apply_btn.on_click(_on_apply)
+
+        controls = pn.Row(
+            n_sel_md, sort_sel, apply_btn,
+            styles={"background": "#1e1e2e", "padding": "8px", "border-radius": "6px"},
+        )
+
+        # Insert controls above the viewer's own controls
+        return pn.Column(controls, viewer_panel)
+
+    def servable(self):
+        return self.panel().servable()

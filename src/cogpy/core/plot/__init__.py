@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING
 __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
+        "grid_indexing",
         "frame_plot",
+        "ieeg_toolkit_app",
         "multichannel_timeseries",
         "orthoslicer",
         "orthoslicer_facet",
@@ -15,6 +17,7 @@ __getattr__, __dir__, __all__ = attach(
         "orthoslicer_zoom",
         "orthoslicer.py",  # keep "orthoslicer" twice? No—see note below.
         "specgram_plot",
+        "spectrogram_bursts_app",
         "time_player",
         "time_plot",
         "xarray_hv",

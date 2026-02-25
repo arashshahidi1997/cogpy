@@ -21,6 +21,9 @@ tutorials/index
 :caption: Explanation
 
 explanation/architecture
+explanation/datasets/index
+explanation/plot/ieeg-toolkit
+explanation/plot/ieeg-toolkit-spec
 ```
 
 ```{toctree}
