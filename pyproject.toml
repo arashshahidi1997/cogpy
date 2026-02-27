@@ -53,6 +53,9 @@ io = [
   "openpyxl",
   "xmltodict",
 ]
+interop-mne = [
+  "mne",
+]
 perf = [
   "dask[distributed]",
   "pyfftw",
