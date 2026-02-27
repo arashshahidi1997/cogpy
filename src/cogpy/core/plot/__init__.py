@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING
 __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
+        "grid_frame_element",
         "grid_indexing",
         "frame_plot",
         "ieeg_toolkit_app",
         "linked_views",
+        "processing_chain",
         "multichannel_timeseries",
         "theme",
         "orthoslicer",
@@ -35,8 +37,10 @@ __getattr__, __dir__, __all__ = attach(
 
 if TYPE_CHECKING:
     from . import (
+        grid_frame_element,
         frame_plot,
         multichannel_timeseries,
+        processing_chain,
         orthoslicer,
         orthoslicer_facet,
         orthoslicer_ranger,

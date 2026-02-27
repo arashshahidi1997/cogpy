@@ -566,7 +566,7 @@ def drop_micro_states(
     ]
     df_macro = df_macro.drop(macro_within_micro.index)
     # convert to numpy
-    macro_state_intervals = df_macro[["t_start", "t_end"]].to_numpy()
+    macro_state_intervals = df_macro[["t_start", "t_end"]].to_numpy(copy=True)
 
     df = pd.DataFrame(micro_state_intervals, columns=["t_start", "t_end"])
     df_ = sort_col_into_states(

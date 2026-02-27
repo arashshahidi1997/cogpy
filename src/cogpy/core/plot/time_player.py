@@ -117,7 +117,7 @@ class TimeHair(param.Parameterized):
         ensure_tap_tools: bool = True,
         tools: list[str] | None = None,
         active_tools: list[str] | None = None,
-        line_color: str = "white",
+        line_color: str = "auto",
         line_width: int = 2,
         line_alpha: float = 0.9,
     ):
@@ -134,9 +134,19 @@ class TimeHair(param.Parameterized):
         ensure_tap_tools
             If True, applies a basic toolset including ``tap`` so clicks work
             even if the incoming element did not declare tools.
+        line_color
+            Hair line colour. Use ``"auto"`` (default) for a theme-safe visible colour.
         """
         import holoviews as hv
         from holoviews import streams
+
+        if line_color == "auto":
+            # Visible on both light and dark backgrounds.
+            try:
+                from .theme import TEAL as _DEFAULT_HAIR_COLOR
+            except Exception:  # noqa: BLE001
+                _DEFAULT_HAIR_COLOR = "#4fc3f7"
+            line_color = _DEFAULT_HAIR_COLOR
 
         snap_values = self._infer_snap_values(obj, time_kdim) if bool(self.snap) else None
         snapper = self._build_snapper(snap_values) if snap_values is not None and bool(self.snap) else None
@@ -176,7 +186,9 @@ class TimeHair(param.Parameterized):
 
             el2 = el
             if bool(ensure_tap_tools):
-                el2 = el2.opts(tools=list(tools), active_tools=list(active_tools))
+                # Ensure a toolbar exists; otherwise Bokeh may omit the TapTool
+                # entirely and clicks won't fire.
+                el2 = el2.opts(toolbar="above", tools=list(tools), active_tools=list(active_tools))
 
             tap = streams.Tap(source=el2, x=None, y=None)
             tap.add_subscriber(_on_tap)

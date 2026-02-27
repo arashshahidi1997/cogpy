@@ -41,6 +41,7 @@ Usage
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import numpy as np
 import panel as pn
 import param
@@ -50,6 +51,7 @@ from bokeh.plotting import figure
 from .channel_grid import ChannelGrid
 from .theme import BG, BORDER, TEAL, TEXT, TEXT_MED, style_figure
 from .topomap import TopoMap
+from cogpy.datasets.schemas import AtlasImageOverlay
 
 __all__ = ["ChannelGridWidget"]
 
@@ -98,6 +100,7 @@ class ChannelGridWidget(param.Parameterized):
         cell_values: np.ndarray | None = None,
         bad_mask: np.ndarray | None = None,
         topomap: TopoMap | None = None,
+        atlas_overlay: AtlasImageOverlay | None = None,
         # atlas
         ap_coords: np.ndarray | None = None,
         ml_coords: np.ndarray | None = None,
@@ -114,12 +117,22 @@ class ChannelGridWidget(param.Parameterized):
         self._cell_values = None if topomap is not None else self._validate_cell_values(cell_values, self.grid.n_ap, self.grid.n_ml)
         self._bad_mask    = self._validate_bad_mask(bad_mask, self.grid.n_ap, self.grid.n_ml)
 
+        self._tap_callbacks: list[Callable[[dict], None]] = []
+
         # atlas
         self._ap_coords   = np.asarray(ap_coords) if ap_coords is not None else None
         self._ml_coords   = np.asarray(ml_coords) if ml_coords is not None else None
-        self._atlas_image = atlas_image
-        self._atlas_mode  = atlas_mode
-        self._bl_distance = float(bl_distance)
+        if atlas_overlay is not None and atlas_image is not None:
+            raise ValueError("Provide only one of atlas_overlay or atlas_image")
+        self._atlas_overlay = atlas_overlay
+        if atlas_overlay is not None:
+            self._atlas_image = atlas_overlay.image
+            self._atlas_mode = "full" if (self._ap_coords is not None and self._ml_coords is not None) else "crop"
+            self._bl_distance = float(atlas_overlay.bl_distance)
+        else:
+            self._atlas_image = atlas_image
+            self._atlas_mode = atlas_mode
+            self._bl_distance = float(bl_distance)
 
         self._source   = self._build_source()
         self._fig      = self._build_figure()
@@ -131,6 +144,16 @@ class ChannelGridWidget(param.Parameterized):
         if self._topomap is None:
             self._source.selected.on_change("indices", self._on_tap)
         else:
+            # In notebooks, showing the TopoMap separately and then embedding it as a
+            # background will try to attach the same Bokeh models to a second
+            # document, which Bokeh forbids.
+            if getattr(self._topomap.figure, "document", None) is not None:
+                raise RuntimeError(
+                    "TopoMap figure is already attached to a Bokeh document. "
+                    "When using TopoMap as the ChannelGridWidget background, do not "
+                    "also display the same TopoMap separately. Create a fresh TopoMap "
+                    "instance (or display only the widget)."
+                )
             if int(self._topomap.n_ap) != int(self.grid.n_ap) or int(self._topomap.n_ml) != int(self.grid.n_ml):
                 raise ValueError(
                     "topomap shape must match grid shape: "
@@ -150,6 +173,7 @@ class ChannelGridWidget(param.Parameterized):
         cell_values: np.ndarray | None = None,
         bad_mask: np.ndarray | None = None,
         topomap: TopoMap | None = None,
+        atlas_overlay: AtlasImageOverlay | None = None,
         ap_coords: np.ndarray | None = None,
         ml_coords: np.ndarray | None = None,
         atlas_image: np.ndarray | None = None,
@@ -163,6 +187,7 @@ class ChannelGridWidget(param.Parameterized):
             cell_values=cell_values,
             bad_mask=bad_mask,
             topomap=topomap,
+            atlas_overlay=atlas_overlay,
             ap_coords=ap_coords,
             ml_coords=ml_coords,
             atlas_image=atlas_image,
@@ -178,6 +203,7 @@ class ChannelGridWidget(param.Parameterized):
         *,
         cell_size: int = 28,
         bad_mask: np.ndarray | None = None,
+        atlas_overlay: AtlasImageOverlay | None = None,
     ) -> "ChannelGridWidget":
         """
         Construct a widget whose background is driven by the provided TopoMap.
@@ -190,6 +216,7 @@ class ChannelGridWidget(param.Parameterized):
             cell_values=None,
             bad_mask=bad_mask,
             topomap=topomap,
+            atlas_overlay=atlas_overlay,
         )
 
     # ------------------------------------------------------------------ #
@@ -201,6 +228,13 @@ class ChannelGridWidget(param.Parameterized):
             pn.pane.Bokeh(self._fig),
             styles={"background": BG, "padding": "10px", "border-radius": "8px"},
         )
+
+    def on_tap(self, callback: Callable[[dict], None]) -> None:
+        """
+        Register a tap callback. Called with dict:
+          {"ap_idx": int, "ml_idx": int, "ap": float|None, "ml": float|None}
+        """
+        self._tap_callbacks.append(callback)
 
     def update_cell_values(self, values: np.ndarray) -> None:
         """Push a new per-electrode background array and redraw."""
@@ -294,6 +328,9 @@ class ChannelGridWidget(param.Parameterized):
             ap_step = float(getattr(self, "_overlay_ap_step", 1.0))
             ml_step = float(getattr(self, "_overlay_ml_step", 1.0))
 
+            # Atlas background (drawn before selection overlays so it sits behind).
+            self._maybe_add_atlas(fig)
+
             # Selected-only overlay (unselected alpha=0).
             fig.rect(
                 x="ml",
@@ -381,6 +418,23 @@ class ChannelGridWidget(param.Parameterized):
         elif mode == "manual":
             g.toggle_manual(ap, ml)
 
+        self._emit_tap(ap, ml)
+
+    def _emit_tap(self, ap: int, ml: int) -> None:
+        if not self._tap_callbacks:
+            return
+        ap_mm = None
+        ml_mm = None
+        if self._topomap is not None:
+            ap_mm = float(self._topomap.ap_coords[int(ap)])
+            ml_mm = float(self._topomap.ml_coords[int(ml)])
+        elif self._ap_coords is not None and self._ml_coords is not None:
+            ap_mm = float(self._ap_coords[int(ap)])
+            ml_mm = float(self._ml_coords[int(ml)])
+        info = {"ap_idx": int(ap), "ml_idx": int(ml), "ap": ap_mm, "ml": ml_mm}
+        for cb in list(self._tap_callbacks):
+            cb(info)
+
     def _maybe_add_atlas(self, fig: figure) -> None:
         """Overlay atlas image if provided."""
         if self._atlas_image is None:
@@ -392,52 +446,88 @@ class ChannelGridWidget(param.Parameterized):
 
         # Ensure RGBA uint32 for Bokeh image_rgba
         if img.dtype != np.uint8:
+            img = np.asarray(img)
+            # Common case: matplotlib.image.imread returns float in [0, 1].
+            if np.issubdtype(img.dtype, np.floating):
+                finite = img[np.isfinite(img)]
+                if finite.size and float(finite.max()) <= 1.0:
+                    img = img * 255.0
             img = np.clip(img, 0, 255).astype(np.uint8)
         if img.ndim == 3 and img.shape[2] == 3:
             alpha = np.full((*img.shape[:2], 1), 180, dtype=np.uint8)
             img   = np.concatenate([img, alpha], axis=2)
         # Bokeh wants (H, W) uint32 in RGBA packed
         img_u32 = img.view(np.uint32).reshape(img.shape[:2])
+        # Bokeh's image glyphs map array row 0 to the *bottom* of the image in
+        # data space, while most image loaders (and Matplotlib's default imshow)
+        # treat row 0 as the *top*. Flip vertically so pixel-to-mm registrations
+        # (made in image coordinates) align in Bokeh.
+        img_u32 = np.flipud(img_u32)
 
+        # TopoMap-wired mode uses physical coords on the figure axes.
+        if self._topomap is not None:
+            ap_coords = np.asarray(self._topomap.ap_coords, dtype=float)
+            ml_coords = np.asarray(self._topomap.ml_coords, dtype=float)
+            ap_min = float(np.nanmin(ap_coords))
+            ap_max = float(np.nanmax(ap_coords))
+            ml_min = float(np.nanmin(ml_coords))
+            ml_max = float(np.nanmax(ml_coords))
+
+            if self._atlas_overlay is not None:
+                # Use explicit atlas extents in physical coords.
+                y0, y1 = map(float, self._atlas_overlay.ap_extent)  # AP axis
+                x0, x1 = map(float, self._atlas_overlay.ml_extent)  # ML axis
+            else:
+                # Fill electrode extent (physical coords).
+                x0, x1 = ml_min, ml_max
+                y0, y1 = ap_min, ap_max
+
+            fig.image_rgba(
+                image=[img_u32],
+                x=float(x0),
+                y=float(y0),
+                dw=float(x1 - x0),
+                dh=float(y1 - y0),
+                level="image",
+            )
+            return
+
+        # Non-TopoMap mode uses grid index space on axes.
         if mode == "crop" or self._ap_coords is None or self._ml_coords is None:
-            # Fill the whole plot area — simple stretch to grid extent
-            fig.image_rgba(
-                image=[img_u32],
-                x=-0.5, y=-0.5,
-                dw=g.n_ml, dh=g.n_ap,
-                level="image",
-            )
+            # Fill the whole plot area — simple stretch to grid extent.
+            fig.image_rgba(image=[img_u32], x=-0.5, y=-0.5, dw=g.n_ml, dh=g.n_ap, level="image")
+            return
+
+        # "full" mode: place the image at correct physical coords, mapped into grid index space.
+        ap_min = float(self._ap_coords.min())
+        ap_max = float(self._ap_coords.max())
+        ml_min = float(self._ml_coords.min())
+        ml_max = float(self._ml_coords.max())
+
+        # How many mm per grid step.
+        ap_step = (ap_max - ap_min) / max(g.n_ap - 1, 1)
+        ml_step = (ml_max - ml_min) / max(g.n_ml - 1, 1)
+
+        # Atlas physical extent:
+        # - If an AtlasImageOverlay is provided, use its explicit extents.
+        # - Otherwise, fall back to the older bregma-lambda heuristic.
+        if self._atlas_overlay is not None:
+            y0_mm, y1_mm = map(float, self._atlas_overlay.ap_extent)  # AP axis
+            x0_mm, x1_mm = map(float, self._atlas_overlay.ml_extent)  # ML axis
         else:
-            # "full" mode: place the image at correct physical coords
-            # Map physical mm → grid index space using bl_distance scale
-            # 1 grid unit = (ap_range / (n_ap-1)) mm
-            ap_min = float(self._ap_coords.min())
-            ap_max = float(self._ap_coords.max())
-            ml_min = float(self._ml_coords.min())
-            ml_max = float(self._ml_coords.max())
-
-            # How many mm per grid step
-            ap_step = (ap_max - ap_min) / max(g.n_ap - 1, 1)
-            ml_step = (ml_max - ml_min) / max(g.n_ml - 1, 1)
-
-            # Atlas physical extent (assume atlas covers bregma ± bl_distance/2)
             half_bl = self._bl_distance / 2
-            # x = ML axis, y = AP axis
-            x0_mm = -half_bl;  x1_mm = half_bl
-            y0_mm = -half_bl;  y1_mm = half_bl
+            x0_mm = -half_bl
+            x1_mm = half_bl
+            y0_mm = -half_bl
+            y1_mm = half_bl
 
-            # Convert mm → grid index coords
-            x0 = (x0_mm - ml_min) / ml_step - 0.5
-            x1 = (x1_mm - ml_min) / ml_step - 0.5
-            y0 = (y0_mm - ap_min) / ap_step - 0.5
-            y1 = (y1_mm - ap_min) / ap_step - 0.5
+        # Convert mm → grid index coords.
+        x0 = (x0_mm - ml_min) / ml_step - 0.5
+        x1 = (x1_mm - ml_min) / ml_step - 0.5
+        y0 = (y0_mm - ap_min) / ap_step - 0.5
+        y1 = (y1_mm - ap_min) / ap_step - 0.5
 
-            fig.image_rgba(
-                image=[img_u32],
-                x=x0, y=y0,
-                dw=(x1 - x0), dh=(y1 - y0),
-                level="image",
-            )
+        fig.image_rgba(image=[img_u32], x=x0, y=y0, dw=(x1 - x0), dh=(y1 - y0), level="image")
 
     # ------------------------------------------------------------------ #
     # Controls                                                             #
@@ -540,6 +630,8 @@ class ChannelGridWidget(param.Parameterized):
             # Toggle via ChannelGrid helper — does NOT replace manual_selection
             # wholesale, so Bokeh source state is never out of sync
             g.toggle_manual(ap, ml)
+
+        self._emit_tap(ap, ml)
 
     def _on_mode_btn(self, event):
         self.grid.mode = event.new

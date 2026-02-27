@@ -16,6 +16,7 @@ import numpy as np
 import panel as pn
 import xarray as xr
 from bokeh.models import BasicTicker, ColorBar, ColumnDataSource, HoverTool, LinearColorMapper
+from bokeh.models import FixedTicker
 from bokeh.plotting import figure
 
 from .theme import BG, BORDER, COLORMAPS, TEXT, style_figure
@@ -57,6 +58,7 @@ class TopoMap:
         ml_coords: np.ndarray | None = None,
         colormap: str = "viridis",
         symmetric: bool = False,
+        style: str = "electrodes",
         cell_size: int = 30,
         width: int | None = None,
         height: int | None = None,
@@ -75,8 +77,12 @@ class TopoMap:
         if colormap not in COLORMAPS:
             raise ValueError(f"colormap must be one of {list(COLORMAPS)}, got {colormap!r}")
 
+        if style not in {"electrodes", "image"}:
+            raise ValueError("style must be 'electrodes' or 'image'")
+
         self._colormap = colormap
         self._symmetric = bool(symmetric)
+        self._style = str(style)
         self._cell_size = int(cell_size)
         self._electrode_radius = float(electrode_radius)
         self._show_values = bool(show_values)
@@ -130,6 +136,9 @@ class TopoMap:
                 "value_str": [(i, f"{float(v):.3g}") for i, v in enumerate(flat)],
             }
         )
+        # Image-style uses a separate image source.
+        if getattr(self, "_img_source", None) is not None:
+            self._img_source.data = {"image": [values.astype(float)]}
 
     def on_tap(self, callback: Callable[[dict], None]) -> None:
         self._tap_callbacks.append(callback)
@@ -190,12 +199,16 @@ class TopoMap:
         ap_idx_grid, ml_idx_grid = np.meshgrid(np.arange(self._n_ap), np.arange(self._n_ml), indexing="ij")
         ap_phys_grid, ml_phys_grid = np.meshgrid(self._ap_coords, self._ml_coords, indexing="ij")
 
+        # Display convention: AP index starts at the top (opposite physical direction when AP increases upward).
+        ap_idx_display = (self._n_ap - 1 - ap_idx_grid)
+
         flat_vals = values.ravel()
         lo, hi = self._color_range(values)
 
         source = ColumnDataSource(
             dict(
                 ap_idx=ap_idx_grid.ravel().tolist(),
+                ap_idx_display=ap_idx_display.ravel().tolist(),
                 ml_idx=ml_idx_grid.ravel().tolist(),
                 ap=ap_phys_grid.ravel().tolist(),
                 ml=ml_phys_grid.ravel().tolist(),
@@ -223,24 +236,43 @@ class TopoMap:
             toolbar_location=None,
             title=self._title,
         )
-        style_figure(fig, xlabel="ML (mm)", ylabel="AP (mm)", toolbar=False)
+        style_figure(fig, xlabel="ML", ylabel="AP", toolbar=False)
         fig.title.text_color = TEXT
         fig.title.text_font_size = "13px"
 
-        ap_step = float(np.diff(ap_phys).mean()) if len(ap_phys) > 1 else 1.0
-        ml_step = float(np.diff(ml_phys).mean()) if len(ml_phys) > 1 else 1.0
-        radius = self._electrode_radius * min(abs(ap_step), abs(ml_step))
+        if self._style == "electrodes":
+            ap_step = float(np.diff(ap_phys).mean()) if len(ap_phys) > 1 else 1.0
+            ml_step = float(np.diff(ml_phys).mean()) if len(ml_phys) > 1 else 1.0
+            radius = self._electrode_radius * min(abs(ap_step), abs(ml_step))
 
-        fig.circle(
-            x="ml",
-            y="ap",
-            radius=radius,
-            source=self._source,
-            fill_color={"field": "value", "transform": self._mapper},
-            fill_alpha=0.92,
-            line_color="#1a1a2e",
-            line_width=0.8,
-        )
+            fig.circle(
+                x="ml",
+                y="ap",
+                radius=radius,
+                source=self._source,
+                fill_color={"field": "value", "transform": self._mapper},
+                fill_alpha=0.92,
+                line_color="#1a1a2e",
+                line_width=0.8,
+            )
+        else:
+            # Continuous heatmap image in physical coordinates.
+            # Note: image expects rows correspond to y (AP) increasing upward.
+            initial = np.array(self._source.data["value"], dtype=float).reshape(self._n_ap, self._n_ml)
+            self._img_source = ColumnDataSource({"image": [initial]})
+            x0 = float(ml_phys.min())
+            y0 = float(ap_phys.min())
+            dw = float(ml_phys.max() - ml_phys.min()) if len(ml_phys) > 1 else 1.0
+            dh = float(ap_phys.max() - ap_phys.min()) if len(ap_phys) > 1 else 1.0
+            fig.image(
+                image="image",
+                x=x0,
+                y=y0,
+                dw=dw,
+                dh=dh,
+                source=self._img_source,
+                color_mapper=self._mapper,
+            )
 
         if self._show_values:
             fig.text(
@@ -267,10 +299,16 @@ class TopoMap:
         )
         fig.add_layout(color_bar, "right")
 
+        # Show ML/AP indices as axis tick labels, positioned at physical coords.
+        fig.xaxis.ticker = FixedTicker(ticks=[float(v) for v in ml_phys.tolist()])
+        fig.yaxis.ticker = FixedTicker(ticks=[float(v) for v in ap_phys.tolist()])
+        fig.xaxis.major_label_overrides = {float(v): str(i) for i, v in enumerate(ml_phys.tolist())}
+        fig.yaxis.major_label_overrides = {float(v): str(self._n_ap - 1 - i) for i, v in enumerate(ap_phys.tolist())}
+
         fig.add_tools(
             HoverTool(
                 tooltips=[
-                    ("AP", "@ap{0.2f} mm  (row @ap_idx)"),
+                    ("AP", "@ap{0.2f} mm  (row @ap_idx_display)"),
                     ("ML", "@ml{0.2f} mm  (col @ml_idx)"),
                     ("value", "@value{0.4f}"),
                 ]
@@ -294,6 +332,7 @@ class TopoMap:
         d = self._source.data
         info = {
             "ap_idx": int(d["ap_idx"][idx]),
+            "ap_idx_display": int(d["ap_idx_display"][idx]),
             "ml_idx": int(d["ml_idx"][idx]),
             "ap": float(d["ap"][idx]),
             "ml": float(d["ml"][idx]),

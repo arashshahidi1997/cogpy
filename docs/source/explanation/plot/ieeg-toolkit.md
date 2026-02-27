@@ -143,3 +143,35 @@ spectrogram_bursts_app(mode="small", seed=0, kind="toy").servable()
 - **Bad channel detection** — flag high-kurtosis electrodes on the grid widget
 - **Linked views** — shared time cursor between trace viewer, spectrogram, and AP×ML topomap
 - **Lazy loading** — materialise only the visible time window for long recordings
+
+---
+
+## Atlas overlay (typed)
+
+`ChannelGridWidget` supports passing an `AtlasImageOverlay` (image + extents) so the placement metadata travels with the image.
+
+```python
+import numpy as np
+from PIL import Image
+
+from cogpy.datasets.schemas import AtlasImageOverlay
+from cogpy.core.plot.channel_grid import ChannelGrid
+from cogpy.core.plot.channel_grid_widget import ChannelGridWidget
+
+atlas = np.array(Image.open(\"docs/assets/atlas/dorsal-cortex.png\").convert(\"RGBA\"), dtype=np.uint8)
+overlay = AtlasImageOverlay(
+    image=atlas,
+    ap_extent=(-4.0, 1.0),
+    ml_extent=(-4.0, 4.0),
+    bl_distance=7.5,
+)
+
+grid = ChannelGrid(n_ap=16, n_ml=16)
+w = ChannelGridWidget.from_grid(
+    grid,
+    ap_coords=np.linspace(-4, 1, 16),
+    ml_coords=np.linspace(-4, 4, 16),
+    atlas_overlay=overlay,
+)
+w.panel().servable()
+```

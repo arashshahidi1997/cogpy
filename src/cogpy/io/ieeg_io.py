@@ -42,6 +42,7 @@ def from_file(
         # we might want a fail-safe or a default.
         raise ValueError(f"Dtype missing. No channels.tsv found for {meta_file or dat_file}")
 
+    print(f"Loading data from {dat_file} with dtype={metadata.dtype} and fs={metadata.fs} Hz...")
     memmap_array = np.memmap(dat_file, dtype=metadata.dtype, mode="r")
 
     if grid:
@@ -61,10 +62,9 @@ def from_file(
 
         # NeuroScope/Matlab-native convention: 2D (time, channel) stored column-major.
         # Reshape to (time, channel) first, then map channel -> (ML, AP) with ML-major order.
-        order = "F" if matlab_column_major else "C"
-        arr_tc = memmap_array.reshape((n_time, n_ch), order=order)
+        arr_tc = memmap_array.reshape((n_time, n_ch))
         # channel index = ml * n_ap + ap  -> (time, ML, AP)
-        arr = arr_tc.reshape((n_time, n_ml, n_ap), order="C")
+        arr = arr_tc.reshape((n_time, n_ml, n_ap))
         dask_array = da.from_array(arr, chunks="auto")  # Let dask optimize chunks
         
         time_coords = np.arange(n_time) / metadata.fs
@@ -78,7 +78,6 @@ def from_file(
             dims=("time", "ML", "AP"),
             coords={"time": time_coords, "ML": ml_coords, "AP": ap_coords},
         )
-        data_array.attrs["flat_order"] = "col-major"
     
     else:
         # Linear channel representation
@@ -88,8 +87,7 @@ def from_file(
                 f"File size not divisible by nch={n_ch}. Got {memmap_array.size} elements."
             )
         n_time = int(memmap_array.size // n_ch)
-        order = "F" if matlab_column_major else "C"
-        arr = memmap_array.reshape((n_time, n_ch), order=order)
+        arr = memmap_array.reshape((n_time, n_ch))
         dask_array = da.from_array(arr, chunks="auto")
         
         time_coords = np.arange(n_time) / metadata.fs
@@ -105,3 +103,4 @@ def from_file(
 
     data_array.attrs["fs"] = metadata.fs
     return data_array.astype(float) if as_float else data_array
+

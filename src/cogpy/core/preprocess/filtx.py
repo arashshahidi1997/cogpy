@@ -160,12 +160,17 @@ def butterworth_bandpass_shoulder(
 def bandpassx(
     sigx: xr.DataArray, wl: float, wh: float, order: int, axis: str
 ) -> xr.DataArray:
-    b, a = bandpass_filt_params(order, wl, wh, _fs_scalar(sigx))
-    axis = sigx.get_axis_num(axis)
-    bp_filt = lambda x: signal.filtfilt(b, a, x, axis=axis)
-    sigx_bp = xut.xarr_wrap(bp_filt)(sigx)
-    sigx_bp.name = "Bandpass ({}-{} Hz)".format(wl, wh)
-    return sigx_bp
+    """
+    Uses second-order sections (SOS) form for numerical stability at all orders.
+    For shoulder-controlled stopband specs use butterworth_bandpass_shoulder instead.
+    """
+    fs = _fs_scalar(sigx)
+    wh = min(wh, fs / 2 - 0.1)
+    sos = signal.butter(order, [wl, wh], btype="bandpass", fs=fs, output="sos")
+    axis_num = sigx.get_axis_num(axis)
+    out = _apply_full_array(sigx, lambda x: signal.sosfiltfilt(sos, x, axis=axis_num))
+    out.name = "Bandpass ({}-{} Hz)".format(wl, wh)
+    return out
 
 
 def lowpassx(sigx: xr.DataArray, wl: float, order: int, axis: str) -> xr.DataArray:
@@ -335,6 +340,101 @@ def median_subtractx(
     out = _apply_full_array(sigx, _medsub_full, output_dtype=sigx.dtype)
     out.name = (sigx.name + "_medsub") if sigx.name else "median_subtract"
     out.attrs.update({"filter_type": "median_subtract", "dims": tuple(dims)})
+    return out
+
+
+def cmrx(
+    sigx: xr.DataArray,
+    *,
+    channel_dims: tuple[str, ...] | None = None,
+    skipna: bool = True,
+) -> xr.DataArray:
+    """
+    Common median reference: subtract median across channels at each time sample.
+
+    For grid input (AP+ML dims present): subtracts median over (AP, ML).
+    For stacked input (channel dim present): subtracts median over channel.
+    Pass channel_dims explicitly to override auto-detection.
+
+    This matches NeuroScope2's "median filter" preprocessing:
+        ephys.traces = ephys.traces - median(ephys.traces, 2)
+    """
+    if channel_dims is None:
+        if "AP" in sigx.dims and "ML" in sigx.dims:
+            channel_dims = ("AP", "ML")
+        elif "channel" in sigx.dims:
+            channel_dims = ("channel",)
+        else:
+            raise ValueError(
+                "cmrx could not auto-detect channel dims. Expected ('AP','ML') grid dims or a 'channel' dim; "
+                f"got sigx.dims={tuple(sigx.dims)}. Pass channel_dims=... explicitly."
+            )
+
+    channel_dims = tuple(channel_dims)
+    for d in channel_dims:
+        if d not in sigx.dims:
+            raise ValueError(f"cmrx expected channel dim {d!r} in sigx.dims={tuple(sigx.dims)}")
+
+    axis = tuple(range(-len(channel_dims), 0))
+    if bool(skipna):
+        med = xr.apply_ufunc(
+            lambda x: np.nanmedian(x, axis=axis),
+            sigx,
+            input_core_dims=[list(channel_dims)],
+            output_core_dims=[[]],
+            vectorize=True,
+            dask="parallelized",
+            output_dtypes=[np.result_type(sigx.dtype, np.float64)],
+        )
+    else:
+        med = xr.apply_ufunc(
+            lambda x: np.median(x, axis=axis),
+            sigx,
+            input_core_dims=[list(channel_dims)],
+            output_core_dims=[[]],
+            vectorize=True,
+            dask="parallelized",
+            output_dtypes=[np.result_type(sigx.dtype, np.float64)],
+        )
+
+    out = sigx - med
+    out.attrs = dict(sigx.attrs)
+    out.attrs.update({"filter_type": "common_median_reference", "channel_dims": channel_dims})
+    out.name = sigx.name
+    return out
+
+
+def zscorex(
+    sigx: xr.DataArray,
+    *,
+    dim: str = "time",
+    robust: bool = False,
+    eps: float = 1e-12,
+) -> xr.DataArray:
+    """
+    Z-score normalization along dim.
+
+    robust=False: (x - mean) / std
+    robust=True:  (x - median) / (MAD * 1.4826)
+
+    Intended for display normalization (z-score per window before rendering).
+    Not a filter — does not modify frequency content.
+    """
+    if dim not in sigx.dims:
+        raise ValueError(f"zscorex expected dim {dim!r} in sigx.dims={tuple(sigx.dims)}")
+
+    if bool(robust):
+        center = sigx.median(dim=dim)
+        mad = (np.abs(sigx - center)).median(dim=dim)
+        scale = mad * 1.4826
+    else:
+        center = sigx.mean(dim=dim)
+        scale = sigx.std(dim=dim)
+
+    out = (sigx - center) / (scale + float(eps))
+    out.attrs = dict(sigx.attrs)
+    out.name = (sigx.name + "_zscore") if sigx.name else "zscore"
+    out.attrs.update({"normalization": "zscore", "dim": str(dim), "robust": bool(robust)})
     return out
 
 

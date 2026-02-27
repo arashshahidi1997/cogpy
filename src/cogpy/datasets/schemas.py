@@ -9,16 +9,22 @@ import xarray as xr
 
 __all__ = [
     "DIMS_IEEG_GRID",
+    "DIMS_IEEG_GRID_WINDOW",
     "DIMS_MULTICHANNEL",
+    "DIMS_MULTICHANNEL_WINDOW",
     "DIMS_SPECTROGRAM4D",
     "DIMS_IEEG_TIME_CHANNEL",
     "validate_ieeg_grid",
+    "validate_ieeg_grid_windowed",
     "validate_multichannel",
+    "validate_multichannel_windowed",
     "validate_spectrogram4d",
     "validate_burst_peaks",
     "validate_ieeg_time_channel",
     "coerce_ieeg_grid",
+    "coerce_ieeg_grid_windowed",
     "coerce_multichannel",
+    "coerce_multichannel_windowed",
     "coerce_spectrogram4d",
     "coerce_ieeg_time_channel",
     "assert_attrs_survive",
@@ -27,13 +33,15 @@ __all__ = [
 
 # Canonical dim orders (single source of truth for validators and docs).
 DIMS_IEEG_GRID = ("time", "ML", "AP")
+DIMS_IEEG_GRID_WINDOW = ("time_win", "ML", "AP")
 DIMS_MULTICHANNEL = ("channel", "time")
+DIMS_MULTICHANNEL_WINDOW = ("time_win", "channel")
 # Keep orthoslicer-friendly order consistent with existing code.
 DIMS_SPECTROGRAM4D = ("ml", "ap", "time", "freq")
 DIMS_IEEG_TIME_CHANNEL = ("time", "channel")
 
 
-def validate_ieeg_grid(da: xr.DataArray) -> xr.DataArray:
+def validate_ieeg_grid(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
     """
     Validate IEEGGridTimeSeries schema.
 
@@ -43,7 +51,7 @@ def validate_ieeg_grid(da: xr.DataArray) -> xr.DataArray:
     _check_type(da, xr.DataArray, "IEEGGridTimeSeries")
     _check_dims(
         da,
-        DIMS_IEEG_GRID,
+        ("time", "ML", "AP"),
         "IEEGGridTimeSeries",
         hint="sig.transpose('time', 'ML', 'AP')",
     )
@@ -51,10 +59,47 @@ def validate_ieeg_grid(da: xr.DataArray) -> xr.DataArray:
     _check_coord_1d(da, "ML", "IEEGGridTimeSeries")
     _check_coord_1d(da, "AP", "IEEGGridTimeSeries")
     _warn_missing_attr(da, "fs", "IEEGGridTimeSeries")
+    _check_required_attrs(da, required_attrs, "IEEGGridTimeSeries")
     return da
 
 
-def validate_multichannel(da: xr.DataArray) -> xr.DataArray:
+def validate_ieeg_grid_windowed(
+    da: xr.DataArray,
+    *,
+    win_dim: str = "time_win",
+    required_attrs: tuple[str, ...] = (),
+) -> xr.DataArray:
+    """
+    Validate IEEGGridWindowed schema (sliding-window grid features).
+
+    Canonical dims: (win_dim, "ML", "AP") with default win_dim="time_win".
+    Returns da unchanged so it can be used inline.
+
+    Notes
+    -----
+    This schema is intended for per-window feature maps derived from an
+    ``IEEGGridTimeSeries`` input. Typical attrs include:
+      - fs (recommended)
+      - window_size, window_step (recommended)
+      - center_method, run_dim (optional/recommended depending on producer)
+    """
+    entity = "IEEGGridWindowed"
+    _check_type(da, xr.DataArray, entity)
+    expected = (str(win_dim), "ML", "AP")
+    got = tuple(da.dims)
+    if got != expected:
+        raise ValueError(f"{entity} must have dims {expected}, got {got}.")
+    _check_coord_1d_increasing(da, str(win_dim), entity)
+    _check_coord_1d(da, "ML", entity)
+    _check_coord_1d(da, "AP", entity)
+    _warn_missing_attr(da, "fs", entity)
+    _warn_missing_attr(da, "window_size", entity)
+    _warn_missing_attr(da, "window_step", entity)
+    _check_required_attrs(da, required_attrs, entity)
+    return da
+
+
+def validate_multichannel(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
     """
     Validate MultichannelTimeSeries schema.
 
@@ -70,10 +115,38 @@ def validate_multichannel(da: xr.DataArray) -> xr.DataArray:
     )
     _check_coord_1d_increasing(da, "time", "MultichannelTimeSeries")
     _warn_missing_attr(da, "fs", "MultichannelTimeSeries")
+    _check_required_attrs(da, required_attrs, "MultichannelTimeSeries")
     return da
 
 
-def validate_spectrogram4d(da: xr.DataArray) -> xr.DataArray:
+def validate_multichannel_windowed(
+    da: xr.DataArray,
+    *,
+    win_dim: str = "time_win",
+    required_attrs: tuple[str, ...] = (),
+) -> xr.DataArray:
+    """
+    Validate MultichannelWindowed schema (sliding-window channel features).
+
+    Canonical dims: (win_dim, "channel") with default win_dim="time_win".
+    Returns da unchanged so it can be used inline.
+    """
+    entity = "MultichannelWindowed"
+    _check_type(da, xr.DataArray, entity)
+    expected = (str(win_dim), "channel")
+    got = tuple(da.dims)
+    if got != expected:
+        raise ValueError(f"{entity} must have dims {expected}, got {got}.")
+    _check_coord_1d_increasing(da, str(win_dim), entity)
+    _check_coord_1d(da, "channel", entity)
+    _warn_missing_attr(da, "fs", entity)
+    _warn_missing_attr(da, "window_size", entity)
+    _warn_missing_attr(da, "window_step", entity)
+    _check_required_attrs(da, required_attrs, entity)
+    return da
+
+
+def validate_spectrogram4d(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
     """
     Validate GridSpectrogram4D schema (orthoslicer-friendly).
 
@@ -84,6 +157,7 @@ def validate_spectrogram4d(da: xr.DataArray) -> xr.DataArray:
     _check_dims(da, DIMS_SPECTROGRAM4D, "GridSpectrogram4D")
     _check_coord_1d_increasing(da, "time", "GridSpectrogram4D")
     _check_coord_1d_increasing(da, "freq", "GridSpectrogram4D")
+    _check_required_attrs(da, required_attrs, "GridSpectrogram4D")
     return da
 
 
@@ -105,7 +179,7 @@ def validate_burst_peaks(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def validate_ieeg_time_channel(da: xr.DataArray) -> xr.DataArray:
+def validate_ieeg_time_channel(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
     """
     Validate an iEEG time×channel view intended for stacked-trace viewers.
 
@@ -118,6 +192,8 @@ def validate_ieeg_time_channel(da: xr.DataArray) -> xr.DataArray:
        `stack(...).reset_index("channel")`).
     2) **Allowed** (MultiIndex): `channel` is a pandas.MultiIndex with level
        names including "AP" and "ML".
+    3) **Allowed** (flat channel): `channel` is a simple 1D coordinate without
+       spatial metadata.
     """
     _check_type(da, xr.DataArray, "IEEGTimeChannel")
     _check_dims(
@@ -127,6 +203,8 @@ def validate_ieeg_time_channel(da: xr.DataArray) -> xr.DataArray:
         hint="sig.transpose('time','AP','ML').stack(channel=('AP','ML')).reset_index('channel')",
     )
     _check_coord_1d_increasing(da, "time", "IEEGTimeChannel")
+    _warn_missing_attr(da, "fs", "IEEGTimeChannel")
+    _check_required_attrs(da, required_attrs, "IEEGTimeChannel")
 
     if "channel" in da.coords and da["channel"].ndim != 1:
         raise ValueError("IEEGTimeChannel coordinate 'channel' must be 1D when present")
@@ -146,10 +224,19 @@ def validate_ieeg_time_channel(da: xr.DataArray) -> xr.DataArray:
     except Exception:  # noqa: BLE001
         pass
 
+    # Allowed: plain 1D channel coordinate (no AP/ML metadata).
+    if "channel" in da.coords and da["channel"].ndim == 1:
+        warnings.warn(
+            "IEEGTimeChannel: channel coordinate has no AP/ML metadata; accepting flat channel coordinate.",
+            stacklevel=3,
+        )
+        return da
+
     raise ValueError(
         "IEEGTimeChannel channel coordinate must either:\n"
         "  (a) have coords AP and ML aligned to channel (recommended), or\n"
         "  (b) be a MultiIndex with levels named AP and ML.\n"
+        "  (c) be a flat 1D channel coordinate (allowed).\n"
         "  Hint: sig.stack(channel=('AP','ML')).reset_index('channel')"
     )
 
@@ -221,6 +308,65 @@ def coerce_ieeg_grid(
     return validate_ieeg_grid(da)
 
 
+def coerce_ieeg_grid_windowed(
+    da: xr.DataArray,
+    *,
+    win_dim: str = "time_win",
+    win_coords: np.ndarray | None = None,
+    ap_coords: np.ndarray | None = None,
+    ml_coords: np.ndarray | None = None,
+) -> xr.DataArray:
+    """
+    Best-effort coercion to IEEGGridWindowed schema.
+
+    - Transposes to (win_dim,"ML","AP") if dims are a permutation
+    - Injects missing coords (win_dim/ML/AP) if provided, else uses arange
+    """
+    entity = "IEEGGridWindowed"
+    _check_type(da, xr.DataArray, entity)
+    win_dim = str(win_dim)
+    expected_set = {win_dim, "ML", "AP"}
+    if set(da.dims) != expected_set:
+        raise ValueError(
+            f"{entity} must have dims ({win_dim!r}, 'ML', 'AP') (permutation allowed), got {tuple(da.dims)}"
+        )
+    if tuple(da.dims) != (win_dim, "ML", "AP"):
+        da = da.transpose(win_dim, "ML", "AP")
+
+    n_win = int(da.sizes[win_dim])
+    n_ml = int(da.sizes["ML"])
+    n_ap = int(da.sizes["AP"])
+
+    if win_dim not in da.coords:
+        if win_coords is not None:
+            w = np.asarray(win_coords, dtype=float)
+            if w.shape != (n_win,):
+                raise ValueError(f"win_coords must have shape ({n_win},), got {w.shape}")
+        else:
+            w = np.arange(n_win, dtype=float)
+        da = da.assign_coords(**{win_dim: w})
+
+    if "ML" not in da.coords:
+        if ml_coords is not None:
+            ml = np.asarray(ml_coords, dtype=float)
+            if ml.shape != (n_ml,):
+                raise ValueError(f"ml_coords must have shape ({n_ml},), got {ml.shape}")
+        else:
+            ml = np.arange(n_ml, dtype=float)
+        da = da.assign_coords(ML=ml)
+
+    if "AP" not in da.coords:
+        if ap_coords is not None:
+            ap = np.asarray(ap_coords, dtype=float)
+            if ap.shape != (n_ap,):
+                raise ValueError(f"ap_coords must have shape ({n_ap},), got {ap.shape}")
+        else:
+            ap = np.arange(n_ap, dtype=float)
+        da = da.assign_coords(AP=ap)
+
+    return validate_ieeg_grid_windowed(da, win_dim=win_dim)
+
+
 def coerce_multichannel(
     da: xr.DataArray,
     *,
@@ -275,6 +421,54 @@ def coerce_multichannel(
     return validate_multichannel(da)
 
 
+def coerce_multichannel_windowed(
+    da: xr.DataArray,
+    *,
+    win_dim: str = "time_win",
+    win_coords: np.ndarray | None = None,
+    channel_coords: np.ndarray | None = None,
+) -> xr.DataArray:
+    """
+    Best-effort coercion to MultichannelWindowed schema.
+
+    - Transposes to (win_dim,"channel") if dims are a permutation
+    - Injects missing coords (win_dim/channel) if provided, else uses arange
+    """
+    entity = "MultichannelWindowed"
+    _check_type(da, xr.DataArray, entity)
+    win_dim = str(win_dim)
+    expected_set = {win_dim, "channel"}
+    if set(da.dims) != expected_set:
+        raise ValueError(
+            f"{entity} must have dims ({win_dim!r}, 'channel') (permutation allowed), got {tuple(da.dims)}"
+        )
+    if tuple(da.dims) != (win_dim, "channel"):
+        da = da.transpose(win_dim, "channel")
+
+    n_win = int(da.sizes[win_dim])
+    n_ch = int(da.sizes["channel"])
+
+    if win_dim not in da.coords:
+        if win_coords is not None:
+            w = np.asarray(win_coords, dtype=float)
+            if w.shape != (n_win,):
+                raise ValueError(f"win_coords must have shape ({n_win},), got {w.shape}")
+        else:
+            w = np.arange(n_win, dtype=float)
+        da = da.assign_coords(**{win_dim: w})
+
+    if "channel" not in da.coords:
+        if channel_coords is not None:
+            ch = np.asarray(channel_coords)
+            if ch.shape != (n_ch,):
+                raise ValueError(f"channel_coords must have shape ({n_ch},), got {ch.shape}")
+        else:
+            ch = np.arange(n_ch)
+        da = da.assign_coords(channel=ch)
+
+    return validate_multichannel_windowed(da, win_dim=win_dim)
+
+
 def coerce_spectrogram4d(da: xr.DataArray) -> xr.DataArray:
     """
     Best-effort coercion to GridSpectrogram4D schema.
@@ -282,6 +476,9 @@ def coerce_spectrogram4d(da: xr.DataArray) -> xr.DataArray:
     - Transposes to ("ml","ap","time","freq") if dims are a permutation
     """
     _check_type(da, xr.DataArray, "GridSpectrogram4D")
+    # Accept uppercase variants commonly used for grid data and coerce to canonical lowercase.
+    if set(da.dims) == {"ML", "AP", "time", "freq"}:
+        da = da.rename({"ML": "ml", "AP": "ap"})
     if set(da.dims) != set(DIMS_SPECTROGRAM4D):
         raise ValueError(
             f"GridSpectrogram4D must have dims {DIMS_SPECTROGRAM4D} (permutation allowed), got {tuple(da.dims)}"
@@ -313,7 +510,7 @@ def coerce_ieeg_time_channel(da: xr.DataArray, *, fs: float | None = None) -> xr
         idx = da["channel"].to_index()
         if getattr(idx, "names", None) and len(getattr(idx, "names")) > 1:
             da = da.reset_index("channel")
-    except Exception:  # noqa: BLE001
+    except (KeyError, AttributeError, TypeError, ValueError):
         pass
 
     if fs is None and "fs" not in da.attrs:
@@ -340,6 +537,11 @@ def assert_attrs_survive(da: xr.DataArray, required: list[str]) -> None:
 class AtlasImageOverlay:
     """
     Bundle-safe atlas overlay: keep the image and its placement metadata together.
+
+    Notes
+    -----
+    The `image` is defensively copied and marked read-only in `__post_init__` so
+    callers cannot mutate it in-place while it's being shared through GUI bundles.
     """
 
     image: np.ndarray  # (H, W, 3) or (H, W, 4) uint8
@@ -356,6 +558,9 @@ class AtlasImageOverlay:
             )
         if img.dtype != np.uint8:
             raise ValueError(f"AtlasImageOverlay.image must be uint8, got {img.dtype}")
+        img = np.array(img, copy=True)
+        img.setflags(write=False)
+        object.__setattr__(self, "image", img)
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
@@ -385,17 +590,23 @@ def _check_coord_1d(da: xr.DataArray, coord: str, entity: str) -> None:
 def _check_coord_1d_increasing(da: xr.DataArray, coord: str, entity: str) -> None:
     _check_coord_1d(da, coord, entity)
     vals = np.asarray(da[coord].values)
-    if vals.ndim != 1 or len(vals) < 2:
-        raise ValueError(f"{entity} coordinate {coord!r} must have length >= 2")
+    if vals.ndim != 1 or len(vals) < 1:
+        raise ValueError(f"{entity} coordinate {coord!r} must have length >= 1")
     if not np.all(np.isfinite(vals)):
         raise ValueError(f"{entity} coordinate {coord!r} contains non-finite values")
-    if not np.all(np.diff(vals) > 0):
+    if len(vals) > 1 and not np.all(np.diff(vals) > 0):
         raise ValueError(f"{entity} coordinate {coord!r} must be strictly increasing")
 
 
 def _warn_missing_attr(da: xr.DataArray, attr: str, entity: str) -> None:
     if attr not in da.attrs:
         warnings.warn(f"{entity}: recommended attr {attr!r} is missing", stacklevel=3)
+
+
+def _check_required_attrs(da: xr.DataArray, required: tuple[str, ...], entity: str) -> None:
+    missing = [k for k in required if k not in da.attrs]
+    if missing:
+        raise ValueError(f"{entity} missing required attrs: {missing}")
 
 
 def _maybe_extract_fs(attrs: dict) -> float | None:
@@ -407,7 +618,7 @@ def _maybe_extract_fs(attrs: dict) -> float | None:
         if k in attrs:
             try:
                 return float(attrs[k])
-            except Exception:  # noqa: BLE001
+            except (TypeError, ValueError):
                 continue
 
     for container_key in ("meta", "metadata"):
@@ -417,7 +628,7 @@ def _maybe_extract_fs(attrs: dict) -> float | None:
                 if k in meta:
                     try:
                         return float(meta[k])
-                    except Exception:  # noqa: BLE001
+                    except (TypeError, ValueError):
                         continue
 
     return None

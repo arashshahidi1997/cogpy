@@ -283,10 +283,12 @@ def running_blockwise(
     example_out = np.asarray(func(windows_moved[0]))
     feature_shape = example_out.shape
     out = np.empty((n_windows,) + feature_shape, dtype=example_out.dtype)
-    out[0] = example_out
-    it = tqdrange(1, n_windows) if progress else range(1, n_windows)
+    it = tqdrange(n_windows) if progress else range(n_windows)
     for i in it:
-        out[i] = func(windows_moved[i])
+        if i == 0:
+            out[i] = example_out
+        else:
+            out[i] = func(windows_moved[i])
     if not return_centers:
         return out
     centers = window_centers_idx(x.shape[axis], window_size, window_step)
@@ -307,6 +309,9 @@ def _infer_feature_dims(
     """
     remaining_dims = tuple(d for d in x_dims if d != run_dim)
     # Only infer when the shapes are compatible; for all other cases, fall back.
+    # NOTE: this matches by *count* only. It assumes `func` returns outputs whose
+    # axes follow the same order as `remaining_dims`. If your function reorders
+    # axes (e.g. swaps spatial dims), pass `feature_dims` explicitly.
     if len(feature_shape) == len(remaining_dims):
         return remaining_dims
     return tuple(f"feat{i}" for i in range(len(feature_shape)))
@@ -330,6 +335,13 @@ def running_blockwise_xr(
     Returns an ``xr.DataArray`` with a windowed coordinate on ``out_dim``.
     By default the coordinate is computed from the midpoint of each window in
     ``xsig[run_dim]`` (if present), otherwise it is returned as sample indices.
+
+    Notes
+    -----
+    `func` receives a NumPy array with the per-window samples on the *last axis*.
+    The remaining axes (excluding `run_dim`) follow the input dim order of `xsig`
+    with `run_dim` removed. If your function expects a specific axis order,
+    transpose inside `func` or call ``xsig.transpose(...)`` before passing it in.
     """
     import xarray as xr
 
@@ -420,7 +432,12 @@ def running_reduce_xr(
     )
 
     dims_out = tuple(out_dim if d == run_dim else d for d in xsig.dims)
-    coords = {d: (xsig.coords[d].values if d in xsig.coords else None) for d in dims_out if d != out_dim}
+    coords = {}
+    for d in dims_out:
+        if d == out_dim:
+            continue
+        if d in xsig.coords:
+            coords[d] = xsig.coords[d].values
     if run_dim in xsig.coords:
         coords[out_dim] = window_centers_time(
             xsig.coords[run_dim].values, int(window_size), int(window_step), method=str(center_method)
@@ -431,7 +448,7 @@ def running_reduce_xr(
     da = xr.DataArray(
         y,
         dims=dims_out,
-        coords={k: v for k, v in coords.items() if v is not None},
+        coords=coords,
         attrs=dict(xsig.attrs),
         name=xsig.name,
     )

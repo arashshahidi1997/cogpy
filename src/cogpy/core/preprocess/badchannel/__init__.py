@@ -12,6 +12,11 @@ from .pipeline import (
     normalize_features_from_raw,
     window_centers,
 )
+from .feature_normalization import (
+    normalize_windowed_features,
+    smooth_windowed_features,
+    summarize_windowed_features,
+)
 
 __all__ = [
     "DbscanParams",
@@ -30,4 +35,7 @@ __all__ = [
     "compute_features_sliding_legacy",
     "normalize_features_from_raw",
     "window_centers",
+    "normalize_windowed_features",
+    "smooth_windowed_features",
+    "summarize_windowed_features",
 ]

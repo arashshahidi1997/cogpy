@@ -25,19 +25,67 @@ Usage
 """
 from __future__ import annotations
 
+import warnings
 import numpy as np
 import panel as pn
 import xarray as xr
 
 from .multichannel_viewer import MultichannelViewer
-from .grid_indexing import flat_indices_from_selected, apml_from_flat_index_order
+from .grid_indexing import apml_from_flat_index_order, flat_indices_from_selected
+from .processing_chain import ProcessingChain
 
 __all__ = ["ieeg_viewer"]
+
+
+def _make_channel_labels(ch_vals, *, n_ml: int | None = None, flat_order: str = "row-major") -> list[str]:
+    """
+    Build display labels for the channel coordinate.
+
+    - If `ch_vals` are integer flat indices AND `n_ml` is known:
+        label = "(col,row)" where col=ML index and row=AP index derived from the
+        flat index using the specified `flat_order`. Example: row=3, col=5 -> "(5,3)".
+    - Otherwise: `str(v)` for each value.
+
+    Notes
+    -----
+    If `n_ml` is provided but the values cannot be interpreted as integer flat
+    indices, this falls back to `str(v)` and emits a warning (to avoid silent
+    "0..7" axis labels surprises).
+    """
+    if flat_order not in {"row-major", "col-major"}:
+        raise ValueError("flat_order must be 'row-major' or 'col-major'")
+
+    if n_ml is None:
+        return [str(v) for v in ch_vals]
+
+    n_ml_i = int(n_ml)
+    if n_ml_i <= 0:
+        raise ValueError("n_ml must be > 0")
+
+    # Best-effort interpret as integer flat indices.
+    try:
+        idxs = [int(v) for v in ch_vals]
+    except Exception:  # noqa: BLE001
+        warnings.warn(
+            "n_ml was provided but channel coordinate values are not integer-like; "
+            "falling back to str(v) labels.",
+            stacklevel=2,
+        )
+        return [str(v) for v in ch_vals]
+
+    n_ch = len(idxs)
+    n_ap_i = int(np.ceil(n_ch / max(n_ml_i, 1)))
+    labels: list[str] = []
+    for i in idxs:
+        ap, ml = apml_from_flat_index_order(i, n_ap=n_ap_i, n_ml=n_ml_i, order=str(flat_order))
+        labels.append(f"({ml},{ap})")
+    return labels
 
 
 def ieeg_viewer(
     data: xr.DataArray,
     *,
+    chain: ProcessingChain | None = None,
     time_dim: str = "time",
     channel_dim: str = "channel",
     initial_window_s: float = 10.0,
@@ -96,7 +144,28 @@ def ieeg_viewer(
     stds  = raw.std(axis=1, keepdims=True) + 1e-12
     sig_z = np.ascontiguousarray((raw - means) / stds)
 
-    ch_labels = [str(v) for v in ch_vals]
+    ch_labels = _make_channel_labels(ch_vals, n_ml=n_ml, flat_order=str(flat_order))
+
+    if chain is None:
+        is_grid_backed = False
+        try:
+            if "AP" in data.coords and "ML" in data.coords:
+                is_grid_backed = True
+        except Exception:  # noqa: BLE001
+            pass
+        if not is_grid_backed:
+            try:
+                if channel_dim in data.coords:
+                    idx = data[channel_dim].to_index()
+                    names = set(getattr(idx, "names", []) or [])
+                    if {"AP", "ML"}.issubset(names):
+                        is_grid_backed = True
+            except Exception:  # noqa: BLE001
+                pass
+
+        if is_grid_backed:
+            sig_raw = data.transpose(time_dim, channel_dim)
+            chain = ProcessingChain(sig_raw, time_dim=str(time_dim))
 
     viewer = MultichannelViewer(
         sig_z, t_vals, ch_labels,
@@ -111,6 +180,7 @@ def ieeg_viewer(
         overview_height=overview_height,
         time_dim=time_dim,
         title=title or f"{data.name or 'iEEG'}  ({n_ch} ch, {t_vals[-1]-t_vals[0]:.1f} s)",
+        chain=chain,
     )
 
     # Default selection
@@ -119,6 +189,7 @@ def ieeg_viewer(
     n_ap = int(getattr(channel_grid, "n_ap", 0)) if channel_grid is not None else None
     return IEEGViewer(
         viewer,
+        chain=chain,
         channel_grid=channel_grid,
         n_ap=n_ap,
         n_ml=n_ml,
@@ -133,8 +204,19 @@ class IEEGViewer:
     Access the underlying MultichannelViewer via .viewer.
     """
 
-    def __init__(self, viewer: MultichannelViewer, *, channel_grid, n_ap, n_ml, n_ch, flat_order: str):
+    def __init__(
+        self,
+        viewer: MultichannelViewer,
+        *,
+        chain: ProcessingChain | None,
+        channel_grid,
+        n_ap,
+        n_ml,
+        n_ch,
+        flat_order: str,
+    ):
         self.viewer = viewer
+        self.chain = chain
         self._grid  = channel_grid
         self._n_ap  = n_ap
         self._n_ml  = n_ml
@@ -142,11 +224,21 @@ class IEEGViewer:
         self._flat_order = flat_order
         self._built = False
 
-    def panel(self) -> pn.viewable.Viewable:
-        viewer_panel = self.viewer.panel()
+    def panel(self, *, fresh: bool = False) -> pn.viewable.Viewable:
+        viewer_panel = self.viewer.panel(fresh=bool(fresh))
+
+        if self.chain is not None:
+            proc_controls = pn.Card(
+                self.chain.controls(),
+                title="Processing",
+                collapsed=True,
+                width=260,
+            )
+        else:
+            proc_controls = None
 
         if self._grid is None:
-            return viewer_panel
+            return pn.Row(proc_controls, viewer_panel) if proc_controls is not None else viewer_panel
 
         # Grid-wired controls
         n_sel_md = pn.pane.Markdown(
@@ -255,7 +347,20 @@ class IEEGViewer:
         )
 
         # Insert controls above the viewer's own controls
-        return pn.Column(controls, viewer_panel)
+        main = pn.Column(controls, viewer_panel)
+        return pn.Row(proc_controls, main) if proc_controls is not None else main
+
+    def add_time_hair(self, hair) -> None:
+        """
+        Delegate to the underlying :class:`MultichannelViewer`.
+
+        See :meth:`MultichannelViewer.add_time_hair` for full docs.
+        """
+        self.viewer.add_time_hair(hair)
+
+    def attach_time_hair_to_overview(self, hair, *, time_kdim: str | None = None, **attach_kwargs):
+        """Delegate to :meth:`MultichannelViewer.attach_time_hair_to_overview`."""
+        return self.viewer.attach_time_hair_to_overview(hair, time_kdim=time_kdim, **attach_kwargs)
 
     def servable(self):
         return self.panel().servable()

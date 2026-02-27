@@ -19,6 +19,7 @@ def link_topomap_to_viewer(
     topomap: TopoMap,
     viewer: MultichannelViewer,
     sig_grid: xr.DataArray,  # ("time","ML","AP")
+    time_dim: str = "time",
     *,
     scalar: Scalar = "rms",
     debounce_ms: int = 150,
@@ -39,8 +40,8 @@ def link_topomap_to_viewer(
     if not hasattr(viewer, "_range_stream") or viewer._range_stream is None:  # noqa: SLF001
         raise ValueError("viewer has no _range_stream; call viewer.panel() before linking")
 
-    if "time" not in sig_grid.dims or "ML" not in sig_grid.dims or "AP" not in sig_grid.dims:
-        raise ValueError(f"sig_grid must have dims including ('time','ML','AP'); got dims={tuple(sig_grid.dims)}")
+    if time_dim not in sig_grid.dims or "ML" not in sig_grid.dims or "AP" not in sig_grid.dims:
+        raise ValueError(f"sig_grid must have dims including ('{time_dim}','ML','AP'); got dims={tuple(sig_grid.dims)}")
 
     n_ap = int(sig_grid.sizes["AP"])
     n_ml = int(sig_grid.sizes["ML"])
@@ -55,19 +56,19 @@ def link_topomap_to_viewer(
 
     def _compute_and_update(t0: float, t1: float) -> None:
         # Window slice in physical time coords.
-        win = sig_grid.sel(time=slice(float(t0), float(t1)))
-        if int(win.sizes.get("time", 0)) < 2:
+        win = sig_grid.sel(**{time_dim: slice(float(t0), float(t1))})
+        if int(win.sizes.get(time_dim, 0)) < 2:
             return
 
         if scalar == "mean":
-            reduced = win.mean(dim="time")
+            reduced = win.mean(dim=time_dim)
         elif scalar == "std":
-            reduced = win.std(dim="time")
+            reduced = win.std(dim=time_dim)
         elif scalar == "max":
-            reduced = win.max(dim="time")
+            reduced = win.max(dim=time_dim)
         else:
             # True RMS: sqrt(mean(x^2))
-            reduced = np.sqrt((win * win).mean(dim="time"))
+            reduced = np.sqrt((win * win).mean(dim=time_dim))
 
         # Ensure (AP, ML) for TopoMap.update (expects n_ap x n_ml).
         reduced = reduced.transpose("AP", "ML")

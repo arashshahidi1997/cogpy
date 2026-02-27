@@ -29,13 +29,29 @@ from holoviews.plotting.links import RangeToolLink
 import panel as pn
 from tsdownsample import MinMaxLTTBDownsampler
 
-from .theme import BG, BG_PANEL, BLUE, PALETTE, TEXT
+from .theme import BG, BG_PANEL, BLUE, PALETTE, TEAL, TEXT, TEXT_SMALL
 
 __all__ = ["MultichannelViewer"]
 
 _ds = MinMaxLTTBDownsampler()
 
 _PALETTE = PALETTE
+
+
+def _hide_yaxis_tick_labels(plot, element) -> None:
+    """
+    NeuroScope2-style: keep y ticks (for visual reference / zoom context),
+    but hide tick labels (channel identity is shown inline).
+
+    HoloViews does not expose a simple "hide tick labels but keep axis" option, so
+    we apply it via a Bokeh hook.
+    """
+    try:
+        for ax in plot.state.yaxis:
+            ax.major_label_text_font_size = "0pt"
+            ax.major_label_text_alpha = 0.0
+    except Exception:
+        return
 
 
 def _make_contiguous(a: np.ndarray) -> np.ndarray:
@@ -103,6 +119,8 @@ class MultichannelViewer:
         overview_height: int = 120,
         time_dim: str = "time",
         title: str = "Multichannel viewer",
+        show_channel_labels: bool = True,
+        chain=None,
     ):
         assert sig_z.ndim == 2, "sig_z must be (n_ch, n_time)"
         assert sig_z.shape[1] == len(t_vals), "sig_z columns must match t_vals length"
@@ -112,6 +130,7 @@ class MultichannelViewer:
         self._t_vals   = np.asarray(t_vals, dtype=np.float64)
         self._ch_labels = list(ch_labels)
         self._n_ch     = sig_z.shape[0]
+        self._chain = chain
 
         self._iw   = initial_window_s
         self._minw = min_window_s
@@ -124,12 +143,20 @@ class MultichannelViewer:
         self._oh   = overview_height
         self._tdim = time_dim
         self._title = title
+        self._show_channel_labels = bool(show_channel_labels)
 
         self._t0 = float(self._t_vals[0])
         self._t1 = float(self._t_vals[-1])
 
         # Current channel indices to display — mutated by show_channels()
         self._active_ix: list[int] = list(range(min(8, self._n_ch)))
+
+        self._range_stream = None
+        self._current_t_range = (self._t0, min(self._t0 + self._iw, self._t1))
+        self._hair = None  # set by add_time_hair()
+
+        if self._chain is not None:
+            self._wire_chain(self._chain)
 
         self._built = False
 
@@ -151,10 +178,18 @@ class MultichannelViewer:
         if self._built:
             self._apply()
 
-    def panel(self) -> pn.viewable.Viewable:
-        """Build and return the Panel layout. Call once."""
+    def panel(self, *, fresh: bool = False) -> pn.viewable.Viewable:
+        """Build and return the Panel layout.
+
+        Notes
+        -----
+        In notebooks, displaying the same Panel object multiple times can raise
+        Bokeh "Models must be owned by only a single document" errors. Use
+        ``fresh=True`` (or create a new viewer instance) when re-displaying in a
+        new output cell.
+        """
         if self._built:
-            return self._layout
+            return self._layout.clone() if bool(fresh) else self._layout
 
         # Ensure a plotting backend is loaded before applying .opts(...)
         # (HoloViews raises if no extension has been loaded yet).
@@ -218,6 +253,30 @@ class MultichannelViewer:
     # Internal rendering
     # ------------------------------------------------------------------
 
+    def _wire_chain(self, chain):
+        """Re-render current window when any processing param changes."""
+        params_to_watch = [
+            "cmr_on",
+            "bandpass_on",
+            "bandpass_lo",
+            "bandpass_hi",
+            "bandpass_order",
+            "spatial_median_on",
+            "spatial_median_size",
+            "zscore_on",
+            "zscore_robust",
+        ]
+        try:
+            chain.param.watch(self._on_chain_change, params_to_watch)
+        except Exception:  # noqa: BLE001
+            return
+
+    def _on_chain_change(self, *events):
+        if self._range_stream is None:
+            return
+        lo, hi = self._current_t_range
+        self._range_stream.event(x_range=(float(lo), float(hi)))
+
     def _build_detail(self, x_range) -> hv.Element:
         """Called by DynamicMap on every stream event."""
         if x_range is None or x_range == (None, None):
@@ -227,21 +286,63 @@ class MultichannelViewer:
             t1 = min(float(x_range[1]), self._t1)
 
         i0, i1   = _find_indices(self._t_vals, t0, t1)
-        t_win    = self._t_vals[i0:i1]
         ch_ixs   = list(self._active_ix)   # snapshot
         n_vis    = len(ch_ixs)
 
+        # Always return the same element type (Overlay) so DynamicMap updates are stable.
         if n_vis == 0 or i1 <= i0:
-            return hv.Curve([], kdims=self._tdim, vdims="amp").opts(
-                width=self._w, height=self._dh, framewise=True
+            empty_overlay = hv.NdOverlay({}, kdims="rank").opts(
+                hv.opts.NdOverlay(
+                    width=self._w,
+                    height=self._dh,
+                    show_legend=False,
+                    toolbar="above",
+                    xlabel=f"{self._tdim} (s)",
+                    ylabel="",
+                    title=self._title,
+                    framewise=True,
+                    shared_axes=False,
+                    axiswise=True,
+                    yaxis="left",
+                    hooks=[_hide_yaxis_tick_labels],
+                )
             )
+            empty_labels = hv.Labels(
+                {self._tdim: [], "amp": [], "text": []},
+                kdims=[self._tdim, "amp"],
+                vdims=["text"],
+            ).opts(
+                text_align="left",
+                text_baseline="middle",
+                text_font_size=TEXT_SMALL,
+                text_color=TEXT,
+                text_alpha=0.7,
+                xoffset=6,
+            )
+            return self._with_hair(empty_overlay * empty_labels)
+
+        t0_ix = float(self._t_vals[i0])
+        t1_ix = float(self._t_vals[min(i1, len(self._t_vals) - 1)])
+        self._current_t_range = (t0_ix, t1_ix)
+
+        if self._chain is not None:
+            win = self._chain.get_window(t0_ix, t1_ix, channels=list(ch_ixs))
+            t_win = np.asarray(win[self._tdim].values, dtype=np.float64)
+            sig_window = np.asarray(win.values).T  # (n_active, n_samples)
+        else:
+            t_win = self._t_vals[i0:i1]
+            sig_window = None
 
         # Build one NdOverlay with integer keys — avoids label-based caching
         # that causes HoloViews to silently drop new curves on re-render.
         curves = {}
-        yticks = []
+        y_offsets = []
+        y_labels = []
         for rank, ch in enumerate(ch_ixs):
-            y_win      = self._sig_z[ch, i0:i1]
+            if sig_window is not None:
+                y_win = sig_window[rank]
+            else:
+                y_win = self._sig_z[ch, i0:i1]
             t_ds, y_ds = _downsample(t_win, y_win, self._dpx)
             offset     = (n_vis - 1 - rank) * self._offs
             curves[rank] = hv.Curve(
@@ -251,20 +352,45 @@ class MultichannelViewer:
                 color=_PALETTE[rank % len(_PALETTE)],
                 line_width=1,
             )
-            yticks.append((offset, self._ch_labels[ch]))
+            y_offsets.append(float(offset))
+            y_labels.append(str(self._ch_labels[ch]))
 
-        return hv.NdOverlay(curves, kdims="rank").opts(
+        traces = hv.NdOverlay(curves, kdims="rank").opts(
             hv.opts.NdOverlay(
                 width=self._w, height=self._dh,
                 show_legend=False, toolbar="above",
                 xlabel=f"{self._tdim} (s)", ylabel="",
-                yticks=yticks,
                 title=self._title,
                 framewise=True,
-                # Allow y-tick labels to change when channels change.
                 shared_axes=False,
+                axiswise=True,
+                yaxis="left",
+                hooks=[_hide_yaxis_tick_labels],
             )
         )
+
+        if not self._show_channel_labels:
+            return self._with_hair(traces)
+
+        # Inline channel labels (NeuroScope2-style): draw text at each trace offset.
+        #
+        # Important: place the text *inside* the visible x-range to avoid clipping.
+        x_left = float(t_win[0]) if len(t_win) else float(self._t0)
+        x_span = float(t1 - t0)
+        x_pos = x_left + (0.01 * x_span if x_span > 0 else 0.0)
+        labels_el = hv.Labels(
+            {self._tdim: [x_pos] * n_vis, "amp": y_offsets, "text": y_labels},
+            kdims=[self._tdim, "amp"],
+            vdims=["text"],
+        ).opts(
+            text_align="left",
+            text_baseline="middle",
+            text_font_size=TEXT_SMALL,
+            text_color=TEXT,
+            text_alpha=0.8,
+        )
+
+        return self._with_hair(traces * labels_el)
 
     def _apply(self) -> None:
         """Push current x_range as an event to force re-render."""
@@ -278,3 +404,79 @@ class MultichannelViewer:
         new_lo = max(self._t0, center - half)
         new_hi = min(self._t1, center + half)
         self._range_stream.event(x_range=(new_lo, new_hi))
+
+    def add_time_hair(self, hair) -> None:
+        """
+        Show a vertical time-hair line in the detail traces driven by a
+        :class:`TimeHair`.
+
+        The VLine is baked into each render of the detail DynamicMap so that
+        the ``RangeToolLink`` and ``RangeX`` stream remain stable — no
+        overlay swapping, no Bokeh figure replacement.
+
+        Every change to ``hair.t`` triggers a lightweight re-render of the
+        current window (same data slice, processing unchanged, just a new
+        VLine position).  This is acceptable for click-based or player-driven
+        updates.  Avoid wiring a continuously-dragged slider when the chain
+        includes an expensive filter.
+
+        Can be called before or after :meth:`panel`.
+
+        Parameters
+        ----------
+        hair : TimeHair
+            Shared time parameter.  ``hair.t`` drives the VLine position.
+        """
+        self._hair = hair
+        hair.param.watch(self._on_hair_t, "t")
+
+    def _with_hair(self, element: hv.Element) -> hv.Element:
+        """Append VLine to element if a time hair is set and has a position."""
+        if self._hair is None:
+            return element
+        t = getattr(self._hair, "t", None)
+        if t is None:
+            return element
+        x = t.item() if hasattr(t, "item") else t
+        vline = hv.VLine(float(x)).opts(color=TEAL, line_width=2, alpha=0.9)
+        return element * vline
+
+    def _on_hair_t(self, event=None) -> None:
+        """Re-render current window when hair.t changes."""
+        if self._range_stream is None:
+            return
+        lo, hi = self._current_t_range
+        self._range_stream.event(x_range=(float(lo), float(hi)))
+
+    def attach_time_hair_to_overview(self, hair, *, time_kdim: str | None = None, **attach_kwargs):
+        """Attach tap/click behavior + hair overlay to the overview curve.
+
+        This is the recommended way to make clicks in the overview update
+        ``hair.t`` (and therefore drive any listeners such as the detail VLine
+        or other linked widgets).
+
+        Parameters
+        ----------
+        hair : TimeHair
+            Shared time parameter controller.
+        time_kdim : str | None
+            Time dimension name for tapping. Defaults to this viewer's
+            ``time_dim``.
+        **attach_kwargs
+            Passed through to ``hair.attach(...)``.
+
+        Returns
+        -------
+        holoviews object
+            The attached overview element. If the panel layout is already
+            built, the overview slot is updated in-place.
+        """
+        time_kdim = self._tdim if time_kdim is None else str(time_kdim)
+        if not getattr(self, "_built", False):
+            self.panel()
+
+        attached = hair.attach(self._overview, time_kdim=time_kdim, **attach_kwargs)
+        if self._built:
+            # Overview slot (index 3).
+            self._layout[3] = attached
+        return attached
