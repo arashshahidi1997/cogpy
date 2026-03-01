@@ -20,42 +20,17 @@ from cogpy.core.utils.sliding_core import running_blockwise_xr, running_reduce_x
 EPS = 1e-12
 
 
-def relative_variance(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    return np.nanvar(arr, axis=axis)
-
-
-def deviation(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    return np.nanmean(arr, axis=axis)
-
-
-def standard_deviation(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    return np.nanstd(arr, axis=axis)
-
-
-def amplitude(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    return np.nanmax(arr, axis=axis) - np.nanmin(arr, axis=axis)
-
-
-def time_derivative(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    grad = np.gradient(arr, axis=axis)
-    return np.nanmean(np.abs(grad), axis=axis)
-
-
-def hurst_exponent(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    y = arr - np.nanmean(arr, axis=axis, keepdims=True)
-    z = np.cumsum(y, axis=axis)
-    r = np.nanmax(z, axis=axis) - np.nanmin(z, axis=axis)
-    std = np.nanstd(arr, axis=axis)
-    return 0.5 * np.log((r / (std + EPS)) + EPS)
-
-
-def kurtosis(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    x = np.asarray(arr, dtype=np.float64)
-    mean = np.nanmean(x, axis=axis, keepdims=True)
-    centered = x - mean
-    m2 = np.nanmean(centered**2, axis=axis)
-    m4 = np.nanmean(centered**4, axis=axis)
-    return m4 / ((m2**2) + EPS)
+# Temporal measures moved to cogpy.core.measures.temporal.
+# Re-exported here for backward compatibility.
+from cogpy.core.measures.temporal import (
+    relative_variance,
+    deviation,
+    standard_deviation,
+    amplitude,
+    time_derivative,
+    hurst_exponent,
+    kurtosis,
+)
 
 
 def noise_to_signal(
