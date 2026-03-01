@@ -1,3 +1,18 @@
+"""
+Multitaper spectral estimation utilities.
+
+This module provides core DPSS/multitaper primitives and a multitaper
+spectrogram wrapper (Ghostipy backend) with Dask-friendly outer parallelism.
+
+Status
+------
+STATUS: ACTIVE
+Reason: Core multitaper primitives in active use; legacy wrappers deprecated in favour of sliding_core.
+Superseded by: n/a
+Safe to remove: no
+"""
+
+import warnings
 import numpy as np
 import xarray as xr
 import dask.array as da
@@ -361,6 +376,12 @@ multitaper_psd.output_dtype = np.float64
 
 # %% spectrogram functions (not fundamental, since all rolling window operations are handled using rolling_win)
 def assign_freqs(freqx: xr.DataArray, fs, freq_dim="freq"):
+    warnings.warn(
+        "assign_freqs is deprecated and will be removed. "
+        "Use sliding_core.running_blockwise_xr instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     nfft = freqx.sizes[freq_dim]
     freqs_ = np.fft.rfftfreq(nfft, 1 / fs)
     freqx = freqx.assign_coords({freq_dim: freqs_})
@@ -368,6 +389,12 @@ def assign_freqs(freqx: xr.DataArray, fs, freq_dim="freq"):
 
 
 def specx_coords(specx, nfft, fs, freq_dim="freq", time_dim="time"):
+    warnings.warn(
+        "specx_coords is deprecated and will be removed. "
+        "Use sliding_core.running_blockwise_xr instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     reorder_dims = [d for d in specx.dims if d not in (time_dim, freq_dim)] + [
         freq_dim,
         time_dim,
@@ -390,6 +417,12 @@ def multitaper_spectrogram(
     window_dim="window",
     freq_dim="freq",
 ):
+    warnings.warn(
+        "multitaper_spectrogram is deprecated and will be removed. "
+        "Use sliding_core.running_blockwise_xr instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     mtx = running_spectral(
         multitaper_psd,
         xsig,
@@ -421,6 +454,12 @@ def multitaper_fftgram(
     freq_dim="freq",
     taper_dim="taper",
 ):
+    warnings.warn(
+        "multitaper_fftgram is deprecated and will be removed. "
+        "Use sliding_core.running_blockwise_xr instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     ntapers = 2 * NW - 1
     mtx_fft = running_spectral(
         multitaper_fft,
@@ -464,6 +503,12 @@ def running_spectral(
     """
     spectral_func: function handle for spectral function
     """
+    warnings.warn(
+        "running_spectral is deprecated and will be removed. "
+        "Use sliding_core.running_blockwise_xr instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     assert isinstance(xsig, xr.DataArray), "xsig should be an xarray DataArray"
     assert (
         time_dim in xsig.dims

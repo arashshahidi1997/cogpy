@@ -17,6 +17,13 @@ Constants:
     None
 
 Example:
+
+Status
+------
+STATUS: DEPRECATED
+Reason: multitaper_csd and multitaper_chd both compute PSD not cross-spectrum; superseded by psd_multitaper in spectral/psd.py (forthcoming). pyfftw dependency adds overhead for no benefit.
+Superseded by: cogpy.core.spectral.psd (forthcoming)
+Safe to remove: yes
 """
 
 from scipy import signal

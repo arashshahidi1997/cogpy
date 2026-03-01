@@ -13,6 +13,13 @@ Classes:
 Constants:
 
 Example:
+
+Status
+------
+STATUS: ARCHIVE
+Reason: Incomplete WIP, Numba stubs only, never used.
+Superseded by: n/a
+Safe to remove: yes
 """
 
 # Author: Johann Faouzi <johann.faouzi@gmail.com>

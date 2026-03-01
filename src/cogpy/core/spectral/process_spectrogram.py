@@ -1,3 +1,17 @@
+"""
+Post-processing helpers for spectrogram-like arrays.
+
+Utilities here are primarily geared towards xarray-backed spectrogram tensors
+(e.g., clipping frequency ranges, smoothing, and simple outlier repair).
+
+Status
+------
+STATUS: REFERENCE
+Reason: Post-processing ideas from a previous project. Not actively used but patterns (outlier repair, frequency clipping, smoothing) will be selectively reused. Do not build new pipelines on this module.
+Superseded by: n/a
+Safe to remove: no
+"""
+
 import numpy as np
 import scipy.ndimage as nd
 import xarray as xr

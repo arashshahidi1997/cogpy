@@ -14,6 +14,16 @@ __all__ = [
     "DIMS_MULTICHANNEL_WINDOW",
     "DIMS_SPECTROGRAM4D",
     "DIMS_IEEG_TIME_CHANNEL",
+    "DIMS_CHANNEL_FEATURE_MAP",
+    "DIMS_GRID_FEATURE_MAP",
+    "DIMS_CHANNEL_SPECTRUM",
+    "DIMS_GRID_SPECTRUM",
+    "DIMS_CHANNEL_WINDOWED_SPECTRUM",
+    "DIMS_GRID_WINDOWED_SPECTRUM",
+    "DIMS_PAIRWISE_FEATURE_MATRIX",
+    "DIMS_PAIRWISE_SPECTRUM",
+    "DIMS_COMODULOGRAM",
+    "DIMS_SPATIAL_COHERENCE_PROFILE",
     "validate_ieeg_grid",
     "validate_ieeg_grid_windowed",
     "validate_multichannel",
@@ -39,6 +49,18 @@ DIMS_MULTICHANNEL_WINDOW = ("time_win", "channel")
 # Keep orthoslicer-friendly order consistent with existing code.
 DIMS_SPECTROGRAM4D = ("ml", "ap", "time", "freq")
 DIMS_IEEG_TIME_CHANNEL = ("time", "channel")
+
+# Feature output schemas (validate/coerce added on first pipeline use)
+DIMS_CHANNEL_FEATURE_MAP = ("channel",)
+DIMS_GRID_FEATURE_MAP = ("AP", "ML")
+DIMS_CHANNEL_SPECTRUM = ("channel", "freq")
+DIMS_GRID_SPECTRUM = ("AP", "ML", "freq")
+DIMS_CHANNEL_WINDOWED_SPECTRUM = ("time_win", "channel", "freq")
+DIMS_GRID_WINDOWED_SPECTRUM = ("time_win", "AP", "ML", "freq")
+DIMS_PAIRWISE_FEATURE_MATRIX = ("channel_i", "channel_j")
+DIMS_PAIRWISE_SPECTRUM = ("channel_i", "channel_j", "freq")
+DIMS_COMODULOGRAM = ("channel", "freq_phase", "freq_amp")
+DIMS_SPATIAL_COHERENCE_PROFILE = ("distance_bin", "freq")
 
 
 def validate_ieeg_grid(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:

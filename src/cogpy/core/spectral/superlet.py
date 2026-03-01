@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+"""
+Time-frequency analysis with superlets.
+
+Based on "Time-frequency super-resolution with superlets" (Moca et al., 2021),
+Nature Communications. This file contains an exploratory implementation of the
+Superlet Transform (multiplicative and adaptive variants).
+
+Status
+------
+STATUS: ARCHIVE
+Reason: Exploratory implementation, not used in any pipeline or notebook. Preserved for reference.
+Superseded by: n/a
+Safe to remove: yes (after confirming no external dependents)
+"""
+
 #
 # Time-frequency analysis with superlets
 # Based on 'Time-frequency super-resolution with superlets'

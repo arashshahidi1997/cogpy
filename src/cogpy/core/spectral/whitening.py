@@ -1,3 +1,17 @@
+"""
+Whitening utilities for time series.
+
+Includes an autoregressive (AR) whitening filter implementation and a few
+standalone AR helpers.
+
+Status
+------
+STATUS: ACTIVE
+Reason: AR whitening in active use across pipelines.
+Superseded by: n/a
+Safe to remove: no
+"""
+
 import numpy as np
 from statsmodels.tsa.ar_model import AutoReg
 from scipy.signal import lfilter

@@ -1,3 +1,18 @@
+"""
+Spectrogram + burst detection workflow (iEEG-specific).
+
+This module provides a higher-level workflow for computing multitaper
+spectrograms from memmapped iEEG/LFP data and integrating with burst/blob
+detection logic.
+
+Status
+------
+STATUS: PIPELINE-SPECIFIC
+Reason: Higher-level workflow coupled to ieeg_io/memmap. Useful as reference but not a general-purpose utility.
+Superseded by: n/a
+Safe to remove: no
+"""
+
 from __future__ import annotations
 
 import math
