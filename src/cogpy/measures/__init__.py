@@ -9,6 +9,6 @@ of neural signals.
 # Auto-generated shim: exposes cogpy.core.measures as cogpy.measures
 from cogpy.core import measures as _impl
 from cogpy.core.measures.temporal import *
+from cogpy.core.measures.spatial import *
 
 __all__ = getattr(_impl, "__all__", [])
-

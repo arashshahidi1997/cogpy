@@ -25,6 +25,9 @@ __all__ = [
     "amplitude",
     "time_derivative",
     "hurst_exponent",
+    "dfa_exponent",
+    "sample_entropy",
+    "lempel_ziv",
     "kurtosis",
     "skewness",
     "hjorth_mobility",
@@ -57,11 +60,179 @@ def time_derivative(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
 
 
 def hurst_exponent(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
-    y = arr - np.nanmean(arr, axis=axis, keepdims=True)
-    z = np.cumsum(y, axis=axis)
-    r = np.nanmax(z, axis=axis) - np.nanmin(z, axis=axis)
-    std = np.nanstd(arr, axis=axis)
-    return 0.5 * np.log((r / (std + EPS)) + EPS)
+    """
+    Hurst exponent via R/S analysis.
+
+    H > 0.5: persistent long-range correlations (typical healthy LFP).
+    H < 0.5: anti-persistent.
+    H ~ 0.5: white noise.
+
+    Wraps nolds.hurst_rs. More reliable than pure numpy R/S estimator
+    for short time series (N < 5000).
+
+    Parameters
+    ----------
+    arr : (..., time)
+    axis : int — time axis (default -1)
+
+    Returns
+    -------
+    H : same shape as arr with axis removed.
+
+    Notes
+    -----
+    nolds.hurst_rs is biased for very short series (N < 500).
+    For non-stationary signals prefer dfa_exponent.
+    """
+    try:
+        import nolds  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        import sys
+        from pathlib import Path
+
+        repo_root = next(
+            p for p in Path(__file__).resolve().parents if (p / "code" / "lib").is_dir()
+        )
+        sys.path.insert(0, str(repo_root / "code" / "lib" / "nolds"))
+        import nolds  # type: ignore[import-not-found]
+
+    arr = np.moveaxis(arr, axis, -1)
+    out = np.apply_along_axis(nolds.hurst_rs, -1, arr)
+    return out
+
+
+def dfa_exponent(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
+    """
+    Detrended Fluctuation Analysis (DFA) scaling exponent.
+
+    More robust than Hurst R/S for non-stationary signals.
+    Alpha ~ 0.5: uncorrelated (white noise).
+    Alpha ~ 1.0: 1/f noise (typical LFP).
+    Alpha > 1.0: non-stationary, strong long-range correlations.
+
+    Wraps nolds.dfa.
+
+    Parameters
+    ----------
+    arr : (..., time)
+    axis : int — time axis (default -1)
+
+    Returns
+    -------
+    alpha : same shape as arr with axis removed.
+    """
+    try:
+        import nolds  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        import sys
+        from pathlib import Path
+
+        repo_root = next(
+            p for p in Path(__file__).resolve().parents if (p / "code" / "lib").is_dir()
+        )
+        sys.path.insert(0, str(repo_root / "code" / "lib" / "nolds"))
+        import nolds  # type: ignore[import-not-found]
+
+    arr = np.moveaxis(arr, axis, -1)
+    out = np.apply_along_axis(nolds.dfa, -1, arr)
+    return out
+
+
+def sample_entropy(
+    arr: np.ndarray, *, axis: int = -1, order: int = 2, metric: str = "chebyshev"
+) -> np.ndarray:
+    """
+    Sample Entropy (SampEn).
+
+    Probability that patterns of m samples that match will still
+    match at m+1 samples. Lower = more regular. Higher = more complex.
+
+    Wraps antropy.sample_entropy.
+
+    Parameters
+    ----------
+    arr : (..., time)
+    axis : int — time axis (default -1)
+    order : int — template length m (default 2)
+    metric : str — distance metric (default 'chebyshev')
+
+    Returns
+    -------
+    entropy : same shape as arr with axis removed.
+
+    Notes
+    -----
+    Tolerance r is set automatically by antropy as 0.2 * std(x).
+    """
+    try:
+        import antropy  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        import sys
+        from pathlib import Path
+
+        repo_root = next(
+            p for p in Path(__file__).resolve().parents if (p / "code" / "lib").is_dir()
+        )
+        sys.path.insert(0, str(repo_root / "code" / "lib" / "antropy" / "src"))
+        import antropy  # type: ignore[import-not-found]
+
+    arr = np.moveaxis(arr, axis, -1)
+
+    def fn(x):
+        return antropy.sample_entropy(x, order=order, metric=metric)
+
+    out = np.apply_along_axis(fn, -1, arr)
+    return out
+
+
+def lempel_ziv(arr: np.ndarray, *, axis: int = -1, normalize: bool = True) -> np.ndarray:
+    """
+    Lempel-Ziv complexity on binarized signal.
+
+    Signal binarized at median before LZ76 parsing.
+    Lower = more repetitive/structured.
+    Higher = more random/complex.
+
+    Wraps antropy.lziv_complexity.
+
+    Parameters
+    ----------
+    arr : (..., time)
+    axis : int — time axis (default -1)
+    normalize : bool — normalize by theoretical maximum (default True)
+
+    Returns
+    -------
+    lzc : same shape as arr with axis removed.
+
+    Notes
+    -----
+    Binarization: x > median(x). Sensitive to binarization threshold —
+    median is robust but consider mean for symmetric distributions.
+    """
+    try:
+        import antropy  # type: ignore[import-not-found]
+    except ModuleNotFoundError:
+        import sys
+        from pathlib import Path
+
+        repo_root = next(
+            p for p in Path(__file__).resolve().parents if (p / "code" / "lib").is_dir()
+        )
+        sys.path.insert(0, str(repo_root / "code" / "lib" / "antropy" / "src"))
+        import antropy  # type: ignore[import-not-found]
+
+    arr = np.moveaxis(arr, axis, -1)
+
+    def _lzc(x):
+        binary = (x > np.median(x)).astype(int)
+        val = antropy.lziv_complexity(binary, normalize=normalize)
+        if normalize:
+            return float(np.clip(val, 0.0, 1.0))
+        return val
+
+    out = np.apply_along_axis(_lzc, -1, arr)
+    return out
 
 
 def kurtosis(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
@@ -141,4 +312,3 @@ def saturation_fraction(
     adc_max has no default — caller must provide it explicitly.
     """
     return np.nanmean(np.abs(arr) > (adc_max - eps), axis=axis)
-

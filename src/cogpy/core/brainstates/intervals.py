@@ -1,5 +1,17 @@
 import numpy as np
 import pandas as pd
+import xarray as xr
+
+from cogpy.datasets.schemas import Events, Intervals
+
+__all__ = [
+    "check_intervals_disjoint",
+    "map_numbers_to_intervals",
+    "map_numbers_to_disjoint_intervals",
+    "subtract_intervals",
+    "restrict",
+    "perievent_epochs",
+]
 
 
 # %% Interval and State Mapping Functions:
@@ -207,3 +219,197 @@ def subtract_intervals(a, b):
         )  # Add the adjusted intervals for the current b interval to the result
 
     return result
+
+
+def restrict(
+    xsig: xr.DataArray,
+    intervals,
+    *,
+    time_dim: str = "time",
+) -> xr.DataArray:
+    """
+    Return signal samples whose time coordinate falls within any interval.
+
+    Equivalent to pynapple's .restrict() but operates on xr.DataArray
+    with a named time coordinate. Preserves all dims, coords, and attrs.
+
+    Parameters
+    ----------
+    xsig      : xr.DataArray — signal with a time coordinate
+    intervals : Intervals | np.ndarray (n,2) | list of [t0,t1]
+                | dict {state: [[t0,t1],...]}
+        If dict (cogpy brainstates format), all intervals across
+        all states are used (union of all intervals).
+    time_dim  : str — name of time dimension (default "time")
+
+    Returns
+    -------
+    xr.DataArray — same dims/coords/attrs as input,
+                   time axis restricted to valid samples.
+                   Empty array if no samples fall in any interval.
+
+    Notes
+    -----
+    Boundary convention: [t0, t1) — consistent with
+    cogpy.core.brainstates.intervals.map_numbers_to_disjoint_intervals.
+    """
+    if time_dim not in xsig.dims:
+        raise ValueError(f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}")
+    if time_dim not in xsig.coords:
+        raise ValueError(f"xsig must have a {time_dim!r} coordinate")
+
+    if isinstance(intervals, Intervals):
+        iv = intervals.to_array()
+    elif isinstance(intervals, dict):
+        parts = []
+        for v in intervals.values():
+            if v is None or len(v) == 0:
+                continue
+            arr = np.asarray(v, dtype=float)
+            if arr.ndim != 2 or arr.shape[1] != 2:
+                raise ValueError(f"State intervals must be (n, 2), got shape {arr.shape}")
+            parts.append(arr)
+        iv = np.concatenate(parts, axis=0) if parts else np.zeros((0, 2), dtype=float)
+    else:
+        iv = np.asarray(intervals, dtype=float)
+        if iv.ndim == 1 and len(iv) == 2:
+            iv = iv[np.newaxis, :]
+        if iv.ndim != 2 or iv.shape[1] != 2:
+            raise ValueError(f"intervals must be (n, 2) array or Intervals object, got shape {iv.shape}")
+
+    t = np.asarray(xsig.coords[time_dim].values, dtype=float)
+    mask = np.zeros(len(t), dtype=bool)
+    for t0, t1 in iv:
+        mask |= (t >= t0) & (t < t1)
+
+    return xsig.isel({time_dim: mask})
+
+
+def perievent_epochs(
+    xsig: xr.DataArray,
+    events,
+    fs: float,
+    *,
+    pre: float,
+    post: float,
+    time_dim: str = "time",
+    fill_value: float = np.nan,
+) -> xr.DataArray:
+    """
+    Extract signal epochs time-locked to events.
+
+    Equivalent to pynapple's compute_perievent but operates on
+    xr.DataArray and returns an xr.DataArray with an "event" dimension.
+
+    Parameters
+    ----------
+    xsig       : xr.DataArray — continuous signal with time coordinate
+                 Supported schemas: MultichannelTimeSeries (channel, time)
+                                    IEEGGridTimeSeries (time, ML, AP)
+                                    any DataArray with a time dim
+    events     : Events | np.ndarray (n,) | list of float
+                 Event times in seconds (same timebase as xsig).
+    fs         : float — sampling rate in Hz
+    pre        : float — seconds before event (positive = before)
+    post       : float — seconds after event
+    time_dim   : str — name of time dimension (default "time")
+    fill_value : float — value for out-of-bounds samples (default NaN)
+
+    Returns
+    -------
+    xr.DataArray with dims ("event", <other dims>, "lag")
+        - "event" coordinate: event times in seconds
+        - "lag" coordinate: time relative to event in seconds,
+          from -pre to +post, length = round((pre + post) * fs) + 1
+        - all other dims/coords from xsig preserved (excluding time coords)
+        - attrs from xsig preserved, plus:
+            pre, post, fs added to attrs
+
+    Notes
+    -----
+    Events near the start or end of the recording where the full
+    window is not available are padded with fill_value (NaN by default).
+    Events are not dropped — the caller can filter NaN epochs if needed.
+    """
+    if time_dim not in xsig.dims:
+        raise ValueError(f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}")
+    if time_dim not in xsig.coords:
+        raise ValueError(f"xsig must have a {time_dim!r} coordinate")
+    if fs <= 0:
+        raise ValueError("fs must be positive")
+    if pre < 0 or post < 0:
+        raise ValueError("pre and post must be non-negative")
+
+    if isinstance(events, Events):
+        event_times = np.asarray(events.times, dtype=float)
+    else:
+        event_times = np.asarray(events, dtype=float)
+        if event_times.ndim != 1:
+            raise ValueError("events must be 1D array of times")
+
+    t = np.asarray(xsig.coords[time_dim].values, dtype=float)
+    n_time = len(t)
+
+    n_pre = int(round(pre * fs))
+    n_post = int(round(post * fs))
+    n_samples = n_pre + n_post + 1
+    lags = np.linspace(-pre, post, n_samples)
+
+    other_dims = tuple(d for d in xsig.dims if d != time_dim)
+    out_dims = ("event", *other_dims, "lag")
+
+    fill_arr = np.asarray(fill_value)
+    if fill_arr.dtype.kind == "f" and np.isnan(fill_arr):
+        out_dtype = np.result_type(xsig.dtype, np.float64)
+    else:
+        out_dtype = np.result_type(xsig.dtype, fill_arr.dtype)
+
+    out_shape = (len(event_times), *[xsig.sizes[d] for d in other_dims], n_samples)
+    out = np.full(out_shape, fill_value, dtype=out_dtype)
+
+    xsig_other_last = xsig.transpose(*other_dims, time_dim) if other_dims else xsig
+    for ie, t_ev in enumerate(event_times):
+        i_center = _nearest_sample_index(t, t_ev)
+        i_start = i_center - n_pre
+        i_end = i_center + n_post + 1
+
+        src_start = max(0, i_start)
+        src_end = min(n_time, i_end)
+        if src_end <= src_start:
+            continue
+
+        dest_start = max(0, -i_start)
+        dest_end = dest_start + (src_end - src_start)
+
+        epoch = xsig_other_last.isel({time_dim: slice(src_start, src_end)})
+        epoch_data = np.asarray(epoch.data)
+        out[(ie, *([slice(None)] * len(other_dims)), slice(dest_start, dest_end))] = epoch_data
+
+    coords = {}
+    for name, coord in xsig.coords.items():
+        if time_dim in coord.dims:
+            continue
+        coords[name] = coord
+    coords["event"] = event_times
+    coords["lag"] = lags
+
+    epochs_da = xr.DataArray(out, dims=out_dims, coords=coords, attrs=dict(xsig.attrs))
+    epochs_da.attrs.update({"pre": float(pre), "post": float(post), "fs": float(fs)})
+    return epochs_da
+
+
+def _nearest_sample_index(t: np.ndarray, t_ev: float) -> int:
+    """
+    Return index of sample time nearest to t_ev.
+
+    Assumes t is 1D, sorted increasing.
+    """
+    n = len(t)
+    if n == 0:
+        raise ValueError("time coordinate is empty")
+    i = int(np.searchsorted(t, t_ev, side="left"))
+    if i <= 0:
+        return 0
+    if i >= n:
+        return n - 1
+    return i if abs(t[i] - t_ev) <= abs(t[i - 1] - t_ev) else i - 1

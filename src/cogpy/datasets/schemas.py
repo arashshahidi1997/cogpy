@@ -24,6 +24,9 @@ __all__ = [
     "DIMS_PAIRWISE_SPECTRUM",
     "DIMS_COMODULOGRAM",
     "DIMS_SPATIAL_COHERENCE_PROFILE",
+    "DIMS_EVENTS_TABLE",
+    "DIMS_INTERVALS_TABLE",
+    "DIMS_PERIEVENT",
     "validate_ieeg_grid",
     "validate_ieeg_grid_windowed",
     "validate_multichannel",
@@ -39,6 +42,8 @@ __all__ = [
     "coerce_ieeg_time_channel",
     "assert_attrs_survive",
     "AtlasImageOverlay",
+    "Intervals",
+    "Events",
 ]
 
 # Canonical dim orders (single source of truth for validators and docs).
@@ -61,6 +66,9 @@ DIMS_PAIRWISE_FEATURE_MATRIX = ("channel_i", "channel_j")
 DIMS_PAIRWISE_SPECTRUM = ("channel_i", "channel_j", "freq")
 DIMS_COMODULOGRAM = ("channel", "freq_phase", "freq_amp")
 DIMS_SPATIAL_COHERENCE_PROFILE = ("distance_bin", "freq")
+DIMS_EVENTS_TABLE = ("time",)
+DIMS_INTERVALS_TABLE = ("t_start", "t_end")
+DIMS_PERIEVENT = ("event", "channel", "time")
 
 
 def validate_ieeg_grid(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
@@ -583,6 +591,247 @@ class AtlasImageOverlay:
         img = np.array(img, copy=True)
         img.setflags(write=False)
         object.__setattr__(self, "image", img)
+
+
+@dataclass
+class Intervals:
+    """
+    Named set of time intervals for iEEG analysis.
+
+    Lightweight alternative to pynapple.IntervalSet and MNE Annotations
+    that stays within cogpy's numpy-first convention. Optional conversions
+    to external objects available via to_pynapple() and to_mne_annotations().
+
+    Parameters
+    ----------
+    starts : (n,) array-like — interval start times in seconds
+    ends   : (n,) array-like — interval end times in seconds
+    name   : str — label for this interval set (e.g. "PerSWS", "spindles")
+
+    Validation
+    ----------
+    - ends must be strictly greater than starts (element-wise)
+    - starts and ends must have the same length
+    - all values must be finite
+
+    Notes
+    -----
+    Intervals are open-ended on the right: [t0, t1).
+    Consistent with cogpy.core.brainstates.intervals convention.
+    """
+
+    starts: np.ndarray
+    ends: np.ndarray
+    name: str = ""
+
+    def __post_init__(self):
+        self.starts = np.asarray(self.starts, dtype=float)
+        self.ends = np.asarray(self.ends, dtype=float)
+        if self.starts.ndim != 1 or self.ends.ndim != 1:
+            raise ValueError("Intervals.starts and ends must be 1D arrays")
+        if len(self.starts) != len(self.ends):
+            raise ValueError(
+                f"Intervals.starts and ends must have same length, "
+                f"got {len(self.starts)} and {len(self.ends)}"
+            )
+        if not np.all(np.isfinite(self.starts)) or not np.all(np.isfinite(self.ends)):
+            raise ValueError("Intervals.starts and ends must be finite")
+        if not np.all(self.ends > self.starts):
+            raise ValueError("Intervals: all ends must be strictly greater than starts")
+
+    def __len__(self) -> int:
+        return len(self.starts)
+
+    def __repr__(self) -> str:
+        if len(self) == 0:
+            return f"Intervals(name={self.name!r}, n=0)"
+        return (
+            f"Intervals(name={self.name!r}, n={len(self)}, "
+            f"span=[{self.starts.min():.3f}, {self.ends.max():.3f}]s)"
+        )
+
+    def to_array(self) -> np.ndarray:
+        """Return (n, 2) array of [[t0, t1], ...]."""
+        return np.stack([self.starts, self.ends], axis=1)
+
+    def total_duration(self) -> float:
+        """Total duration covered by all intervals in seconds."""
+        return float(np.sum(self.ends - self.starts))
+
+    @classmethod
+    def from_array(cls, arr: np.ndarray, name: str = "") -> "Intervals":
+        """
+        Construct from (n, 2) array of [[t0, t1], ...].
+
+        Parameters
+        ----------
+        arr  : (n, 2) array-like
+        name : str label
+        """
+        arr = np.asarray(arr, dtype=float)
+        if arr.ndim != 2 or arr.shape[1] != 2:
+            raise ValueError(f"Intervals.from_array expects (n, 2) array, got {arr.shape}")
+        return cls(arr[:, 0], arr[:, 1], name=name)
+
+    @classmethod
+    def from_state_dict(cls, states: dict, state_name: str) -> "Intervals":
+        """
+        Construct from cogpy brainstates state dict.
+
+        Parameters
+        ----------
+        states     : dict of {state_name: [[t0, t1], ...]}
+        state_name : key to extract
+        """
+        if state_name not in states:
+            raise KeyError(
+                f"State {state_name!r} not found in states dict. "
+                f"Available: {list(states.keys())}"
+            )
+        arr = np.array(states[state_name], dtype=float)
+        return cls.from_array(arr, name=state_name)
+
+    def to_pynapple(self):
+        """
+        Convert to pynapple.IntervalSet.
+
+        Requires pynapple to be installed.
+        """
+        try:
+            import pynapple as nap
+        except ImportError:
+            raise ImportError(
+                "pynapple is required for Intervals.to_pynapple(). Install via: pip install pynapple"
+            )
+        return nap.IntervalSet(start=self.starts, end=self.ends)
+
+    def to_mne_annotations(self, orig_time=None):
+        """
+        Convert to mne.Annotations.
+
+        Requires mne to be installed.
+
+        Parameters
+        ----------
+        orig_time : float or None — origin time passed to mne.Annotations
+        """
+        try:
+            import mne
+        except ImportError:
+            raise ImportError("mne is required for Intervals.to_mne_annotations(). Install via: pip install mne")
+        durations = self.ends - self.starts
+        return mne.Annotations(
+            onset=self.starts,
+            duration=durations,
+            description=self.name,
+            orig_time=orig_time,
+        )
+
+
+@dataclass
+class Events:
+    """
+    Timestamped point events with optional labels.
+
+    Represents discrete events (spindle peaks, ripple troughs,
+    stimulus onsets) as a typed container. Replaces ad-hoc
+    numpy arrays of timestamps in cogpy pipelines.
+
+    Parameters
+    ----------
+    times  : (n,) array-like — event times in seconds
+    labels : (n,) array-like of str, or empty array — per-event labels
+    name   : str — label for this event set (e.g. "spindles", "ripples")
+
+    Notes
+    -----
+    If labels is empty or not provided, an empty string array is stored.
+    Use to_intervals() to expand point events to epoch windows.
+    """
+
+    times: np.ndarray
+    labels: np.ndarray = None
+    name: str = ""
+
+    def __post_init__(self):
+        self.times = np.asarray(self.times, dtype=float)
+        if self.times.ndim != 1:
+            raise ValueError("Events.times must be 1D")
+        if not np.all(np.isfinite(self.times)):
+            raise ValueError("Events.times must be finite")
+        if self.labels is None or (hasattr(self.labels, "__len__") and len(self.labels) == 0):
+            self.labels = np.array([""] * len(self.times), dtype=str)
+        else:
+            self.labels = np.asarray(self.labels, dtype=str)
+            if len(self.labels) != len(self.times):
+                raise ValueError(
+                    f"Events.labels must have same length as times, "
+                    f"got {len(self.labels)} and {len(self.times)}"
+                )
+        sort_idx = np.argsort(self.times)
+        self.times = self.times[sort_idx]
+        self.labels = self.labels[sort_idx]
+
+    def __len__(self) -> int:
+        return len(self.times)
+
+    def __repr__(self) -> str:
+        return (
+            f"Events(name={self.name!r}, n={len(self)}, "
+            f"span=[{self.times.min():.3f}, {self.times.max():.3f}]s)"
+            if len(self) > 0
+            else f"Events(name={self.name!r}, n=0)"
+        )
+
+    def to_intervals(self, pre: float, post: float) -> Intervals:
+        """
+        Expand point events to symmetric windows → Intervals.
+
+        Parameters
+        ----------
+        pre  : float — seconds before each event (positive = before)
+        post : float — seconds after each event
+
+        Returns
+        -------
+        Intervals with starts = times - pre, ends = times + post
+        """
+        if pre < 0 or post < 0:
+            raise ValueError("pre and post must be non-negative")
+        return Intervals(
+            starts=self.times - pre,
+            ends=self.times + post,
+            name=self.name,
+        )
+
+    def to_pynapple(self):
+        """
+        Convert to pynapple.Ts (timestamps only, labels dropped).
+
+        Requires pynapple to be installed.
+        """
+        try:
+            import pynapple as nap
+        except ImportError:
+            raise ImportError("pynapple is required for Events.to_pynapple(). Install via: pip install pynapple")
+        return nap.Ts(t=self.times)
+
+    def restrict(self, intervals: "Intervals") -> "Events":
+        """
+        Return only events that fall within the given intervals.
+
+        Parameters
+        ----------
+        intervals : Intervals
+
+        Returns
+        -------
+        Events — subset of events within any interval
+        """
+        mask = np.zeros(len(self.times), dtype=bool)
+        for t0, t1 in zip(intervals.starts, intervals.ends):
+            mask |= (self.times >= t0) & (self.times < t1)
+        return Events(self.times[mask], self.labels[mask], name=self.name)
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────

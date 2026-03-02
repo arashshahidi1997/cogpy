@@ -43,6 +43,10 @@ __all__ = [
     "coherence",
     "plv",
     "mtm_fstat",
+    "cross_corr_peak",
+    "cross_corr_lag",
+    "pac_modulation_index",
+    "spectral_granger",
 ]
 
 
@@ -219,3 +223,205 @@ def mtm_fstat(mtfft, fs, N, *, f0):
     K = int(mtfft.shape[-2])
     mu2 = np.abs(mu) ** 2
     return (K - 1) * mu2 / (S - mu2 / float(K) + EPS)
+
+
+def cross_corr_peak(
+    x: np.ndarray, y: np.ndarray, *, axis: int = -1, normalize: bool = True
+) -> np.ndarray:
+    """
+    Peak cross-correlation between signals x and y.
+
+    Returns the maximum absolute value of the cross-correlation
+    sequence across all lags.
+
+    Wraps nitime.utils.crosscorr with all_lags=True.
+
+    Parameters
+    ----------
+    x : (..., time)
+    y : (..., time) — same shape as x
+    axis : int — time axis (default -1)
+    normalize : bool — normalize by sqrt(var(x) * var(y)) (default True)
+
+    Returns
+    -------
+    peak : (...,) — peak cross-correlation in [0, 1] if normalized
+    """
+    from nitime.utils import crosscorr
+
+    x = np.moveaxis(x, axis, -1)
+    y = np.moveaxis(y, axis, -1)
+    N = x.shape[-1]
+
+    def _peak(xy):
+        x_, y_ = xy[:N], xy[N:]
+        r = crosscorr(x_, y_, all_lags=True)
+        if normalize:
+            norm = np.sqrt(np.var(x_) * np.var(y_)) + EPS
+            r = r / norm
+        return np.max(np.abs(r))
+
+    xy = np.concatenate([x, y], axis=-1)
+    return np.apply_along_axis(_peak, -1, xy)
+
+
+def cross_corr_lag(x: np.ndarray, y: np.ndarray, *, axis: int = -1, fs: float = 1.0) -> np.ndarray:
+    """
+    Lag at peak cross-correlation between signals x and y.
+
+    Positive lag: x leads y. Negative lag: y leads x.
+
+    Wraps nitime.utils.crosscorr with all_lags=True.
+
+    Parameters
+    ----------
+    x : (..., time)
+    y : (..., time) — same shape as x
+    axis : int — time axis (default -1)
+    fs : float — sampling rate Hz; converts lag from samples to seconds
+
+    Returns
+    -------
+    lag : (...,) — lag in seconds at peak absolute cross-correlation
+    """
+    from nitime.utils import crosscorr
+
+    x = np.moveaxis(x, axis, -1)
+    y = np.moveaxis(y, axis, -1)
+    N = x.shape[-1]
+    lags = np.arange(-(N - 1), N) / fs
+
+    def _lag(xy):
+        x_, y_ = xy[:N], xy[N:]
+        r = crosscorr(x_, y_, all_lags=True)
+        return lags[np.argmax(np.abs(r))]
+
+    xy = np.concatenate([x, y], axis=-1)
+    return np.apply_along_axis(_lag, -1, xy)
+
+
+def pac_modulation_index(pha: np.ndarray, amp: np.ndarray, *, n_bins: int = 18) -> np.ndarray:
+    """
+    Phase-Amplitude Coupling (PAC) via Modulation Index (Tort et al. 2010).
+
+    Measures whether the amplitude of a fast oscillation is modulated
+    by the phase of a slow oscillation. Classic examples:
+    theta-gamma coupling in hippocampus, spindle-ripple coupling
+    during NREM sleep.
+
+    Wraps tensorpac.methods.meth_pac.modulation_index.
+
+    Parameters
+    ----------
+    pha : (..., time) — instantaneous phase in radians
+        Typically: np.angle(hilbert(bandpass(x, f_low, f_high)))
+    amp : (..., time) — instantaneous amplitude (envelope)
+        Typically: np.abs(hilbert(bandpass(x, f_low, f_high)))
+    n_bins : int — number of phase bins (default 18 = 20° bins)
+
+    Returns
+    -------
+    mi : (...,) — modulation index, higher = stronger PAC
+
+    Notes
+    -----
+    MI based on KL divergence between observed amplitude distribution
+    over phase bins and uniform distribution.
+    MI = 0: no coupling. MI > 0: phase-amplitude coupling present.
+
+    For a full comodulogram (DIMS_COMODULOGRAM), call across a grid
+    of (freq_phase, freq_amp) pairs and stack results.
+
+    Examples
+    --------
+    >>> from scipy.signal import hilbert
+    >>> pha = np.angle(hilbert(bandpass(x, 4, 8, fs)))
+    >>> amp = np.abs(hilbert(bandpass(x, 30, 80, fs)))
+    >>> mi = pac_modulation_index(pha, amp)
+    """
+    from tensorpac.methods.meth_pac import modulation_index as _mi
+
+    pha = np.asarray(pha)
+    amp = np.asarray(amp)
+    if pha.shape != amp.shape:
+        raise ValueError(f"pha and amp must have identical shapes, got {pha.shape} and {amp.shape}.")
+
+    # tensorpac expects:
+    #   pha: (n_pha, ..., n_times)
+    #   amp: (n_amp, ..., n_times)
+    #
+    # We accept (..., time) and interpret it as one phase series and one
+    # amplitude series per batch element.
+    pha = pha[np.newaxis, ...]
+    amp = amp[np.newaxis, ...]
+    out = _mi(pha, amp, n_bins=int(n_bins))
+    return out[0, 0, ...]
+
+
+def spectral_granger(
+    x: np.ndarray,
+    y: np.ndarray,
+    fs: float,
+    *,
+    axis: int = -1,
+    direction: str = "both",
+) -> tuple:
+    """
+    Spectral Granger causality between signals x and y.
+
+    Tests directional influence at each frequency.
+    Use case: cortical → hippocampal vs hippocampal → cortical
+    communication during sleep consolidation.
+
+    Wraps elephant.causality.granger.pairwise_spectral_granger.
+
+    Parameters
+    ----------
+    x : (time,) — source signal (1D only, elephant limitation)
+    y : (time,) — target signal
+    fs : float — sampling rate in Hz
+    axis : int — time axis (default -1)
+    direction : str — "x_to_y" | "y_to_x" | "both" (default "both")
+
+    Returns
+    -------
+    If direction == "both":
+        (freqs, gc_x_to_y, gc_y_to_x)
+    If direction == "x_to_y" or "y_to_x":
+        (freqs, gc)
+
+    Notes
+    -----
+    Granger causality is not symmetric: gc_x_to_y ≠ gc_y_to_x.
+    Values > 0 indicate directional influence at that frequency.
+    Interpret relative to surrogate distribution for significance.
+    1D input only — elephant does not support batched input natively.
+    For multichannel use, call in a loop over channel pairs.
+    """
+    from elephant.causality.granger import pairwise_spectral_granger
+
+    x = np.asarray(x)
+    y = np.asarray(y)
+    x = np.moveaxis(x, axis, -1)
+    y = np.moveaxis(y, axis, -1)
+
+    if x.ndim != 1 or y.ndim != 1:
+        raise ValueError(
+            "spectral_granger only supports 1D inputs after moving time axis. "
+            f"Got x.shape={x.shape}, y.shape={y.shape}."
+        )
+    if x.shape != y.shape:
+        raise ValueError(f"x and y must have the same shape, got {x.shape} and {y.shape}.")
+
+    freqs, causality = pairwise_spectral_granger(x, y, fs=float(fs))
+    freqs = np.asarray(freqs, dtype=float)
+    gc_x_to_y = np.asarray(causality.directional_causality_x_y, dtype=float)
+    gc_y_to_x = np.asarray(causality.directional_causality_y_x, dtype=float)
+
+    if direction == "both":
+        return freqs, gc_x_to_y, gc_y_to_x
+    if direction == "x_to_y":
+        return freqs, gc_x_to_y
+    if direction == "y_to_x":
+        return freqs, gc_y_to_x
+    raise ValueError('direction must be one of: "x_to_y", "y_to_x", "both".')
