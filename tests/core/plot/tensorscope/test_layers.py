@@ -1,24 +1,98 @@
-"""
-Tests for TensorLayer interface and concrete layers (Phase 2 implementation).
-
-Phase 0: Stub tests (skipped)
-Phase 2: Implement these tests
-"""
+"""Tests for TensorScope layers."""
 
 from __future__ import annotations
 
-import pytest
+import panel as pn
+
+from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.core.plot.tensorscope.layers import (
+    ChannelSelectorLayer,
+    ProcessingControlsLayer,
+    SpatialMapLayer,
+    TimeseriesLayer,
+    TimeNavigatorLayer,
+)
 
 
-@pytest.mark.skip(reason="Phase 2 implementation pending")
-def test_layer_interface_contract(small_ieeg):
-    """A TensorLayer should accept state and return a Panel viewable."""
-
-    pytest.importorskip("panel")
-    pytest.importorskip("param")
-
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
+def test_timeseries_layer_creation(small_ieeg):
     state = TensorScopeState(small_ieeg)
-    assert state is not None
+    layer = TimeseriesLayer(state)
+
+    assert layer.layer_id == "timeseries"
+    assert layer.state is state
+    assert isinstance(layer.panel(), pn.viewable.Viewable)
+
+
+def test_timeseries_layer_selection_update(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = TimeseriesLayer(state)
+
+    state.channel_grid.select_cell(1, 1)
+    state.channel_grid.select_cell(2, 2)
+
+    assert layer.panel() is not None
+
+
+def test_spatial_layer_creation(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = SpatialMapLayer(state, mode="rms", window_s=0.1)
+
+    assert layer.layer_id == "spatial_map"
+    assert layer.title == "Spatial RMS"
+    assert isinstance(layer.panel(), pn.viewable.Viewable)
+
+
+def test_channel_selector_layer(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = ChannelSelectorLayer(state)
+    assert isinstance(layer.panel(), pn.viewable.Viewable)
+
+
+def test_processing_controls_layer(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = ProcessingControlsLayer(state)
+    assert isinstance(layer.panel(), pn.viewable.Viewable)
+
+
+def test_time_navigator_layer(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = TimeNavigatorLayer(state)
+    assert isinstance(layer.panel(), pn.viewable.Viewable)
+
+
+def test_layer_dispose(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+    layer = TimeseriesLayer(state)
+
+    assert len(layer._watchers) > 0
+    layer.dispose()
+    assert len(layer._watchers) == 0
+
+
+def test_multiple_layers_same_state(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+
+    layer1 = TimeseriesLayer(state)
+    layer2 = SpatialMapLayer(state)
+    layer3 = ChannelSelectorLayer(state)
+
+    assert layer1.panel() is not None
+    assert layer2.panel() is not None
+    assert layer3.panel() is not None
+
+    layer1.dispose()
+    layer2.dispose()
+    layer3.dispose()
+
+
+def test_layer_lifecycle_100_cycles_lightweight(small_ieeg):
+    state = TensorScopeState(small_ieeg)
+
+    for _ in range(100):
+        l1 = ChannelSelectorLayer(state)
+        l2 = ProcessingControlsLayer(state)
+        l3 = TimeNavigatorLayer(state)
+        l1.dispose()
+        l2.dispose()
+        l3.dispose()
 

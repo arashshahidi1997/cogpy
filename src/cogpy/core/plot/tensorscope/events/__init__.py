@@ -3,6 +3,6 @@
 from __future__ import annotations
 
 from .model import EventStream
+from .registry import EventRegistry
 
-__all__ = ["EventStream"]
-
+__all__ = ["EventRegistry", "EventStream"]

@@ -265,6 +265,20 @@ class ProcessingChain(param.Parameterized):
 
         return win
 
+    def to_dict(self) -> dict[str, object]:
+        """Serialize processing settings (not data)."""
+        return {
+            "cmr_on": bool(self.cmr_on),
+            "bandpass_on": bool(self.bandpass_on),
+            "bandpass_lo": float(self.bandpass_lo),
+            "bandpass_hi": float(self.bandpass_hi),
+            "bandpass_order": int(self.bandpass_order),
+            "spatial_median_on": bool(self.spatial_median_on),
+            "spatial_median_size": int(self.spatial_median_size),
+            "zscore_on": bool(self.zscore_on),
+            "zscore_robust": bool(self.zscore_robust),
+        }
+
     def controls(self) -> pn.Column:
         if self._controls_view is not None:
             return self._controls_view

@@ -154,6 +154,8 @@ class MultichannelViewer:
         self._range_stream = None
         self._current_t_range = (self._t0, min(self._t0 + self._iw, self._t1))
         self._hair = None  # set by add_time_hair()
+        self._hair_watcher = None
+        self._chain_watchers = []
 
         if self._chain is not None:
             self._wire_chain(self._chain)
@@ -177,6 +179,11 @@ class MultichannelViewer:
         self._active_ix = [i for i in indices if 0 <= i < self._n_ch]
         if self._built:
             self._apply()
+
+    @property
+    def range_stream(self):
+        """Read-only access to the HoloViews RangeX stream (public API)."""
+        return self._range_stream
 
     def panel(self, *, fresh: bool = False) -> pn.viewable.Viewable:
         """Build and return the Panel layout.
@@ -267,7 +274,8 @@ class MultichannelViewer:
             "zscore_robust",
         ]
         try:
-            chain.param.watch(self._on_chain_change, params_to_watch)
+            h = chain.param.watch(self._on_chain_change, params_to_watch)
+            self._chain_watchers.append(h)
         except Exception:  # noqa: BLE001
             return
 
@@ -427,8 +435,14 @@ class MultichannelViewer:
         hair : TimeHair
             Shared time parameter.  ``hair.t`` drives the VLine position.
         """
+        if self._hair is not None and self._hair_watcher is not None:
+            try:
+                self._hair.param.unwatch(self._hair_watcher)
+            except Exception:  # noqa: BLE001
+                pass
+
         self._hair = hair
-        hair.param.watch(self._on_hair_t, "t")
+        self._hair_watcher = hair.param.watch(self._on_hair_t, "t")
 
     def _with_hair(self, element: hv.Element) -> hv.Element:
         """Append VLine to element if a time hair is set and has a position."""
@@ -480,3 +494,30 @@ class MultichannelViewer:
             # Overview slot (index 3).
             self._layout[3] = attached
         return attached
+
+    def dispose(self) -> None:
+        """Best-effort cleanup of watchers/streams to avoid leaks in layered apps."""
+        if self._hair is not None and self._hair_watcher is not None:
+            try:
+                self._hair.param.unwatch(self._hair_watcher)
+            except Exception:  # noqa: BLE001
+                pass
+        self._hair = None
+        self._hair_watcher = None
+
+        if self._chain is not None and self._chain_watchers:
+            for h in list(self._chain_watchers):
+                try:
+                    self._chain.param.unwatch(h)
+                except Exception:  # noqa: BLE001
+                    pass
+        self._chain_watchers = []
+
+        self._range_stream = None
+        try:
+            self._layout = None
+        except Exception:  # noqa: BLE001
+            pass
+        self._overview = None
+        self._detail_dmap = None
+        self._built = False

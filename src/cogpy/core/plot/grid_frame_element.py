@@ -106,7 +106,7 @@ class GridFrameElement:
         )
 
         # Wire hair watcher — fires on every t change.
-        hair.param.watch(self._on_t, "t")
+        self._hair_watcher = hair.param.watch(self._on_t, "t")
 
         # Trigger immediately if t is already set.
         if hair.t is not None:
@@ -124,6 +124,13 @@ class GridFrameElement:
     def panel(self) -> pn.viewable.Viewable:
         """Return the Panel pane wrapping the spatial frame."""
         return self._tmap.panel()
+
+    def dispose(self) -> None:
+        """Detach watchers to avoid leaks when layers are removed."""
+        try:
+            self._hair.param.unwatch(self._hair_watcher)
+        except Exception:  # noqa: BLE001
+            pass
 
     # ------------------------------------------------------------------
     # Internal

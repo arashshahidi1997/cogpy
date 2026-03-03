@@ -266,6 +266,15 @@ class ChannelGrid(param.Parameterized):
         self.manual_selection = frozenset(current)
         return self
 
+    def select_cell(self, ap: int, ml: int) -> "ChannelGrid":
+        """Select one cell in manual mode (idempotent)."""
+        self.mode = "manual"
+        pair = (int(ap), int(ml))
+        current = set(self.manual_selection)
+        current.add(pair)
+        self.manual_selection = frozenset(current)
+        return self
+
     # ------------------------------------------------------------------
     # Repr
     # ------------------------------------------------------------------

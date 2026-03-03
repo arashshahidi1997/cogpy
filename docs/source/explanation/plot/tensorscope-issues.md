@@ -50,7 +50,35 @@ tmpl = pn.template.FastGridTemplate(
 
 ---
 
-## Issue 2: [Placeholder for future issues]
+## Issue 2: Cards Not Rendering in FastGridTemplate Grid
+
+**Symptoms:**
+Cards assigned to `FastGridTemplate.main` appear as empty/dark areas.
+
+**Root cause:**
+Wrapping cards in `pn.Row()` before grid assignment can prevent proper rendering.
+
+**WRONG:**
+```python
+tmpl.main[0:5, 0:12] = pn.Row(card, sizing_mode='stretch_width')  # ❌ Card may not render
+```
+
+**CORRECT:**
+```python
+tmpl.main[0:5, 0:12] = card  # ✅ Card renders properly
+```
+
+**Explanation:**
+Cards already have `sizing_mode='stretch_both'`. The grid cell itself provides the container. Wrapping in `pn.Row()` adds an unnecessary layer that can interfere with rendering.
+
+**TensorScope convention:**
+- Assign cards directly to grid cells
+- Let cards handle their own sizing via `sizing_mode` parameter
+- Only use `pn.Row()`/`pn.Column()` when actually composing multiple widgets
+
+---
+
+## Issue 3: [Placeholder for future issues]
 
 (To be added as encountered)
 
