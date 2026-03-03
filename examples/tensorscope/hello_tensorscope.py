@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.theme import BG_PANEL, BLUE, TEAL
+from cogpy.core.plot.theme import BG, BG_PANEL, BLUE, TEAL, TEXT
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension("tabulator")
@@ -23,6 +23,7 @@ pn.extension("tabulator")
 print("Loading example iEEG data...")
 data = example_ieeg_grid(mode="small")
 print(f"Loaded: {data.dims}, {data.sizes}")
+print(f"Theme: BG={BG}, BG_PANEL={BG_PANEL}, TEXT={TEXT}, BLUE={BLUE}, TEAL={TEAL}")
 
 print("Phase 0: TensorScopeState exists but controllers are not wired yet (Phase 1).")
 
@@ -31,42 +32,68 @@ def build_app() -> pn.template.base.BasicTemplate:
     """Build Phase 0 demo layout using FastGridTemplate."""
 
     spatial_placeholder = pn.Card(
-        pn.pane.Markdown(
-            "**Spatial Map Layer**\n\n"
-            "Phase 2 will implement:\n"
-            "- GridFrameElement wrapper\n"
-            "- Time-linked RMS/mean display\n"
-            "- Colormap controls"
+        pn.Column(
+            pn.pane.Markdown(
+                "### Spatial Map Layer\n\n"
+                "**Phase 2 will implement:**\n"
+                "- GridFrameElement wrapper\n"
+                "- Time-linked RMS/mean display\n"
+                "- Colormap controls\n"
+                "- Electrode grid overlay",
+                styles={"color": TEXT, "padding": "10px 10px 0 10px"},
+            ),
+            pn.pane.HTML(
+                "<div style=\"background:#2a2a3a; padding:16px; border-radius:6px; color:#cdd6f4;\">"
+                "<b>Status:</b> placeholders only (Phase 0)"
+                "</div>",
+                sizing_mode="stretch_width",
+                styles={"padding": "0 10px 10px 10px"},
+            ),
+            sizing_mode="stretch_both",
         ),
         title="Spatial View (Phase 2)",
         header_background=BLUE,
-        styles={"background": BG_PANEL},
-        min_height=320,
+        styles={"background": BG_PANEL, "padding": "10px"},
+        sizing_mode="stretch_both",
+        min_height=350,
     )
 
     timeseries_placeholder = pn.Card(
-        pn.pane.Markdown(
-            "**Timeseries Layer**\n\n"
-            "Phase 2 will implement:\n"
-            "- MultichannelViewer wrapper\n"
-            "- Channel selection binding\n"
-            "- Time cursor display"
+        pn.Column(
+            pn.pane.Markdown(
+                "### Timeseries Layer\n\n"
+                "**Phase 2 will implement:**\n"
+                "- MultichannelViewer wrapper\n"
+                "- Channel selection binding\n"
+                "- Time cursor display\n"
+                "- Windowed processing",
+                styles={"color": TEXT, "padding": "10px 10px 0 10px"},
+            ),
+            pn.pane.HTML(
+                "<div style=\"background:#2a2a3a; padding:16px; border-radius:6px; color:#cdd6f4;\">"
+                "<b>Status:</b> placeholders only (Phase 0)"
+                "</div>",
+                sizing_mode="stretch_width",
+                styles={"padding": "0 10px 10px 10px"},
+            ),
+            sizing_mode="stretch_both",
         ),
         title="Timeseries View (Phase 2)",
         header_background=BLUE,
-        styles={"background": BG_PANEL},
-        min_height=320,
+        styles={"background": BG_PANEL, "padding": "10px"},
+        sizing_mode="stretch_both",
+        min_height=350,
     )
 
     controls_placeholder = pn.Card(
         pn.Column(
-            pn.pane.Markdown("**Controls**\n\nPhase 2 layers:"),
+            pn.pane.Markdown("**Controls**\n\nPhase 2 layers:", styles={"color": TEXT}),
             pn.widgets.IntSlider(name="Placeholder slider", start=0, end=10),
             pn.widgets.Checkbox(name="Placeholder checkbox"),
         ),
         title="Controls (Phase 2)",
         header_background=TEAL,
-        styles={"background": BG_PANEL},
+        styles={"background": BG_PANEL, "padding": "10px"},
     )
 
     sidebar = pn.Column(
@@ -79,7 +106,8 @@ def build_app() -> pn.template.base.BasicTemplate:
             "- ✅ Package structure created\n"
             "- ✅ FastGridTemplate working\n"
             "- ⏳ Phase 1: State implementation\n"
-            "- ⏳ Phase 2: Core layers"
+            "- ⏳ Phase 2: Core layers",
+            styles={"color": TEXT},
         ),
         controls_placeholder,
     )
