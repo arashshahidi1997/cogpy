@@ -99,6 +99,104 @@ Placeholder cards replaced with actual visualization layers.
 
 ---
 
+## Phase 3: Application Shell
+
+### Quick Tests
+
+**test_phase3_app.py** - Application shell test
+```bash
+conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase3_app.py
+```
+
+Tests:
+- TensorScopeApp creation
+- Builder API
+- Layer management
+- Layout presets
+- Session save/load
+- App shutdown
+
+### Interactive Apps
+
+**phase3_app.py** - Complete TensorScope application
+```bash
+conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/phase3_app.py --show
+```
+
+**Features:**
+- Full application shell with all layers
+- Layout presets (default, spatial_focus, timeseries_focus)
+- Integrated state management
+- Session persistence
+
+**hello_tensorscope.py** (updated) - Now uses TensorScopeApp
+```bash
+conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/hello_tensorscope.py --show
+```
+
+Simplified to use TensorScopeApp builder API.
+
+---
+
+## Phase 4: Events System
+
+### Quick Tests
+
+**test_phase4_events.py** - Event system test
+```bash
+conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase4_events.py
+```
+
+Tests:
+- Creating EventStream from DataFrame
+- Event queries (window, next, prev)
+- Event registration
+- EventTableLayer
+- Navigation (jump to event, next/prev)
+- Serialization
+
+### Interactive Demos
+
+**phase4_events.py** - Interactive event browser
+```bash
+conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/phase4_events.py --show
+```
+
+**Features:**
+- Event table with 30 synthetic events
+- Click row → jump to event time
+- Prev/Next navigation buttons
+- Real-time cursor sync with events
+- Event metadata display
+
+---
+
+## Phase 5: Multi-Modal Support
+
+### Quick Tests
+
+**test_phase5_multimodal.py** - Multi-modal system test
+```bash
+conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase5_multimodal.py
+```
+
+Tests:
+- Creating multiple modalities (LFP, spectrogram)
+- Registering with data registry
+- Switching active modality
+- Time alignment utilities
+- Windowing across different sampling rates
+- Modality conversion (grid→flat)
+
+### Interactive Demos
+
+**phase5_multimodal.py** - Multi-modal browser
+```bash
+conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/phase5_multimodal.py --show
+```
+
+---
+
 ## Requirements
 
 All examples require:

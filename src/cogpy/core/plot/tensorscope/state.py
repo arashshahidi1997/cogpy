@@ -16,6 +16,8 @@ import param
 if TYPE_CHECKING:
     import xarray as xr
 
+from .data.modality import DataModality
+
 
 class TensorScopeState(param.Parameterized):
     """
@@ -72,6 +74,7 @@ class TensorScopeState(param.Parameterized):
         from .data.modalities import GridLFPModality
         from .data.registry import DataRegistry
         from .events.registry import EventRegistry
+        from .schema import flatten_grid_to_channels
         from .schema import validate_and_normalize_grid
         from .time_window import TimeWindowCtrl
 
@@ -88,12 +91,16 @@ class TensorScopeState(param.Parameterized):
         self.time_hair = TimeHair(snap=True)
         self.time_window = TimeWindowCtrl(bounds=(t_min, t_max))
         self.channel_grid = ChannelGrid(n_ap=n_ap, n_ml=n_ml)
-        self.processing = ProcessingChain(normalized_data)
+        # ProcessingChain is used by both the timeseries and spatial map layers.
+        # Use the stacked-flat (time, channel) form so channel subsetting works
+        # and spatial layers can reconstruct frames via AP/ML coords.
+        self.processing = ProcessingChain(flatten_grid_to_channels(normalized_data))
 
         self.data_registry = DataRegistry()
         self.event_registry = EventRegistry()
 
         self.data_registry.register("grid_lfp", GridLFPModality(normalized_data))
+        self.active_modality = str(self.data_registry.get_active_name() or "grid_lfp")
 
     @property
     def current_time(self) -> float | None:
@@ -126,17 +133,72 @@ class TensorScopeState(param.Parameterized):
             return []
         return self.channel_grid.flat_indices
 
-    def register_modality(self, name: str, modality: Any) -> None:
+    def register_modality(self, name: str, modality: DataModality) -> None:
         """Register a data modality by name."""
         if self.data_registry is None:
             raise RuntimeError("data_registry is not initialized")
         self.data_registry.register(name, modality)
 
+    def set_active_modality(self, name: str) -> None:
+        """
+        Set active data modality.
+
+        Switches which modality layers should use for visualization.
+        """
+        if self.data_registry is None:
+            raise RuntimeError("data_registry is not initialized")
+        self.data_registry.set_active(name)
+        self.active_modality = str(name)
+
+    def get_active_modality(self) -> DataModality | None:
+        """Get currently active modality."""
+        if self.data_registry is None:
+            return None
+        return self.data_registry.get_active()
+
     def register_events(self, name: str, stream: Any) -> None:
-        """Register an event stream by name."""
+        """Register an event stream."""
         if self.event_registry is None:
             raise RuntimeError("event_registry is not initialized")
-        self.event_registry.register(name, stream)
+        # Normalize name and ensure the stream is registered under that name.
+        try:
+            stream.name = str(name)
+        except Exception:  # noqa: BLE001
+            pass
+        self.event_registry.register(stream)
+
+    def jump_to_event(self, stream_name: str, event_id) -> None:
+        """Jump to specific event by ID."""
+        if self.event_registry is None:
+            raise RuntimeError("event_registry is not initialized")
+        stream = self.event_registry.get(stream_name)
+        if stream is None:
+            raise ValueError(f"Event stream {stream_name!r} not found")
+        ev = stream.get_event_by_id(event_id)
+        if ev is not None:
+            self.current_time = float(ev[stream.time_col])
+
+    def next_event(self, stream_name: str) -> None:
+        """Jump to next event in stream."""
+        if self.event_registry is None or self.current_time is None:
+            return
+        stream = self.event_registry.get(stream_name)
+        if stream is None:
+            return
+        ev = stream.get_next_event(float(self.current_time))
+        if ev is not None:
+            self.current_time = float(ev[stream.time_col])
+
+    def prev_event(self, stream_name: str) -> None:
+        """Jump to previous event in stream."""
+        if self.event_registry is None or self.current_time is None:
+            return
+        stream = self.event_registry.get(stream_name)
+        if stream is None:
+            return
+        ev = stream.get_prev_event(float(self.current_time))
+        if ev is not None:
+            self.current_time = float(ev[stream.time_col])
 
     def to_dict(self) -> dict:
         """
@@ -187,6 +249,10 @@ class TensorScopeState(param.Parameterized):
                 state.channel_grid.select_cell(int(ap), int(ml))
 
         state.active_layout_preset = str(state_dict.get("active_layout_preset", "default"))
-        state.active_modality = str(state_dict.get("active_modality", "grid_lfp"))
+        desired_modality = str(state_dict.get("active_modality", "grid_lfp"))
+        if state.data_registry is not None and desired_modality in state.data_registry.list():
+            state.set_active_modality(desired_modality)
+        else:
+            state.active_modality = desired_modality
 
         return state
