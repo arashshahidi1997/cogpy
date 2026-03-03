@@ -17,14 +17,7 @@ tmpl.main.append(widget)  # AttributeError: 'GridSpec' object has no attribute '
 **Root cause:**  
 In Panel 1.8.8, `FastGridTemplate.main` is a `GridSpec` object. Unlike `FastListTemplate.main` (which is a list-like container), `GridSpec` requires dictionary-style grid assignment.
 
-**Workaround Option A: Use FastListTemplate for simple layouts**
-```python
-# For demos or simple vertical stacking
-tmpl = pn.template.FastListTemplate(...)
-tmpl.main.append(widget)  # ✅ Works
-```
-
-**Workaround Option B: Use grid assignment with FastGridTemplate**
+**Workaround: Use grid assignment with FastGridTemplate**
 ```python
 # For complex multi-panel layouts
 tmpl = pn.template.FastGridTemplate(...)
@@ -34,7 +27,7 @@ tmpl.main[0:4, 0:12] = widget1  # ✅ Works
 tmpl.main[4:8, 0:12] = widget2
 ```
 
-**Workaround Option C: Pass sidebar at init (not append)**
+**Also: Pass sidebar at init (not append)**
 ```python
 # WRONG
 tmpl = pn.template.FastGridTemplate(...)
@@ -48,8 +41,8 @@ tmpl = pn.template.FastGridTemplate(
 ```
 
 **Decision for TensorScope:**
-- **Phase 0 demo:** Use `FastListTemplate` (simplicity)
-- **Phase 3+ app:** Use `FastGridTemplate` with grid assignment (full layout control)
+- **Phase 0–3:** Use `FastGridTemplate` with grid assignment (full layout control)
+- Avoid `FastListTemplate` in core demos (less layout control)
 
 **References:**
 - Panel docs: https://panel.holoviz.org/reference/templates/FastGridTemplate.html

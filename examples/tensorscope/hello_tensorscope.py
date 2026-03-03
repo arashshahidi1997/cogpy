@@ -4,7 +4,7 @@ Hello TensorScope - Minimal working demo.
 This demonstrates:
 - Loading data with cogpy.datasets
 - Importing TensorScope state/app scaffolding (Phase 0)
-- Building a FastListTemplate layout with placeholder cards
+- Building a FastGridTemplate layout with placeholder cards
 - Panel server deployment
 
 Run with:
@@ -28,7 +28,7 @@ print("Phase 0: TensorScopeState exists but controllers are not wired yet (Phase
 
 
 def build_app() -> pn.template.base.BasicTemplate:
-    """Build Phase 0 demo layout."""
+    """Build Phase 0 demo layout using FastGridTemplate."""
 
     spatial_placeholder = pn.Card(
         pn.pane.Markdown(
@@ -77,22 +77,25 @@ def build_app() -> pn.template.base.BasicTemplate:
             f"- Time: {float(data.time.values[0]):.2f}s - {float(data.time.values[-1]):.2f}s\n\n"
             "**Phase 0 Status:**\n"
             "- ✅ Package structure created\n"
-            "- ✅ FastListTemplate working\n"
+            "- ✅ FastGridTemplate working\n"
             "- ⏳ Phase 1: State implementation\n"
             "- ⏳ Phase 2: Core layers"
         ),
         controls_placeholder,
     )
 
-    tmpl = pn.template.FastListTemplate(
+    tmpl = pn.template.FastGridTemplate(
         title="TensorScope v0.0 (Phase 0 Demo)",
         theme="dark",
         sidebar_width=320,
         sidebar=[sidebar],
+        row_height=80,
     )
 
-    tmpl.main.append(pn.Row(spatial_placeholder, sizing_mode="stretch_width"))
-    tmpl.main.append(pn.Row(timeseries_placeholder, sizing_mode="stretch_width"))
+    # Panel 1.8.8: FastGridTemplate.main is a GridSpec (no .append()).
+    # Use grid assignment instead.
+    tmpl.main[0:5, 0:12] = pn.Row(spatial_placeholder, sizing_mode="stretch_width")
+    tmpl.main[5:10, 0:12] = pn.Row(timeseries_placeholder, sizing_mode="stretch_width")
 
     return tmpl
 

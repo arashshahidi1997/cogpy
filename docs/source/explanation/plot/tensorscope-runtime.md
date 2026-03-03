@@ -36,4 +36,3 @@ python3
 ## Known Panel Quirk (1.8.8)
 
 For `panel==1.8.8`, `FastGridTemplate.main` is a `GridSpec` and does not support `.append()`. See `tensorscope-issues.md`.
-
