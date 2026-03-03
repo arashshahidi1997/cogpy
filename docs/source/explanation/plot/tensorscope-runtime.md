@@ -33,6 +33,24 @@ python3
 /storage/share/python/environments/Anaconda3/condabin/conda run -n cogpy python -m pytest -q code/lib/cogpy/tests/core/plot/tensorscope
 ```
 
+## Reference Template Pattern (FastGridTemplate + GridSpec)
+
+The working reference layout is `code/lib/cogpy/notebooks/tensorscope/tensorscope_app.py`.
+
+Key pattern for `panel==1.8.8`:
+```python
+tmpl = pn.template.FastGridTemplate(
+    title="🧠 TensorScope",
+    sidebar=[sidebar],  # pass at init
+    theme="dark",
+    row_height=60,
+)
+
+tmpl.main[0:6, 0:6] = spatial_card
+tmpl.main[0:6, 6:12] = events_card
+tmpl.main[6:12, 0:12] = ts_card
+```
+
 ## Known Panel Quirk (1.8.8)
 
 For `panel==1.8.8`, `FastGridTemplate.main` is a `GridSpec` and does not support `.append()`. See `tensorscope-issues.md`.
