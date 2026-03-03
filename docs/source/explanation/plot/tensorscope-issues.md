@@ -2,6 +2,8 @@
 
 This document tracks known issues, Panel/HoloViews quirks, and their solutions.
 
+> For environment/runtime setup commands, see [tensorscope-runtime.md](tensorscope-runtime.md).
+
 ---
 
 ## Issue 1: FastGridTemplate `.append()` Not Supported (Panel 1.8.8)
@@ -73,4 +75,3 @@ When adding new issues to this document:
 6. **References:** Links to docs, issues, working examples
 
 Keep entries concise. Link to relevant sections of tensorscope-spec.md or tensorscope-plan.md where applicable.
-

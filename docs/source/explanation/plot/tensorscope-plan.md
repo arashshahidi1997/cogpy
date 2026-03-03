@@ -34,6 +34,7 @@ TensorScope is a **Panel-based neurophysiology visualization app** that composes
 - **Phase 6 (Weeks 16–18)**: Polish/optimization + orthoslicer consolidation path.
 
 > **Note:** For Panel/HoloViews compatibility issues and workarounds, see [tensorscope-issues.md](tensorscope-issues.md).
+> **Runtime:** For the recommended `conda run -n cogpy ...` commands (Panel/pytest), see [tensorscope-runtime.md](tensorscope-runtime.md).
 
 ---
 
