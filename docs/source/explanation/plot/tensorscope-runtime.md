@@ -33,6 +33,17 @@ python3
 /storage/share/python/environments/Anaconda3/condabin/conda run -n cogpy python -m pytest -q code/lib/cogpy/tests/core/plot/tensorscope
 ```
 
+## Saving Changes (datalad)
+
+Use `datalad` from the conda `cogpy` environment and target the cogpy dataset with `-C`:
+
+```bash
+/storage/share/python/environments/Anaconda3/condabin/conda run -n cogpy datalad -C code/lib/cogpy status
+
+# Save specific paths (preferred)
+/storage/share/python/environments/Anaconda3/condabin/conda run -n cogpy datalad -C code/lib/cogpy save -m "message" path/to/file1 path/to/dir2
+```
+
 ## Reference Template Pattern (FastGridTemplate + GridSpec)
 
 The working reference layout is `code/lib/cogpy/notebooks/tensorscope/tensorscope_app.py`.
