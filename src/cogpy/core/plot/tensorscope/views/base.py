@@ -23,11 +23,16 @@ class View:
         self.signal_id = str(signal_id)
         self.view_id = str(view_id or str(uuid.uuid4())[:8])
         self._watchers: list[_WatcherRef] = []
+        self._streams: list[Any] = []
 
     def _watch(self, owner: Any, fn: Callable[..., Any], param_name: str | list[str]):
         h = owner.param.watch(fn, param_name)
         self._watchers.append(_WatcherRef(owner=owner, handle=h))
         return h
+
+    def _add_stream(self, stream: Any) -> Any:
+        self._streams.append(stream)
+        return stream
 
     def get_signal(self):
         reg = getattr(self.state, "signal_registry", None)
@@ -56,3 +61,10 @@ class View:
                 pass
         self._watchers.clear()
 
+        for s in self._streams:
+            try:
+                if hasattr(s, "clear"):
+                    s.clear()
+            except Exception:  # noqa: BLE001
+                pass
+        self._streams.clear()

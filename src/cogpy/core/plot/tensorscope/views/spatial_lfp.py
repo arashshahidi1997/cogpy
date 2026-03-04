@@ -188,7 +188,7 @@ class SpatialLFPView(View):
             )
             img = img * marker
 
-        tap = Tap(source=img)
+        tap = self._add_stream(Tap(source=img))
 
         def _on_tap(x, y):
             if x is None or y is None:
@@ -200,7 +200,8 @@ class SpatialLFPView(View):
             space.set_selection("ML", ml_i)
             space.set_selection("AP", ap_i)
 
-        tap.param.watch(lambda event: _on_tap(event.x, event.y), ["x", "y"])
+        # Use HoloViews' subscriber API (avoids Param watcher signature pitfalls).
+        tap.add_subscriber(_on_tap)
         return img
 
     def _update_spatial_marker(self, _dim: str, _value) -> None:
