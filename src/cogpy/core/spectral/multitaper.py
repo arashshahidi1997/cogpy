@@ -15,12 +15,20 @@ Safe to remove: no
 import warnings
 import numpy as np
 import xarray as xr
-import dask.array as da
-import ghostipy as gsp
 from scipy import signal
 from typing import Callable, Dict, List, Any
 from ..utils.convert import closest_power_of_two
 from ..utils import sliding as sl
+
+try:
+    import dask.array as da
+except Exception:  # noqa: BLE001
+    da = None
+
+try:
+    import ghostipy as gsp
+except Exception:  # noqa: BLE001
+    gsp = None
 
 
 def nperseg_from_ncycle(fm, fs=1, ncycle=7, power_of_two=True):
@@ -192,9 +200,19 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     ...                                 nperseg=256, noverlap=128)
     >>> assert mtspec.shape == (8, 129, 77)  # (n_channels, n_freq, n_time_segments)
     """
+    if gsp is None:
+        raise ImportError(
+            "mtm_spectrogram requires the optional 'ghostipy' dependency "
+            "(install with `cogpy[signal]`)."
+        )
+    if da is None and not isinstance(x, np.ndarray):
+        raise ImportError(
+            "mtm_spectrogram requires the optional 'dask' dependency when the input "
+            "is a Dask array (install with `cogpy[perf]`)."
+        )
     x = np.moveaxis(x, axis, -1)
     x_fiber = take_first_fiber_along_axis(x, axis=-1)
-    if isinstance(x_fiber, da.Array):
+    if (da is not None) and isinstance(x_fiber, da.Array):
         x_fiber: da.Array
         x_fiber = x_fiber.compute()
     S, f, t = gsp.mtm_spectrogram(x_fiber, bandwidth, **kwargs)
@@ -203,7 +221,10 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
         S, *_ = gsp.mtm_spectrogram(x_, bandwidth, **kwargs)
         return S
 
-    mtspec = da.apply_along_axis(_mtspec_func, -1, x, shape=S.shape, dtype=S.dtype)
+    if da is None:
+        mtspec = np.apply_along_axis(_mtspec_func, -1, x)
+    else:
+        mtspec = da.apply_along_axis(_mtspec_func, -1, x, shape=S.shape, dtype=S.dtype)
     return mtspec, f, t
 
 
@@ -251,6 +272,11 @@ def mtm_spectrogramx(xsig, dim="time", **kwargs):
     mtspec_xr : xr.DataArray
             multitaper spectrogram with `freq` and `time` dimensions added
     """
+    if gsp is None:
+        raise ImportError(
+            "mtm_spectrogramx requires the optional 'ghostipy' dependency "
+            "(install with `cogpy[signal]`)."
+        )
     dim = xsig.get_axis_num(dim)
     mtspec, f, t = mtm_spectrogram(xsig.data, axis=dim, **kwargs)
     coords = {dim: xsig.coords[dim] for dim in xsig.dims if dim != "time"}
