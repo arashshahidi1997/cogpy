@@ -9,6 +9,7 @@ Requires-Dist: numpy
 Requires-Dist: scipy
 Requires-Dist: pandas
 Requires-Dist: scikit-learn
+Requires-Dist: lazy_loader
 Requires-Dist: xarray
 Requires-Dist: tqdm
 Requires-Dist: numba
@@ -35,6 +36,8 @@ Requires-Dist: tables; extra == "io"
 Requires-Dist: zarr; extra == "io"
 Requires-Dist: openpyxl; extra == "io"
 Requires-Dist: xmltodict; extra == "io"
+Provides-Extra: interop-mne
+Requires-Dist: mne; extra == "interop-mne"
 Provides-Extra: perf
 Requires-Dist: dask[distributed]; extra == "perf"
 Requires-Dist: pyfftw; extra == "perf"

@@ -75,6 +75,16 @@ Example (Flat Background + Random Blobs)
 
 from __future__ import annotations
 
+import warnings
+
+warnings.warn(
+    f"{__name__} is deprecated. "
+    "For new projects, use TensorScope (cogpy.core.plot.tensorscope). "
+    "For maintenance of existing orthoslicer code, prefer orthoslicer_rangercopy.py.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import pandas as pd
 import holoviews as hv
 import panel as pn

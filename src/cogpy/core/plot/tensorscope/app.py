@@ -44,6 +44,7 @@ class TensorScopeApp:
             EventTableLayer,
             ProcessingControlsLayer,
             SpatialMapLayer,
+            SpectrogramLayer,
             TimeseriesLayer,
             TimeNavigatorLayer,
         )
@@ -91,6 +92,17 @@ class TensorScopeApp:
                 factory=lambda s: TimeNavigatorLayer(s),
                 description="Play/pause/step controls",
                 layer_type="navigation",
+            )
+        )
+
+        # Phase 5: spectrogram layer (only renders when active_modality == "spectrogram")
+        self.layer_manager.register(
+            LayerSpec(
+                layer_id="spectrogram",
+                title="Spectrogram",
+                factory=lambda s: SpectrogramLayer(s),
+                description="Spectrogram heatmap (active when modality is spectrogram)",
+                layer_type="spectrogram",
             )
         )
 

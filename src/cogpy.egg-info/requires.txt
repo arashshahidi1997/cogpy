@@ -2,6 +2,7 @@ numpy
 scipy
 pandas
 scikit-learn
+lazy_loader
 xarray
 tqdm
 numba
@@ -17,6 +18,9 @@ cogpy[notebook]
 cogpy[io]
 cogpy[perf]
 cogpy[signal]
+
+[interop-mne]
+mne
 
 [io]
 h5py

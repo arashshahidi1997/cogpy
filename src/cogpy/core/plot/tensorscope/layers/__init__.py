@@ -7,6 +7,7 @@ from .controls import ChannelSelectorLayer, ProcessingControlsLayer
 from .events import EventOverlayLayer, EventTableLayer
 from .navigation import TimeNavigatorLayer
 from .spatial import SpatialMapLayer
+from .spectrogram import SpectrogramLayer
 from .timeseries import TimeseriesLayer
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "LayerMetadata",
     "TimeseriesLayer",
     "SpatialMapLayer",
+    "SpectrogramLayer",
     "ChannelSelectorLayer",
     "ProcessingControlsLayer",
     "TimeNavigatorLayer",

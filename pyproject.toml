@@ -76,6 +76,7 @@ all = [
 
 [project.scripts]
 cogpy-preproc = "cogpy.cli.preprocess:main"
+tensorscope = "cogpy.core.plot.tensorscope.cli:main"
 
 [tool.setuptools.package-data]
 cogpy = ["workflows/**"]  # ship all workflow files
@@ -91,5 +92,8 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-markers = ["integration: slower, external deps"]
+markers = [
+  "integration: slower, external deps",
+  "benchmark: performance benchmarks (run explicitly with -m benchmark)",
+]
 addopts = "-ra"

@@ -101,6 +101,29 @@ class TensorScopeState(param.Parameterized):
 
         self.data_registry.register("grid_lfp", GridLFPModality(normalized_data))
         self.active_modality = str(self.data_registry.get_active_name() or "grid_lfp")
+        # Keep the registry's active modality in sync even if UI code sets
+        # `state.active_modality = "..."` directly (without calling
+        # `set_active_modality()`).
+        self._active_modality_sync_watch = self.param.watch(
+            self._on_active_modality_param_change, "active_modality"
+        )
+
+    def _on_active_modality_param_change(self, event) -> None:
+        """
+        Sync DataRegistry active modality to the `active_modality` param.
+
+        This is a safety net for UI bindings that update the param directly.
+        """
+        if self.data_registry is None:
+            return
+        new_name = str(getattr(event, "new", ""))
+        if not new_name:
+            return
+        try:
+            if self.data_registry.get_active_name() != new_name and new_name in self.data_registry.list():
+                self.data_registry.set_active(new_name)
+        except Exception:  # noqa: BLE001
+            pass
 
     @property
     def current_time(self) -> float | None:
@@ -254,5 +277,14 @@ class TensorScopeState(param.Parameterized):
             state.set_active_modality(desired_modality)
         else:
             state.active_modality = desired_modality
+
+        # Restore event streams (Phase 6: session persistence).
+        ev = state_dict.get("event_registry") or {}
+        try:
+            from .events.registry import EventRegistry
+
+            state.event_registry = EventRegistry.from_dict(ev)
+        except Exception:  # noqa: BLE001
+            pass
 
         return state

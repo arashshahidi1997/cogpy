@@ -197,6 +197,32 @@ conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/phase5_multim
 
 ---
 
+## Phase 6: Polish & Optimization
+
+### Performance Benchmarks
+
+**benchmarks.py** - performance regression tests (run explicitly)
+```bash
+conda run -n cogpy python -m pytest code/lib/cogpy/tests/core/plot/tensorscope/benchmarks.py -m benchmark -v -s
+```
+
+### Complete System Test
+
+**test_phase6_complete.py** - end-to-end integration smoke test
+```bash
+conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase6_complete.py
+```
+
+### CLI
+
+After installing `cogpy`, use:
+```bash
+tensorscope presets
+tensorscope serve data.nc --layout default --port 5008 --show
+```
+
+---
+
 ## Requirements
 
 All examples require:

@@ -10,4 +10,4 @@ __all__ = [
     "TensorScopeApp",
 ]
 
-__version__ = "0.3.0"  # Phase 3
+__version__ = "1.0.0"  # Phase 6 (TensorScope v1.0)

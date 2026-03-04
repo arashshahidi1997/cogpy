@@ -50,9 +50,10 @@ def test_grid_lfp_window():
 
 
 def test_flat_lfp_modality(small_ieeg):
-    from cogpy.core.plot.tensorscope.schema import flatten_grid_to_channels
+    from cogpy.core.plot.tensorscope.schema import flatten_grid_to_channels, validate_and_normalize_grid
 
-    flat = flatten_grid_to_channels(small_ieeg)
+    # Fixtures may not be in canonical (time, AP, ML) order; normalize first.
+    flat = flatten_grid_to_channels(validate_and_normalize_grid(small_ieeg))
     modality = FlatLFPModality(flat)
 
     assert modality.modality_type == "flat_lfp"
@@ -128,3 +129,26 @@ def test_state_modality_registration(small_ieeg):
     assert state.active_modality == "spectrogram"
     assert state.get_active_modality().modality_type == "spectrogram"
 
+
+def test_state_active_modality_param_syncs_registry(small_ieeg):
+    """Setting `state.active_modality` directly also updates the registry active name."""
+    state = TensorScopeState(small_ieeg)
+
+    spec_data = xr.DataArray(
+        np.random.randn(100, 50, 8, 8),
+        dims=("time", "freq", "AP", "ML"),
+        coords={
+            "time": np.arange(100) / 10.0,
+            "freq": np.linspace(1, 100, 50),
+            "AP": np.arange(8),
+            "ML": np.arange(8),
+        },
+    )
+    state.register_modality("spectrogram", SpectrogramModality(spec_data))
+
+    # Simulate a UI binding that updates the param but doesn't call
+    # `state.set_active_modality()`.
+    state.active_modality = "spectrogram"
+
+    assert state.data_registry.get_active_name() == "spectrogram"
+    assert state.get_active_modality().modality_type == "spectrogram"

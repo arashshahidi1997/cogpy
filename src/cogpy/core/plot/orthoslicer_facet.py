@@ -18,6 +18,16 @@ Compared to the other orthoslicer modules:
   ``orthoslicer_rangercopy.py`` / ``orthoslicer_ranger.py``).
 """
 
+import warnings
+
+warnings.warn(
+    f"{__name__} is deprecated. "
+    "For new projects, use TensorScope (cogpy.core.plot.tensorscope). "
+    "For maintenance of existing orthoslicer code, prefer orthoslicer_rangercopy.py.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import numpy as np
 import xarray as xr
 import holoviews as hv

@@ -109,6 +109,13 @@ class EventStream:
         return len(self.df)
 
     def to_dict(self) -> dict:
+        # Keep session payloads bounded. For typical TensorScope usage, event
+        # tables are small enough to store inline in JSON.
+        max_records = 20000
+        records = None
+        if len(self.df) <= max_records:
+            records = self.df.to_dict(orient="records")
+
         t_min = float(self.df[self.time_col].min()) if len(self.df) else None
         t_max = float(self.df[self.time_col].max()) if len(self.df) else None
         return {
@@ -117,6 +124,7 @@ class EventStream:
             "id_col": self.id_col,
             "n_events": len(self.df),
             "time_range": (t_min, t_max),
+            "records": records,
             "style": {
                 "color": self.style.color,
                 "marker": self.style.marker,
@@ -125,3 +133,35 @@ class EventStream:
             },
         }
 
+    @classmethod
+    def from_dict(cls, dct: dict) -> "EventStream":
+        """
+        Restore an EventStream from serialized metadata.
+
+        If ``records`` are present, they are used to reconstruct the full table.
+        Otherwise, an empty table is created with the required columns.
+        """
+        name = str(dct.get("name", "events"))
+        time_col = str(dct.get("time_col", "t"))
+        id_col = str(dct.get("id_col", "event_id"))
+        records = dct.get("records") or []
+
+        try:
+            df = pd.DataFrame.from_records(records)
+        except Exception:  # noqa: BLE001
+            df = pd.DataFrame()
+
+        # Ensure required columns exist even for empty streams.
+        for col in (id_col, time_col):
+            if col not in df.columns:
+                df[col] = []
+
+        style_d = dct.get("style") or {}
+        style = EventStyle(
+            color=str(style_d.get("color", EventStyle.color)),
+            marker=str(style_d.get("marker", EventStyle.marker)),
+            line_width=float(style_d.get("line_width", EventStyle.line_width)),
+            alpha=float(style_d.get("alpha", EventStyle.alpha)),
+        )
+
+        return cls(name, df, time_col=time_col, id_col=id_col, style=style)
