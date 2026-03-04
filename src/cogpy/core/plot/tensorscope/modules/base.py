@@ -6,6 +6,7 @@ Modules are named collections of `ViewSpec`s with a layout policy.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from ..view_factory import ViewFactory
@@ -35,12 +36,16 @@ class ViewPresetModule:
     description: str
     specs: list[ViewSpec]
     layout: str = "grid"
+    activate_fn: Callable[[object], object] | None = None
 
     def activate(self, state):
         """Instantiate all views and return a HoloViews layout."""
         import holoviews as hv
 
         hv.extension("bokeh")
+
+        if self.activate_fn is not None:
+            return self.activate_fn(state)
 
         views = [ViewFactory.create(spec, state) for spec in self.specs]
         return self._arrange(views)
@@ -66,10 +71,12 @@ class ModuleRegistry:
         self._register_builtin()
 
     def _register_builtin(self) -> None:
-        from . import basic, comparison
+        from . import basic, comparison, electrode_panel, montage
 
         self.register(basic.MODULE)
         self.register(comparison.MODULE)
+        self.register(montage.MODULE)
+        self.register(electrode_panel.MODULE)
 
     def register(self, module: ViewPresetModule) -> None:
         self._modules[str(module.name)] = module
