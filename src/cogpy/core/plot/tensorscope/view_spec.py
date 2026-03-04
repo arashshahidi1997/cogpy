@@ -54,6 +54,8 @@ class ViewSpec:
     operation: Callable[[Any], Any] | None = None
     clim: tuple[float, float] | None = None
     symmetric_clim: bool = False
+    fixed_values: dict[str, object] = field(default_factory=dict)
+    coord_spaces: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not isinstance(self.kdims, list):
@@ -62,6 +64,12 @@ class ViewSpec:
             self.controls = list(self.controls)
         if not isinstance(self.iterate, list):
             self.iterate = list(self.iterate) if self.iterate else []
+        if not isinstance(self.coord_spaces, list):
+            self.coord_spaces = list(self.coord_spaces) if self.coord_spaces else []
+        if self.fixed_values is None:
+            self.fixed_values = {}
+        if not isinstance(self.fixed_values, dict):
+            self.fixed_values = dict(self.fixed_values)
 
         overlap = (set(self.kdims) & set(self.controls)) | (set(self.kdims) & set(self.iterate)) | (
             set(self.controls) & set(self.iterate)
@@ -71,6 +79,14 @@ class ViewSpec:
                 "Dimensions cannot appear in multiple categories "
                 f"(overlap={sorted(overlap)!r}; kdims={self.kdims!r}, controls={self.controls!r}, "
                 f"iterate={self.iterate!r})"
+            )
+
+        fixed_dims = {str(k) for k in self.fixed_values.keys()}
+        conflict = fixed_dims & (set(self.kdims) | set(self.controls) | set(self.iterate))
+        if conflict:
+            raise ValueError(
+                "Fixed dimensions cannot also be in kdims/controls/iterate "
+                f"(conflict={sorted(conflict)!r})"
             )
 
     def to_dict(self) -> dict[str, Any]:
@@ -91,6 +107,8 @@ class ViewSpec:
             "title": self.title,
             "clim": self.clim,
             "symmetric_clim": self.symmetric_clim,
+            "fixed_values": dict(self.fixed_values),
+            "coord_spaces": list(self.coord_spaces),
         }
 
     @classmethod
@@ -106,5 +124,7 @@ class ViewSpec:
             title=config.get("title"),
             clim=tuple(config["clim"]) if config.get("clim") is not None else None,
             symmetric_clim=bool(config.get("symmetric_clim") or False),
+            fixed_values=dict(config.get("fixed_values") or {}),
+            coord_spaces=list(config.get("coord_spaces") or []),
         )
 

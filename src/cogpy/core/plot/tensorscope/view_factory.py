@@ -155,7 +155,15 @@ class ViewFactory:
                 except Exception:  # noqa: BLE001
                     pass
 
-            t = float(time) if time is not None else getattr(getattr(state, "time_hair", None), "t", None)
+            fixed_t = None
+            try:
+                fixed_t = spec.fixed_values.get("time") if getattr(spec, "fixed_values", None) else None
+            except Exception:  # noqa: BLE001
+                fixed_t = None
+
+            t = float(time) if time is not None else (float(fixed_t) if fixed_t is not None else None)
+            if t is None:
+                t = getattr(getattr(state, "time_hair", None), "t", None)
             if t is None:
                 t = float(getattr(state, "selected_time", 0.0) or 0.0)
 
@@ -247,4 +255,3 @@ class ViewFactory:
             )
 
         return hv.DynamicMap(_render, streams=[spatial_stream])
-
