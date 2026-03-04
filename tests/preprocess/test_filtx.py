@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from scipy import signal
-from cogpy.preprocess.filtx import bandpassx, bandpass_filt_params
+from cogpy.preprocess.filtx import bandpassx, bandpass_filt_params, notchx, notchesx
 
 
 def test_bandpassx():
@@ -19,3 +19,26 @@ def test_bandpassx():
     sig_bp = signal.filtfilt(b, a, sig, axis=1)
 
     assert np.allclose(sigx_bp.data, sig_bp)
+
+
+def test_notchesx_matches_sequential_notchx():
+    fs = 1000.0
+    t = np.arange(2000) / fs
+    rng = np.random.default_rng(42)
+    sig = rng.normal(size=(4, t.size))
+    sigx = xr.DataArray(sig, dims=["ch", "time"], coords={"time": t})
+    sigx.attrs["fs"] = fs
+
+    freqs = [60.0, 120.0, 180.0]
+    Q = 30.0
+
+    out_seq = sigx
+    for f in freqs:
+        out_seq = notchx(out_seq, w0=f, Q=Q, time_dim="time")
+
+    out_multi = notchesx(sigx, freqs=freqs, Q=Q, time_dim="time")
+
+    # SOS cascade vs sequential filtfilt can differ at tiny numerical levels.
+    assert np.allclose(out_multi.data, out_seq.data, rtol=1e-6, atol=1e-8)
+    assert out_multi.attrs["filter_type"] == "notch"
+    assert out_multi.attrs["w0_hz"] == freqs

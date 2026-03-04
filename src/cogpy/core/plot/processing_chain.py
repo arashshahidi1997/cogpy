@@ -14,7 +14,7 @@ import param
 import panel as pn
 import xarray as xr
 
-from cogpy.core.preprocess.filtx import bandpassx, cmrx, median_spatialx, notchx, zscorex
+from cogpy.core.preprocess.filtx import bandpassx, cmrx, median_spatialx, notchesx, zscorex
 
 __all__ = ["ProcessingChain"]
 
@@ -292,8 +292,8 @@ class ProcessingChain(param.Parameterized):
             else:
                 freqs_to_notch = [float(f) for f in (self.notch_freqs or [])]
 
-            for freq in freqs_to_notch:
-                win = notchx(win, w0=freq, Q=float(self.notch_q), time_dim=self._time_dim)
+            if freqs_to_notch:
+                win = notchesx(win, freqs=freqs_to_notch, Q=float(self.notch_q), time_dim=self._time_dim)
 
         if bool(self.spatial_median_on) and bool(self._is_grid):
             if "AP" in win.dims and "ML" in win.dims:

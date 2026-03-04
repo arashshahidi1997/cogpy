@@ -208,6 +208,50 @@ def notchx(
     return out
 
 
+def notchesx(
+    sigx: xr.DataArray,
+    *,
+    freqs: list[float] | tuple[float, ...] | np.ndarray,
+    Q: float = 30.0,
+    time_dim: str = "time",
+) -> xr.DataArray:
+    """Apply multiple IIR notches along ``time_dim`` using zero-phase filtering.
+
+    This is equivalent to sequentially calling ``notchx`` for each frequency,
+    but applies all notches within a single xarray apply (reduces wrapper overhead).
+    """
+    fs = _fs_scalar(sigx)
+    axis = sigx.get_axis_num(time_dim)
+
+    freqs_arr = np.asarray(freqs, dtype=float).reshape(-1)
+    if freqs_arr.size == 0:
+        return sigx
+
+    nyq = float(fs) / 2.0
+    if np.any(freqs_arr <= 0) or np.any(freqs_arr >= nyq):
+        raise ValueError(f"All notch frequencies must be in (0, fs/2). Got freqs={freqs_arr.tolist()}, fs={fs}")
+
+    bas = [signal.iirnotch(float(f), float(Q), fs=float(fs)) for f in freqs_arr.tolist()]
+
+    def _multi_notch(x: np.ndarray) -> np.ndarray:
+        y = x
+        for b, a in bas:
+            y = signal.filtfilt(b, a, y, axis=axis)
+        return y
+
+    out = _apply_full_array(sigx, _multi_notch)
+    out.name = (sigx.name + "_notch") if sigx.name else "notch_filtered"
+    out.attrs.update(
+        {
+            "filter_type": "notch",
+            "w0_hz": freqs_arr.tolist(),
+            "Q": float(Q),
+            "fs": float(fs),
+        }
+    )
+    return out
+
+
 def decimatex(
     sigx: xr.DataArray,
     *,
