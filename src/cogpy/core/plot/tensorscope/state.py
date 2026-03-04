@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import xarray as xr
 
 from .data.modality import DataModality
+from .signal import SignalObject, SignalRegistry
 
 
 class TensorScopeState(param.Parameterized):
@@ -42,7 +43,16 @@ class TensorScopeState(param.Parameterized):
     time_hair = param.Parameter(default=None, doc="TimeHair controller")
     time_window = param.Parameter(default=None, doc="TimeWindowCtrl controller")
     channel_grid = param.Parameter(default=None, doc="ChannelGrid controller")
-    processing = param.Parameter(default=None, doc="ProcessingChain controller")
+    processing = param.Parameter(default=None, doc="ProcessingChain controller (legacy: active signal)")
+
+    # Signal-centric state
+    selected_time = param.Number(
+        default=None,
+        allow_None=True,
+        doc="Selected time for analysis (PSD/spatial). Independent of cursor.",
+    )
+    signal_registry = param.Parameter(default=None, doc="SignalRegistry instance")
+    spatial_space = param.Parameter(default=None, doc="CoordinateSpace for linked spatial selection")
 
     # Data registry
     data_registry = param.Parameter(default=None, doc="DataRegistry instance")
@@ -91,10 +101,50 @@ class TensorScopeState(param.Parameterized):
         self.time_hair = TimeHair(snap=True)
         self.time_window = TimeWindowCtrl(bounds=(t_min, t_max))
         self.channel_grid = ChannelGrid(n_ap=n_ap, n_ml=n_ml)
-        # ProcessingChain is used by both the timeseries and spatial map layers.
-        # Use the stacked-flat (time, channel) form so channel subsetting works
-        # and spatial layers can reconstruct frames via AP/ML coords.
-        self.processing = ProcessingChain(flatten_grid_to_channels(normalized_data))
+        self.selected_time = t_min
+
+        # Signal registry (Phase 6: signal-as-object).
+        self.signal_registry = SignalRegistry()
+        self._signal_registry_watch_owner = None
+        self._signal_registry_watch_signal = None
+        self._signal_registry_watch_active = None
+        self._attach_signal_registry(self.signal_registry)
+
+        base_signal = SignalObject(
+            data=normalized_data,
+            name="Raw LFP",
+            processing=ProcessingChain(flatten_grid_to_channels(normalized_data)),
+            metadata={"type": "grid_lfp", "is_base": True},
+        )
+        self.signal_registry.register(base_signal)
+
+        # Legacy: ProcessingChain is used by both the timeseries and spatial map layers.
+        # Keep `state.processing` as an alias to the active signal's chain.
+        self._sync_processing_to_active_signal()
+
+        # Spatial coordinate space (v2.1): shared AP/ML index selections across views.
+        from .transforms.base import CoordinateSpace
+
+        base = self.signal_registry.get_active()
+        spatial_dims: set[str]
+        if base is not None:
+            d = base.data
+            if ("AP" in d.dims) and ("ML" in d.dims):
+                spatial_dims = {"AP", "ML"}
+            elif "channel" in d.dims:
+                spatial_dims = {"channel"}
+            else:
+                spatial_dims = set()
+        else:
+            spatial_dims = set()
+
+        self.spatial_space = CoordinateSpace("spatial", dims=spatial_dims)
+        if ("AP" in spatial_dims) and ("ML" in spatial_dims) and base is not None:
+            n_ap0 = int(base.data.sizes.get("AP", 0))
+            n_ml0 = int(base.data.sizes.get("ML", 0))
+            if n_ap0 > 0 and n_ml0 > 0:
+                self.spatial_space.set_selection("AP", n_ap0 // 2)
+                self.spatial_space.set_selection("ML", n_ml0 // 2)
 
         self.data_registry = DataRegistry()
         self.event_registry = EventRegistry()
@@ -106,6 +156,11 @@ class TensorScopeState(param.Parameterized):
         # `set_active_modality()`).
         self._active_modality_sync_watch = self.param.watch(
             self._on_active_modality_param_change, "active_modality"
+        )
+
+        # If someone replaces the registry object, re-wire watchers.
+        self._signal_registry_replace_watch = self.param.watch(
+            self._on_signal_registry_replaced, "signal_registry"
         )
 
     def _on_active_modality_param_change(self, event) -> None:
@@ -124,6 +179,43 @@ class TensorScopeState(param.Parameterized):
                 self.data_registry.set_active(new_name)
         except Exception:  # noqa: BLE001
             pass
+
+    def _attach_signal_registry(self, registry: SignalRegistry | None) -> None:
+        if registry is None:
+            return
+
+        # Detach existing.
+        owner = getattr(self, "_signal_registry_watch_owner", None)
+        if owner is not None:
+            for handle in (self._signal_registry_watch_signal, self._signal_registry_watch_active):
+                if handle is None:
+                    continue
+                try:
+                    owner.param.unwatch(handle)
+                except Exception:  # noqa: BLE001
+                    pass
+
+        self._signal_registry_watch_signal = registry.param.watch(
+            lambda _e=None: self._sync_processing_to_active_signal(), "signals"
+        )
+        self._signal_registry_watch_active = registry.param.watch(
+            lambda _e=None: self._sync_processing_to_active_signal(), "active_signal_id"
+        )
+        self._signal_registry_watch_owner = registry
+
+    def _on_signal_registry_replaced(self, event) -> None:
+        try:
+            registry = event.new
+        except Exception:  # noqa: BLE001
+            registry = None
+        if registry is None:
+            return
+        self._attach_signal_registry(registry)
+        self._sync_processing_to_active_signal()
+
+    def _sync_processing_to_active_signal(self) -> None:
+        sig = self.signal_registry.get_active() if self.signal_registry is not None else None
+        self.processing = sig.processing if sig is not None else None
 
     @property
     def current_time(self) -> float | None:
@@ -155,6 +247,41 @@ class TensorScopeState(param.Parameterized):
         if self.channel_grid is None:
             return []
         return self.channel_grid.flat_indices
+
+    def create_derived_signal(
+        self,
+        source_id: str,
+        name: str,
+        processing_config: dict | None = None,
+    ) -> str:
+        """
+        Create a new signal derived from an existing signal.
+
+        Parameters
+        ----------
+        source_id
+            ID of source signal to duplicate.
+        name
+            Name for new signal.
+        processing_config
+            Dict of ProcessingChain param values to apply.
+        """
+        if self.signal_registry is None:
+            raise RuntimeError("signal_registry is not initialized")
+
+        new_id = self.signal_registry.duplicate(source_id, name)
+        if processing_config:
+            sig = self.signal_registry.get(new_id)
+            if sig is not None:
+                for key, value in dict(processing_config).items():
+                    if key in sig.processing.param:
+                        setattr(sig.processing, key, value)
+        return new_id
+
+    def set_selected_time_from_cursor(self) -> None:
+        """Lock current cursor position as selected time."""
+        if self.time_hair is not None and self.time_hair.t is not None:
+            self.selected_time = float(self.time_hair.t)
 
     def register_modality(self, name: str, modality: DataModality) -> None:
         """Register a data modality by name."""
@@ -233,11 +360,13 @@ class TensorScopeState(param.Parameterized):
         return {
             "version": "1.0",
             "current_time": self.current_time,
+            "selected_time": self.selected_time,
             "time_window": tuple(self.time_window.window) if self.time_window else None,
             "selected_channels": [list(ch) for ch in self.selected_channels],
             "processing": self.processing.to_dict() if self.processing else {},
             "active_layout_preset": self.active_layout_preset,
             "active_modality": self.active_modality,
+            "signal_registry": self.signal_registry.to_dict() if self.signal_registry else {},
             "data_registry": self.data_registry.to_dict() if self.data_registry else {},
             "event_registry": self.event_registry.to_dict() if self.event_registry else {},
         }
@@ -258,10 +387,14 @@ class TensorScopeState(param.Parameterized):
         data_resolver
             Callable that returns the primary dataset for this state.
         """
-        state = cls(data_resolver())
+        data = data_resolver()
+        state = cls(data)
 
         if state_dict.get("current_time") is not None:
             state.current_time = float(state_dict["current_time"])
+
+        if state_dict.get("selected_time") is not None:
+            state.selected_time = float(state_dict["selected_time"])
 
         if state_dict.get("time_window") is not None and state.time_window is not None:
             t0, t1 = state_dict["time_window"]
@@ -277,6 +410,26 @@ class TensorScopeState(param.Parameterized):
             state.set_active_modality(desired_modality)
         else:
             state.active_modality = desired_modality
+
+        # Restore signal registry (new format). If absent, fall back to restoring
+        # the legacy processing config into the base signal.
+        if state_dict.get("signal_registry") and state.signal_registry is not None:
+            try:
+                state.signal_registry = SignalRegistry.from_dict(
+                    dict(state_dict.get("signal_registry") or {}), data
+                )
+            except Exception:  # noqa: BLE001
+                pass
+
+        # Restore processing settings to the active signal's chain (legacy key).
+        proc = state_dict.get("processing") or {}
+        try:
+            if state.processing is not None:
+                for key, value in dict(proc).items():
+                    if key in state.processing.param:
+                        setattr(state.processing, key, value)
+        except Exception:  # noqa: BLE001
+            pass
 
         # Restore event streams (Phase 6: session persistence).
         ev = state_dict.get("event_registry") or {}

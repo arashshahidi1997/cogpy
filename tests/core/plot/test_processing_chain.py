@@ -1,4 +1,4 @@
-"""Tests for ProcessingChain notch filter and PSD."""
+"""Tests for ProcessingChain notch filter and external PSD analysis."""
 
 from __future__ import annotations
 
@@ -58,11 +58,13 @@ def test_compute_psd_dims_and_processing_attr():
     chain = ProcessingChain(data)
     chain.zscore_on = False
 
-    psd = chain.compute_psd(0.0, 2.0, method="multitaper", bandwidth=4.0)
+    from cogpy.core.spectral.specx import psdx
 
-    assert psd.dims == ("freq", "AP", "ML")
+    win = chain.get_window(0.0, 2.0)
+    psd = psdx(win, method="multitaper", bandwidth=4.0)
+
+    assert set(psd.dims) == {"freq", "AP", "ML"}
     assert len(psd.coords["freq"]) > 0
-    assert psd.attrs["processing"] == chain.describe()
 
 
 def test_psd_with_processing_pipeline_labels():
@@ -78,9 +80,11 @@ def test_psd_with_processing_pipeline_labels():
     chain.notch_fundamental = 60.0
     chain.notch_harmonics = 2
 
-    psd = chain.compute_psd(0.0, 2.0, method="welch", nperseg=512, bandwidth=4.0)
+    from cogpy.core.spectral.specx import psdx
 
-    assert psd.dims == ("freq", "AP", "ML")
-    assert "BP(" in psd.attrs["processing"]
-    assert "Notch(" in psd.attrs["processing"]
+    win = chain.get_window(0.0, 2.0)
+    psd = psdx(win, method="welch", nperseg=512, bandwidth=4.0)
 
+    assert set(psd.dims) == {"freq", "AP", "ML"}
+    assert "BP(" in chain.describe()
+    assert "Notch(" in chain.describe()

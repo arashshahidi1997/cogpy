@@ -64,6 +64,67 @@ def test_state_serialization_roundtrip(small_ieeg):
     assert (2, 2) in state2.selected_channels
 
 
+def test_state_signal_registry(small_ieeg):
+    """Test state initializes signal registry."""
+    from cogpy.core.plot.tensorscope import TensorScopeState
+
+    state = TensorScopeState(small_ieeg)
+
+    assert state.signal_registry is not None
+    assert len(state.signal_registry.list()) == 1
+
+    active = state.signal_registry.get_active()
+    assert active is not None
+    assert active.name == "Raw LFP"
+    assert active.metadata.get("is_base") is True
+
+
+def test_state_create_derived_signal(small_ieeg):
+    """Test state.create_derived_signal()."""
+    from cogpy.core.plot.tensorscope import TensorScopeState
+
+    state = TensorScopeState(small_ieeg)
+
+    base_id = state.signal_registry.list()[0]
+    hg_id = state.create_derived_signal(
+        base_id,
+        "High Gamma",
+        {"bandpass_on": True, "bandpass_lo": 70.0, "bandpass_hi": 150.0},
+    )
+
+    hg_signal = state.signal_registry.get(hg_id)
+    assert hg_signal is not None
+    assert hg_signal.name == "High Gamma"
+    assert hg_signal.processing.bandpass_on is True
+    assert float(hg_signal.processing.bandpass_lo) == 70.0
+    assert float(hg_signal.processing.bandpass_hi) == 150.0
+
+
+def test_state_selected_time(small_ieeg):
+    """Test selected_time feature."""
+    from cogpy.core.plot.tensorscope import TensorScopeState
+
+    state = TensorScopeState(small_ieeg)
+
+    state.time_hair.t = 5.0
+    state.set_selected_time_from_cursor()
+    assert state.selected_time == 5.0
+
+    state.time_hair.t = 7.0
+    assert state.selected_time == 5.0
+
+
+def test_state_legacy_processing_accessor(small_ieeg):
+    """Test legacy state.processing accessor."""
+    from cogpy.core.plot.tensorscope import TensorScopeState
+
+    state = TensorScopeState(small_ieeg)
+
+    proc = state.processing
+    assert proc is not None
+    assert proc is state.signal_registry.get_active().processing
+
+
 def test_state_rejects_invalid_data():
     """Test state validates data schema on init."""
     import numpy as np

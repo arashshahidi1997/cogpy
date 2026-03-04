@@ -32,7 +32,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd", required=False)
 
     serve = sub.add_parser("serve", help="Launch TensorScope on an xarray DataArray file")
-    serve.add_argument("data_path", type=Path, help="Path to xarray DataArray (e.g., .nc)")
+    serve.add_argument(
+        "data_path",
+        type=Path,
+        help="Path to data: xarray (.nc/.zarr) or BIDS iEEG binary (.lfp with sidecars)",
+    )
     serve.add_argument("--layout", default="default", help="Layout preset name")
     serve.add_argument("--port", type=int, default=5006, help="Server port")
     serve.add_argument("--show", action=argparse.BooleanOptionalAction, default=True, help="Open browser")
@@ -93,11 +97,59 @@ def _cmd_serve(data_path: Path, layout: str, port: int, show: bool, title: str) 
         print(f"Details: {e}", file=sys.stderr)
         return 1
 
+    def _load_data(p: Path):
+        p = Path(p)
+        suf = p.suffix.lower()
+
+        # Case 1: BIDS iEEG binary with sidecars (e.g., *.lfp).
+        if suf in {".lfp", ".dat"}:
+            from cogpy.io import ieeg_io
+
+            # Prefer grid=True (TensorScope expects grid-capable data), but fall back
+            # to linear channel mode if metadata is incomplete.
+            try:
+                return ieeg_io.from_file(p, grid=True)
+            except Exception:  # noqa: BLE001
+                da = ieeg_io.from_file(p, grid=False)
+                if ("ch" in getattr(da, "dims", ())) and ("channel" not in da.dims):
+                    da = da.rename({"ch": "channel"})
+                return da
+
+        # Case 2: Zarr store (directory or *.zarr path).
+        if suf == ".zarr" or (p.is_dir() and p.name.lower().endswith(".zarr")):
+            ds = xr.open_zarr(p)
+            # open_zarr returns a Dataset; pick a DataArray deterministically.
+            if hasattr(ds, "data_vars"):
+                if len(ds.data_vars) == 1:
+                    return next(iter(ds.data_vars.values()))
+                if "ieeg" in ds.data_vars:
+                    return ds["ieeg"]
+                raise ValueError(
+                    f"Zarr store has multiple variables; specify a single DataArray. "
+                    f"Found: {list(ds.data_vars)}"
+                )
+            return ds
+
+        # Case 3: NetCDF or other xarray-serializable.
+        try:
+            return xr.load_dataarray(p)
+        except Exception:  # noqa: BLE001
+            # Fall back to Dataset load and pick a variable.
+            ds = xr.load_dataset(p)
+            if len(ds.data_vars) == 1:
+                return next(iter(ds.data_vars.values()))
+            if "ieeg" in ds.data_vars:
+                return ds["ieeg"]
+            raise ValueError(
+                f"File contains multiple variables; expected a single DataArray. "
+                f"Found: {list(ds.data_vars)}"
+            )
+
     print(f"Loading data from: {data_path}")
     try:
-        data = xr.load_dataarray(data_path)
+        data = _load_data(data_path)
     except Exception as e:  # noqa: BLE001
-        print(f"Error: failed to load DataArray: {e}", file=sys.stderr)
+        print(f"Error: failed to load data: {e}", file=sys.stderr)
         return 1
 
     print(f"  Loaded: dims={data.dims}, shape={data.shape}")
@@ -112,6 +164,7 @@ def _cmd_serve(data_path: Path, layout: str, port: int, show: bool, title: str) 
             .add_layer("timeseries")
             .add_layer("spatial_map")
             .add_layer("selector")
+            .add_layer("signal_manager")
             .add_layer("processing")
             .add_layer("navigator")
         )
@@ -158,4 +211,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -1,10 +1,10 @@
 """
-Hello TensorScope - Minimal working demo.
+Hello TensorScope - Phase 6 (signal-centric) demo.
 
 This demonstrates:
 - Loading data with cogpy.datasets
-- Importing TensorScope state/app scaffolding (Phase 0)
-- Building a FastGridTemplate layout with placeholder cards
+- TensorScopeApp (signal-centric state + SignalManagerLayer)
+- Adding a PSD display (analysis on windows via cogpy.core.spectral.specx.psdx)
 - Panel server deployment
 
 Run with:
@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.theme import BG, BG_PANEL, BLUE, TEAL, TEXT
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension("tabulator")
@@ -23,142 +22,126 @@ pn.extension("tabulator")
 print("Loading example iEEG data...")
 data = example_ieeg_grid(mode="small")
 print(f"Loaded: {data.dims}, {data.sizes}")
-print(f"Theme: BG={BG}, BG_PANEL={BG_PANEL}, TEXT={TEXT}, BLUE={BLUE}, TEAL={TEAL}")
 
-print("Phase 3: Creating TensorScope application...")
+print("Phase 6: Creating TensorScope application...")
 from cogpy.core.plot.tensorscope import TensorScopeApp
 
+app = (
+    TensorScopeApp(data, title="TensorScope (Phase 6 Demo)")
+    .with_layout("default")
+    .add_layer("timeseries")
+    .add_layer("spatial_map")
+    .add_layer("selector")
+    .add_layer("signal_manager")
+    .add_layer("processing")
+    .add_layer("navigator")
+)
+print(f"✅ App created with {len(app.layer_manager.list_instances())} layers")
+
+state = app.state
 try:
-    app = (
-        TensorScopeApp(data, title="TensorScope (Phase 3 Demo)")
-        .with_layout("default")
-        .add_layer("timeseries")
-        .add_layer("spatial_map")
-        .add_layer("selector")
-        .add_layer("processing")
-        .add_layer("navigator")
+    state.selected_time = float(state.time_hair.t) if state.time_hair.t is not None else float(data.time.values[0])
+except Exception:  # noqa: BLE001
+    pass
+
+def _psd_view(
+    selected_time: float,
+    span_s: float,
+    method: str,
+    bandwidth: float,
+    nperseg: int,
+):
+    import holoviews as hv
+
+    from cogpy.core.spectral.specx import psdx
+
+    hv.extension("bokeh")
+
+    sig = state.signal_registry.get_active() if state.signal_registry is not None else None
+    if sig is None:
+        return hv.Text(0, 0, "No active signal")
+
+    t_mid = float(selected_time)
+    span = float(span_s)
+    t0, t1 = t_mid - span / 2.0, t_mid + span / 2.0
+
+    channels = list(state.selected_channels_flat) if getattr(state, "selected_channels_flat", []) else None
+    win = sig.get_window(t0, t1, channels=channels)
+
+    reduce_dims = [d for d in win.dims if d != "time"]
+    if reduce_dims:
+        win = win.mean(dim=reduce_dims)
+
+    psd = psdx(
+        win,
+        method=str(method),  # type: ignore[arg-type]
+        bandwidth=float(bandwidth),
+        nperseg=int(nperseg),
     )
-    print(f"✅ App created with {len(app.layer_manager.list_instances())} layers")
-    app_created = True
-except Exception as e:
-    print(f"⚠️  Could not create app: {e}")
-    app = None
-    app_created = False
+
+    f = psd["freq"].values
+    y = psd.values
+
+    return hv.Curve((f, y), kdims=["freq"], vdims=["power"]).opts(
+        width=320,
+        height=220,
+        xlabel="Frequency (Hz)",
+        ylabel="Power",
+        tools=["hover"],
+        line_width=2,
+        title=f"PSD @ t={t_mid:.2f}s  (span={span:.2f}s, {method})",
+    )
 
 
-def build_app() -> pn.template.base.BasicTemplate:
-    """Build fallback demo layout using FastGridTemplate."""
+psd_span = pn.widgets.FloatSlider(name="PSD window (s)", start=0.25, end=10.0, value=2.0, step=0.25)
+psd_method = pn.widgets.Select(name="Method", options=["multitaper", "welch"], value="multitaper")
+psd_bw = pn.widgets.FloatInput(name="Bandwidth (Hz)", value=4.0, step=0.5, width=140)
+psd_nperseg = pn.widgets.IntInput(name="nperseg", value=512, step=64, width=140)
+use_cursor = pn.widgets.Button(name="Use cursor", button_type="primary", width=120)
 
-    spatial_placeholder = pn.Card(
-        pn.Column(
-            pn.pane.Markdown(
-                "### Spatial Map Layer\n\n"
-                "**Phase 2 will implement:**\n"
-                "- GridFrameElement wrapper\n"
-                "- Time-linked RMS/mean display\n"
-                "- Colormap controls\n"
-                "- Electrode grid overlay",
-                styles={"color": TEXT, "padding": "10px 10px 0 10px"},
-            ),
-            pn.pane.HTML(
-                "<div style=\"background:#2a2a3a; padding:16px; border-radius:6px; color:#cdd6f4;\">"
-                "<b>Status:</b> placeholders only (Phase 0)"
-                "</div>",
-                sizing_mode="stretch_width",
-                styles={"padding": "0 10px 10px 10px"},
-            ),
-            sizing_mode="stretch_both",
+
+def _on_use_cursor(_event=None):
+    try:
+        state.set_selected_time_from_cursor()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+use_cursor.on_click(_on_use_cursor)
+
+psd_plot = pn.bind(
+    _psd_view,
+    selected_time=state.param.selected_time,
+    span_s=psd_span,
+    method=psd_method,
+    bandwidth=psd_bw,
+    nperseg=psd_nperseg,
+)
+
+psd_card = pn.Card(
+    pn.Column(
+        pn.pane.Markdown(
+            "### PSD (window → specx.psdx)\n\n"
+            "Uses the **active signal** + its processing, then computes PSD on the processed window.",
         ),
-        title="Spatial View (Phase 2)",
-        header_background=BLUE,
-        styles={"background": BG_PANEL, "padding": "10px"},
-        sizing_mode="stretch_both",
-        min_height=350,
-    )
+        pn.Row(use_cursor),
+        psd_span,
+        pn.Row(psd_method, psd_bw),
+        psd_nperseg,
+        pn.pane.HoloViews(psd_plot, sizing_mode="stretch_width"),
+        sizing_mode="stretch_width",
+    ),
+    title="PSD",
+    collapsed=False,
+)
 
-    timeseries_placeholder = pn.Card(
-        pn.Column(
-            pn.pane.Markdown(
-                "### Timeseries Layer\n\n"
-                "**Phase 2 will implement:**\n"
-                "- MultichannelViewer wrapper\n"
-                "- Channel selection binding\n"
-                "- Time cursor display\n"
-                "- Windowed processing",
-                styles={"color": TEXT, "padding": "10px 10px 0 10px"},
-            ),
-            pn.pane.HTML(
-                "<div style=\"background:#2a2a3a; padding:16px; border-radius:6px; color:#cdd6f4;\">"
-                "<b>Status:</b> placeholders only (Phase 0)"
-                "</div>",
-                sizing_mode="stretch_width",
-                styles={"padding": "0 10px 10px 10px"},
-            ),
-            sizing_mode="stretch_both",
-        ),
-        title="Timeseries View (Phase 2)",
-        header_background=BLUE,
-        styles={"background": BG_PANEL, "padding": "10px"},
-        sizing_mode="stretch_both",
-        min_height=350,
-    )
+demo = app.build()
+try:
+    demo.sidebar.append(psd_card)
+except Exception:  # noqa: BLE001
+    # Fallback: replace sidebar completely if append is unsupported.
+    demo.sidebar = list(demo.sidebar) + [psd_card]
 
-    controls_placeholder = pn.Card(
-        pn.Column(
-            pn.pane.Markdown("**Controls**\n\nPhase 2 layers:", styles={"color": TEXT}),
-            pn.widgets.IntSlider(name="Placeholder slider", start=0, end=10),
-            pn.widgets.Checkbox(name="Placeholder checkbox"),
-        ),
-        title="Controls (placeholder)",
-        header_background=BLUE,
-        styles={"background": BG_PANEL, "padding": "10px"},
-    )
-
-    spatial_card = spatial_placeholder
-    timeseries_card = timeseries_placeholder
-    sidebar_controls = controls_placeholder
-
-    sidebar_markdown = pn.pane.Markdown(
-        "### Dataset Info\n\n"
-        f"- Dims: `{data.dims}`\n"
-        f"- Shape: `{data.shape}`\n"
-        f"- Time: {float(data.time.values[0]):.2f}s - {float(data.time.values[-1]):.2f}s\n\n"
-        "**Phase 3 Status:**\n"
-        "- ✅ Package structure\n"
-        "- ✅ State implementation\n"
-        "- ✅ Core layers\n"
-        "- ✅ Application shell\n\n",
-        styles={"color": TEXT},
-    )
-
-    live_state_info = pn.pane.Markdown(
-        "*Application not available; showing fallback placeholders.*",
-        styles={"color": "#888"},
-    )
-
-    sidebar = pn.Column(
-        sidebar_markdown,
-        live_state_info,
-        sidebar_controls,
-    )
-
-    tmpl = pn.template.FastGridTemplate(
-        title="TensorScope v0.0 (Phase 0 Demo)",
-        theme="dark",
-        sidebar_width=320,
-        sidebar=[sidebar],
-        row_height=80,
-    )
-
-    # Panel 1.8.8: FastGridTemplate.main is a GridSpec (no .append()).
-    # Use grid assignment instead.
-    tmpl.main[0:5, 0:12] = spatial_card
-    tmpl.main[5:10, 0:12] = timeseries_card
-
-    return tmpl
-
-
-demo = app.build() if (app_created and app is not None) else build_app()
 demo.servable()
 
 print("✅ Demo ready!")

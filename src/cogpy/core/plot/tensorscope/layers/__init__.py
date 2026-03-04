@@ -6,6 +6,7 @@ from .base import LayerMetadata, TensorLayer
 from .controls import ChannelSelectorLayer, ProcessingControlsLayer
 from .events import EventOverlayLayer, EventTableLayer
 from .navigation import TimeNavigatorLayer
+from .signal_manager import SignalManagerLayer
 from .spatial import SpatialMapLayer
 from .spectrogram import SpectrogramLayer
 from .timeseries import TimeseriesLayer
@@ -18,6 +19,7 @@ __all__ = [
     "SpectrogramLayer",
     "ChannelSelectorLayer",
     "ProcessingControlsLayer",
+    "SignalManagerLayer",
     "TimeNavigatorLayer",
     "EventTableLayer",
     "EventOverlayLayer",

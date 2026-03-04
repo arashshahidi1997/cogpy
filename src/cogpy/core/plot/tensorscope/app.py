@@ -43,6 +43,7 @@ class TensorScopeApp:
             EventOverlayLayer,
             EventTableLayer,
             ProcessingControlsLayer,
+            SignalManagerLayer,
             SpatialMapLayer,
             SpectrogramLayer,
             TimeseriesLayer,
@@ -82,6 +83,15 @@ class TensorScopeApp:
                 title="Processing",
                 factory=lambda s: ProcessingControlsLayer(s),
                 description="Transform controls",
+                layer_type="controls",
+            )
+        )
+        self.layer_manager.register(
+            LayerSpec(
+                layer_id="signal_manager",
+                title="Signal Manager",
+                factory=lambda s: SignalManagerLayer(s),
+                description="Manage signal objects and processing pipelines",
                 layer_type="controls",
             )
         )

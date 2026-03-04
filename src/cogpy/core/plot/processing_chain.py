@@ -46,8 +46,6 @@ class ProcessingChain(param.Parameterized):
     - Notch filter:
         - List mode: notch exact frequencies, e.g. [60.0, 120.0]
         - Harmonic mode: notch fundamental + N harmonics, e.g. 60Hz × 3
-    - PSD computation:
-        - Multitaper or Welch PSD via compute_psd(), using the same processing chain
 
     Parameters
     ----------
@@ -310,37 +308,6 @@ class ProcessingChain(param.Parameterized):
             win = win.isel(channel=list(channels))
 
         return win
-
-    def compute_psd(
-        self,
-        t0: float,
-        t1: float,
-        *,
-        channels: list[int] | None = None,
-        method: str = "multitaper",
-        bandwidth: float = 4.0,
-        nperseg: int = 256,
-    ) -> xr.DataArray:
-        """
-        Compute power spectral density for a time window.
-
-        Applies the same processing pipeline as get_window(), then transforms
-        to frequency domain using multitaper or Welch PSD.
-        """
-        from cogpy.core.spectral.specx import psdx
-
-        win = self.get_window(t0, t1, channels=channels)
-        psd = psdx(
-            win,
-            axis=self._time_dim,
-            method=method,  # type: ignore[arg-type]
-            bandwidth=float(bandwidth),
-            nperseg=int(nperseg),
-        )
-        if "freq" in psd.dims:
-            psd = psd.transpose("freq", *[d for d in psd.dims if d != "freq"])
-        psd.attrs["processing"] = self.describe()
-        return psd
 
     def to_dict(self) -> dict[str, object]:
         """Serialize processing settings (not data)."""
