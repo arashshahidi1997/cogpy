@@ -8,6 +8,7 @@ import pandas as pd
 import xarray as xr
 
 __all__ = [
+    "DIMS_EVENT_CATALOG",
     "DIMS_IEEG_GRID",
     "DIMS_IEEG_GRID_WINDOW",
     "DIMS_MULTICHANNEL",
@@ -27,6 +28,9 @@ __all__ = [
     "DIMS_EVENTS_TABLE",
     "DIMS_INTERVALS_TABLE",
     "DIMS_PERIEVENT",
+    "EventCatalog",
+    "validate_event_catalog",
+    "coerce_event_catalog",
     "validate_ieeg_grid",
     "validate_ieeg_grid_windowed",
     "validate_multichannel",
@@ -47,6 +51,7 @@ __all__ = [
 ]
 
 # Canonical dim orders (single source of truth for validators and docs).
+DIMS_EVENT_CATALOG = ("event",)
 DIMS_IEEG_GRID = ("time", "ML", "AP")
 DIMS_IEEG_GRID_WINDOW = ("time_win", "ML", "AP")
 DIMS_MULTICHANNEL = ("channel", "time")
@@ -832,6 +837,276 @@ class Events:
         for t0, t1 in zip(intervals.starts, intervals.ends):
             mask |= (self.times >= t0) & (self.times < t1)
         return Events(self.times[mask], self.labels[mask], name=self.name)
+
+
+@dataclass
+class EventCatalog:
+    """
+    Canonical detector output contract: a per-event table + provenance + converters.
+
+    Required table columns
+    ----------------------
+    - event_id   : str | int
+    - t          : float  (peak/center time, seconds)
+    - t0         : float  (start time, seconds)
+    - t1         : float  (end time, seconds; must satisfy t1 > t0)
+    - duration   : float  (t1 - t0, seconds)
+    - label      : str
+    - score      : float  (detector-specific units)
+
+    Optional table columns (not enforced)
+    -------------------------------------
+    channel, AP, ML, f0, f1, f_peak, n_channels, ch_min, ch_max, source
+    """
+
+    family: str
+    table: pd.DataFrame
+    meta: dict
+    memberships: pd.DataFrame | None = None
+
+    def to_events(self) -> Events:
+        return Events(
+            times=self.table["t"].to_numpy(),
+            labels=self.table["label"].to_numpy(),
+            name=self.family,
+        )
+
+    def to_intervals(self) -> Intervals:
+        return Intervals(
+            starts=self.table["t0"].to_numpy(),
+            ends=self.table["t1"].to_numpy(),
+            name=self.family,
+        )
+
+    def to_event_stream(self, *, style=None):
+        from cogpy.core.plot.tensorscope.events import EventStream
+
+        return EventStream(
+            name=self.family,
+            df=self.table,
+            time_col="t",
+            id_col="event_id",
+            style=style,
+        )
+
+    def to_array(self) -> np.ndarray:
+        t0 = np.asarray(self.table["t0"].to_numpy(), dtype=float)
+        t1 = np.asarray(self.table["t1"].to_numpy(), dtype=float)
+        return np.stack([t0, t1], axis=1)
+
+    @classmethod
+    def from_burst_dict(
+        cls,
+        bursts,
+        *,
+        meta: dict,
+        memberships=None,
+    ) -> "EventCatalog":
+        """
+        Convert `aggregate_bursts` output to the canonical EventCatalog schema.
+
+        Field mapping
+        -------------
+        burst_id   → event_id
+        t0_s       → t0
+        t1_s       → t1
+        t_peak_s   → t
+        f0_hz      → f0
+        f1_hz      → f1
+        f_peak_hz  → f_peak
+        n_channels, ch_min, ch_max → passthrough as optional cols
+        score: use an available score/amplitude field when present; otherwise
+               default to 1.0 and set meta["params"]["score_source"] = "not_available"
+        """
+
+        rows: list[dict] = []
+        score_source = "not_available"
+        score_key_candidates = (
+            "score",
+            "amp",
+            "amplitude",
+            "power",
+            "peak_amp",
+            "peak_power",
+        )
+
+        for b in list(bursts or []):
+            if not isinstance(b, dict):
+                raise ValueError("from_burst_dict expects bursts as a list of dicts")
+
+            row: dict = {
+                "event_id": b.get("burst_id"),
+                "t0": b.get("t0_s"),
+                "t1": b.get("t1_s"),
+                "t": b.get("t_peak_s"),
+                "f0": b.get("f0_hz"),
+                "f1": b.get("f1_hz"),
+                "f_peak": b.get("f_peak_hz"),
+                "n_channels": b.get("n_channels"),
+                "ch_min": b.get("ch_min"),
+                "ch_max": b.get("ch_max"),
+                "label": "burst",
+            }
+
+            score_val = None
+            for k in score_key_candidates:
+                if k in b and b.get(k) is not None:
+                    score_val = b.get(k)
+                    score_source = str(k)
+                    break
+            if score_val is None:
+                score_val = 1.0
+            row["score"] = score_val
+
+            try:
+                row["duration"] = float(row["t1"]) - float(row["t0"])
+            except Exception as e:  # noqa: BLE001
+                raise ValueError(f"Invalid t0/t1 for burst row: {e}") from e
+
+            rows.append(row)
+
+        df = pd.DataFrame.from_records(rows)
+
+        # Normalize memberships to a DataFrame if provided as list of tuples.
+        mem_df = None
+        if memberships is not None:
+            if isinstance(memberships, pd.DataFrame):
+                mem_df = memberships
+            else:
+                try:
+                    mem_df = pd.DataFrame(list(memberships), columns=["event_id", "channel"])
+                except Exception as e:  # noqa: BLE001
+                    raise ValueError(f"Invalid memberships; expected DataFrame or list of (event_id, channel): {e}") from e
+
+        meta_out = dict(meta or {})
+        params = meta_out.get("params", {})
+        if not isinstance(params, dict):
+            raise ValueError("meta['params'] must be a dict")
+        if score_source == "not_available":
+            params = dict(params)
+            params["score_source"] = "not_available"
+            meta_out["params"] = params
+
+        # Ensure minimum required meta keys for downstream validation/coercion workflows.
+        meta_out.setdefault("n_events", int(len(df)))
+        meta_out.setdefault("cogpy_version", "unknown")
+
+        cat = cls(family="burst", table=df, meta=meta_out, memberships=mem_df)
+        validate_event_catalog(cat)
+        return cat
+
+
+def validate_event_catalog(catalog: EventCatalog) -> None:
+    allowed = {"burst", "ripple", "spindle", "wave", "generic"}
+
+    if str(getattr(catalog, "family", "")) not in allowed:
+        raise ValueError(f"EventCatalog.family must be one of {sorted(allowed)}, got {getattr(catalog, 'family', None)!r}")
+
+    table = getattr(catalog, "table", None)
+    if not isinstance(table, pd.DataFrame):
+        raise ValueError("EventCatalog.table must be a pandas DataFrame")
+
+    required_cols = {"event_id", "t", "t0", "t1", "duration", "label", "score"}
+    missing = required_cols - set(table.columns)
+    if missing:
+        raise ValueError(f"EventCatalog.table missing required columns: {sorted(missing)}")
+
+    # event_id uniqueness (compare as strings).
+    ids = table["event_id"].astype(str)
+    if ids.duplicated().any():
+        raise ValueError("EventCatalog.table event_id values must be unique")
+
+    # Numeric columns must be finite.
+    for col in ("t0", "t1", "t", "duration", "score"):
+        vals = pd.to_numeric(table[col], errors="coerce").to_numpy(dtype=float, copy=False)
+        if not np.all(np.isfinite(vals)):
+            raise ValueError(f"EventCatalog.table column {col!r} must be finite (no NaN/inf)")
+
+    t0 = pd.to_numeric(table["t0"], errors="coerce").to_numpy(dtype=float, copy=False)
+    t1 = pd.to_numeric(table["t1"], errors="coerce").to_numpy(dtype=float, copy=False)
+    t = pd.to_numeric(table["t"], errors="coerce").to_numpy(dtype=float, copy=False)
+    duration = pd.to_numeric(table["duration"], errors="coerce").to_numpy(dtype=float, copy=False)
+
+    if not np.all(t1 > t0):
+        raise ValueError("EventCatalog.table must satisfy t1 > t0 for all events")
+
+    if not np.all((t >= t0) & (t <= t1)):
+        raise ValueError("EventCatalog.table must satisfy t0 <= t <= t1 for all events")
+
+    if not np.all(np.abs(duration - (t1 - t0)) < 1e-6):
+        raise ValueError("EventCatalog.table must satisfy abs(duration - (t1 - t0)) < 1e-6 for all events")
+
+    meta = getattr(catalog, "meta", None)
+    if not isinstance(meta, dict):
+        raise ValueError("EventCatalog.meta must be a dict")
+
+    required_meta = {"detector", "params", "fs", "n_events", "cogpy_version"}
+    missing_meta = required_meta - set(meta.keys())
+    if missing_meta:
+        raise ValueError(f"EventCatalog.meta missing required keys: {sorted(missing_meta)}")
+
+    if not isinstance(meta.get("params"), dict):
+        raise ValueError("EventCatalog.meta['params'] must be a dict")
+
+    try:
+        n_events = int(meta["n_events"])
+    except Exception as e:  # noqa: BLE001
+        raise ValueError(f"EventCatalog.meta['n_events'] must be an int: {e}") from e
+    if n_events != len(table):
+        raise ValueError("EventCatalog.meta['n_events'] must match len(EventCatalog.table)")
+
+    memberships = getattr(catalog, "memberships", None)
+    if memberships is not None:
+        if not isinstance(memberships, pd.DataFrame):
+            raise ValueError("EventCatalog.memberships must be a pandas DataFrame when provided")
+        need = {"event_id", "channel"}
+        missing_m = need - set(memberships.columns)
+        if missing_m:
+            raise ValueError(f"EventCatalog.memberships missing required columns: {sorted(missing_m)}")
+        mem_ids = memberships["event_id"].astype(str).unique()
+        table_id_set = set(ids.to_numpy())
+        bad = [eid for eid in mem_ids if eid not in table_id_set]
+        if bad:
+            raise ValueError("EventCatalog.memberships contains event_id values not present in table['event_id']")
+
+
+def coerce_event_catalog(
+    obj,
+    *,
+    family: str | None = None,
+    meta: dict | None = None,
+    memberships=None,
+) -> EventCatalog:
+    if isinstance(obj, EventCatalog):
+        validate_event_catalog(obj)
+        return obj
+
+    if isinstance(obj, pd.DataFrame):
+        if family is None:
+            raise ValueError("family is required when coercing from a DataFrame")
+        if meta is None or not isinstance(meta, dict):
+            raise ValueError("meta (dict) is required when coercing from a DataFrame")
+
+        df = obj.copy()
+        if "duration" not in df.columns:
+            df["duration"] = pd.to_numeric(df["t1"], errors="coerce") - pd.to_numeric(df["t0"], errors="coerce")
+        if "label" not in df.columns:
+            df["label"] = "event"
+
+        meta_out = dict(meta)
+        meta_out["n_events"] = int(len(df))
+        meta_out.setdefault("cogpy_version", "unknown")
+
+        cat = EventCatalog(family=str(family), table=df, meta=meta_out, memberships=memberships)
+        validate_event_catalog(cat)
+        return cat
+
+    if isinstance(obj, list) and (len(obj) == 0 or isinstance(obj[0], dict)):
+        if meta is None or not isinstance(meta, dict):
+            raise ValueError("meta (dict) is required when coercing from a list[dict]")
+        return EventCatalog.from_burst_dict(obj, meta=meta, memberships=memberships)
+
+    raise ValueError(f"Unsupported input type for coerce_event_catalog: {type(obj).__name__}")
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
