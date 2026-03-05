@@ -9,6 +9,7 @@ from lazy_loader import attach
 __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
+        "detect",
         "events",
     ],
 )
