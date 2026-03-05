@@ -4,5 +4,6 @@ from __future__ import annotations
 
 from .base import ModuleRegistry, ViewPresetModule
 from .event_explorer import EventExplorerModule
+from .psd_explorer import PSDExplorerModule
 
-__all__ = ["EventExplorerModule", "ModuleRegistry", "ViewPresetModule"]
+__all__ = ["EventExplorerModule", "ModuleRegistry", "PSDExplorerModule", "ViewPresetModule"]
