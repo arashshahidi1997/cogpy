@@ -78,7 +78,8 @@ class ModuleSelectorLayer:
             if mod is None:
                 raise ValueError(f"Module {name!r} not found")
             layout = mod.activate(self.state)
-            self.layout_container.objects = [pn.pane.HoloViews(layout, sizing_mode="stretch_both")]
+            # Modules may return either HoloViews objects or full Panel layouts.
+            self.layout_container.objects = [pn.panel(layout, sizing_mode="stretch_both")]
         except Exception as exc:  # noqa: BLE001
             self.layout_container.objects = [pn.pane.Alert(f"Error loading module: {exc}", alert_type="danger")]
 
@@ -87,4 +88,3 @@ class ModuleSelectorLayer:
 
     def get_layout_container(self):
         return self.layout_container
-

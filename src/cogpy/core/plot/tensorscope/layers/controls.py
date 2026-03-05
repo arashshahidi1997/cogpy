@@ -17,11 +17,17 @@ class ChannelSelectorLayer(TensorLayer):
         self.layer_id = "channel_selector"
         self.title = "Channel Selection"
 
-        self._widget = self._add_data_ref(ChannelGridWidget.from_grid(state.channel_grid))
+        self._widget = self._add_data_ref(ChannelGridWidget.from_grid(state.channel_grid, cell_size=18))
 
     def panel(self):
         if self._panel is None:
-            self._panel = pn.Card(self._widget.panel(), title=self.title, collapsed=False)
+            self._panel = pn.Card(
+                self._widget.panel(),
+                title=self.title,
+                collapsible=True,
+                collapsed=True,
+                sizing_mode="stretch_width",
+            )
         return self._panel
 
 
@@ -38,4 +44,3 @@ class ProcessingControlsLayer(TensorLayer):
         if self._panel is None:
             self._panel = pn.Card(self._controls, title=self.title, collapsed=False)
         return self._panel
-

@@ -42,6 +42,8 @@ class TensorScopeApp:
             ChannelSelectorLayer,
             EventOverlayLayer,
             EventTableLayer,
+            PSDExplorerLayer,
+            PSDSettingsLayer,
             ProcessingControlsLayer,
             SignalManagerLayer,
             SpatialMapLayer,
@@ -97,11 +99,30 @@ class TensorScopeApp:
         )
         self.layer_manager.register(
             LayerSpec(
+                layer_id="psd_settings",
+                title="PSD Settings",
+                factory=lambda s: PSDSettingsLayer(s),
+                description="PSD controls (window/FFT/method/frequency)",
+                layer_type="controls",
+            )
+        )
+        self.layer_manager.register(
+            LayerSpec(
                 layer_id="navigator",
                 title="Time Navigator",
                 factory=lambda s: TimeNavigatorLayer(s),
                 description="Play/pause/step controls",
                 layer_type="navigation",
+            )
+        )
+
+        self.layer_manager.register(
+            LayerSpec(
+                layer_id="psd_explorer",
+                title="PSD Explorer",
+                factory=lambda s: PSDExplorerLayer(s),
+                description="PSD views (heatmap, average curve, spatial PSD map)",
+                layer_type="analysis",
             )
         )
 

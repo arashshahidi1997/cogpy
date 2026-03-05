@@ -6,6 +6,7 @@ from .base import LayerMetadata, TensorLayer
 from .controls import ChannelSelectorLayer, ProcessingControlsLayer
 from .events import EventOverlayLayer, EventTableLayer
 from .navigation import TimeNavigatorLayer
+from .psd_explorer import PSDExplorerLayer, PSDSettingsLayer
 from .signal_manager import SignalManagerLayer
 from .spatial import SpatialMapLayer
 from .spectrogram import SpectrogramLayer
@@ -23,4 +24,6 @@ __all__ = [
     "TimeNavigatorLayer",
     "EventTableLayer",
     "EventOverlayLayer",
+    "PSDSettingsLayer",
+    "PSDExplorerLayer",
 ]

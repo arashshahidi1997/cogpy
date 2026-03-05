@@ -36,5 +36,6 @@ def test_psd_explorer_activate(grid_data):
     module = PSDExplorerModule()
     layout = module.activate(state)
     assert layout is not None
-    assert hasattr(layout, "opts")
+    import panel as pn
 
+    assert isinstance(layout, pn.viewable.Viewable)

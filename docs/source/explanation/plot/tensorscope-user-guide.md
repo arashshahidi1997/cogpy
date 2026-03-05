@@ -40,7 +40,9 @@ app.servable()
 
 ```bash
 tensorscope presets
+tensorscope modules
 tensorscope serve data.nc --layout default --port 5008 --show
+tensorscope serve data.nc --module psd_explorer --port 5008 --show
 ```
 
 ## Loading Data
@@ -184,4 +186,3 @@ app2 = TensorScopeApp.from_session(session, data_resolver=lambda: data)
 See:
 - `tensorscope-issues.md` (common pitfalls and fixes)
 - examples in `code/lib/cogpy/examples/tensorscope/`
-

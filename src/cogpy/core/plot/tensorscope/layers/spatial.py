@@ -13,13 +13,14 @@ class SpatialMapLayer(TensorLayer):
     def __init__(
         self,
         state,
-        mode: str = "rms",
+        mode: str = "instantaneous",
         window_s: float = 0.1,
-        colormap: str = "viridis",
+        colormap: str = "rdbu_r",
     ):
         super().__init__(state)
         self.layer_id = "spatial_map"
-        self.title = f"Spatial {mode.upper()}"
+        mode_s = str(mode)
+        self.title = "Spatial LFP" if mode_s == "instantaneous" else f"Spatial {mode_s.upper()}"
 
         modality = state.data_registry.get("grid_lfp") if state.data_registry is not None else None
         if modality is None:
@@ -33,6 +34,7 @@ class SpatialMapLayer(TensorLayer):
                 window_s=window_s,
                 chain=state.processing,
                 colormap=colormap,
+                symmetric=(mode_s == "instantaneous"),
                 title=self.title,
             )
         )
@@ -41,4 +43,3 @@ class SpatialMapLayer(TensorLayer):
         if self._panel is None:
             self._panel = self._element.panel()
         return self._panel
-

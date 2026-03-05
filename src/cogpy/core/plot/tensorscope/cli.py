@@ -9,9 +9,17 @@ Serve a dataset:
 
     tensorscope serve recording.nc --layout default --port 5008 --show
 
+Serve a dataset into a module view:
+
+    tensorscope serve recording.nc --module psd_explorer --port 5008 --show
+
 List presets:
 
     tensorscope presets
+
+List modules:
+
+    tensorscope modules
 """
 
 from __future__ import annotations
@@ -38,11 +46,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path to data: xarray (.nc/.zarr) or BIDS iEEG binary (.lfp with sidecars)",
     )
     serve.add_argument("--layout", default="default", help="Layout preset name")
+    serve.add_argument(
+        "--module",
+        default=None,
+        help="Module to display (e.g., psd_explorer). If set, runs TensorScope in module view mode.",
+    )
     serve.add_argument("--port", type=int, default=5006, help="Server port")
     serve.add_argument("--show", action=argparse.BooleanOptionalAction, default=True, help="Open browser")
     serve.add_argument("--title", default="TensorScope", help="Application title")
 
     sub.add_parser("presets", help="List available layout presets")
+    sub.add_parser("modules", help="List available modules")
     cfg = sub.add_parser("config", help="Show config (placeholder)")
     cfg.add_argument("--show", action="store_true", help="Show current config")
 
@@ -75,7 +89,24 @@ def _cmd_config(show: bool) -> int:
     return 0
 
 
-def _cmd_serve(data_path: Path, layout: str, port: int, show: bool, title: str) -> int:
+def _cmd_modules() -> int:
+    from cogpy.core.plot.tensorscope.modules import ModuleRegistry
+
+    reg = ModuleRegistry()
+    print("Available Modules:\n")
+    for name in sorted(reg.list()):
+        mod = reg.get(name)
+        desc = getattr(mod, "description", "") if mod is not None else ""
+        if desc:
+            print(f"  {name}:\n    {desc}\n")
+        else:
+            print(f"  {name}\n")
+    return 0
+
+
+def _cmd_serve(
+    data_path: Path, layout: str, module: str | None, port: int, show: bool, title: str
+) -> int:
     if not data_path.exists():
         print(f"Error: file not found: {data_path}", file=sys.stderr)
         return 2
@@ -154,6 +185,75 @@ def _cmd_serve(data_path: Path, layout: str, port: int, show: bool, title: str) 
 
     print(f"  Loaded: dims={data.dims}, shape={data.shape}")
 
+    if module:
+        if str(module) == "psd_explorer":
+            from cogpy.core.plot.tensorscope import TensorScopeApp
+
+            # If the user didn't explicitly choose a layout, default to the PSD explorer preset.
+            layout2 = "psd_explorer" if str(layout) == "default" else str(layout)
+
+            print(f"Creating TensorScope app (layout: {layout2}, module: {module})...")
+            try:
+                app = (
+                    TensorScopeApp(data, title=title)
+                    .with_layout(layout2)
+                    .add_layer("timeseries")
+                    .add_layer("spatial_map")
+                    .add_layer("selector")
+                    .add_layer("processing")
+                    .add_layer("psd_settings")
+                    .add_layer("navigator")
+                    .add_layer("psd_explorer")
+                )
+            except Exception as e:  # noqa: BLE001
+                print(f"Error: failed to create app: {e}", file=sys.stderr)
+                return 1
+
+            template = app.build()
+
+            print(f"Starting server on port {port}...")
+            pn.serve({"/": template}, port=int(port), show=bool(show), title=str(title))
+            return 0
+
+        from cogpy.core.plot.tensorscope import TensorScopeState
+        from cogpy.core.plot.tensorscope.layers.controls import ProcessingControlsLayer
+        from cogpy.core.plot.tensorscope.modules import ModuleRegistry
+
+        reg = ModuleRegistry()
+        mod = reg.get(str(module))
+        if mod is None:
+            print(f"Error: unknown module: {module!r}", file=sys.stderr)
+            print("Run `tensorscope modules` to list available modules.", file=sys.stderr)
+            return 2
+
+        if layout and str(layout) != "default":
+            print("Note: --layout is ignored for module-view mode (non-layer modules).")
+
+        print(f"Creating TensorScope module view (module: {module})...")
+        try:
+            state = TensorScopeState(data)
+            module_view = mod.activate(state)
+        except Exception as e:  # noqa: BLE001
+            print(f"Error: failed to activate module: {e}", file=sys.stderr)
+            return 1
+
+        template = pn.template.FastGridTemplate(
+            title=str(title),
+            theme="dark",
+            sidebar_width=320,
+            row_height=80,
+        )
+        try:
+            template.sidebar.append(ProcessingControlsLayer(state).panel())
+        except Exception:  # noqa: BLE001
+            pass
+
+        template.main[0:10, 0:12] = pn.panel(module_view, sizing_mode="stretch_both")
+
+        print(f"Starting server on port {port}...")
+        pn.serve({"/": template}, port=int(port), show=bool(show), title=str(title))
+        return 0
+
     from cogpy.core.plot.tensorscope import TensorScopeApp
 
     print(f"Creating TensorScope app (layout: {layout})...")
@@ -192,6 +292,8 @@ def main(argv: list[str] | None = None) -> None:
 
     if ns.cmd == "presets":
         raise SystemExit(_cmd_presets())
+    if ns.cmd == "modules":
+        raise SystemExit(_cmd_modules())
     if ns.cmd == "config":
         raise SystemExit(_cmd_config(bool(ns.show)))
     if ns.cmd == "serve":
@@ -199,6 +301,7 @@ def main(argv: list[str] | None = None) -> None:
             _cmd_serve(
                 data_path=ns.data_path,
                 layout=str(ns.layout),
+                module=str(ns.module) if ns.module else None,
                 port=int(ns.port),
                 show=bool(ns.show),
                 title=str(ns.title),

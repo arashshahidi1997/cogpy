@@ -65,6 +65,17 @@ class LayoutManager:
                 },
                 sidebar_panels=["selector", "processing"],
             ),
+            "psd_explorer": LayoutPreset(
+                name="psd_explorer",
+                description="Basic views + PSD explorer panel",
+                grid_assignments={
+                    "spatial_map": (0, 5, 0, 4),
+                    "navigator": (0, 5, 4, 12),
+                    "timeseries": (5, 10, 0, 12),
+                    "psd_explorer": (10, 18, 0, 12),
+                },
+                sidebar_panels=["selector", "processing", "psd_settings"],
+            ),
         }
 
     def preset_names(self) -> list[str]:
@@ -81,7 +92,7 @@ class LayoutManager:
         self,
         *,
         sidebar: list[pn.viewable.Viewable] | None = None,
-        sidebar_width: int = 320,
+        sidebar_width: int = 400,
         row_height: int = 80,
     ) -> pn.template.FastGridTemplate:
         self._template = pn.template.FastGridTemplate(
@@ -126,4 +137,3 @@ class LayoutManager:
         )
         manager._current_preset = config.get("current_preset", "default")
         return manager
-
