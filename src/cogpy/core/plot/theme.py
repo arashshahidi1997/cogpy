@@ -98,7 +98,28 @@ def _interp_palette(base: list[str], n: int) -> list[str]:
     return [_rgb01_to_hex(out[i]) for i in range(n)]
 
 
+def _jet_palette(n: int) -> list[str]:
+    """
+    Approximate MATLAB-style "jet" colormap (blue → cyan → yellow → red).
+
+    Implemented analytically to avoid matplotlib as a dependency.
+    """
+    n = int(n)
+    if n <= 1:
+        return ["#00007f"]
+    x = np.linspace(0.0, 1.0, n)
+
+    # Standard jet approximation.
+    r = np.clip(1.5 - np.abs(4.0 * x - 3.0), 0.0, 1.0)
+    g = np.clip(1.5 - np.abs(4.0 * x - 2.0), 0.0, 1.0)
+    b = np.clip(1.5 - np.abs(4.0 * x - 1.0), 0.0, 1.0)
+
+    rgb = np.stack([r, g, b], axis=1)
+    return [_rgb01_to_hex(rgb[i]) for i in range(n)]
+
+
 _RDBU256 = _interp_palette(list(RdBu11), 256)
+_JET256 = _jet_palette(256)
 
 # Colormaps (Bokeh palette lists)
 COLORMAPS: dict[str, list[str]] = {
@@ -106,6 +127,7 @@ COLORMAPS: dict[str, list[str]] = {
     "plasma": list(Plasma256),
     "rdbu": list(reversed(_RDBU256)),  # red=high, blue=low
     "rdbu_r": _RDBU256,  # blue=high, red=low
+    "jet": _JET256,
 }
 
 
@@ -146,4 +168,3 @@ def style_figure(fig: figure, *, xlabel: str = "", ylabel: str = "", toolbar: bo
         fig.toolbar_location = None
 
     return fig
-

@@ -36,6 +36,29 @@ class PSDExplorerLayer(TensorLayer):
 
         hv.extension("bokeh")
 
+        def _apply_logf_axis(plot, _element) -> None:
+            """
+            Ensure the Bokeh y-scale updates when toggling log-frequency.
+
+            HoloViews' `logy=` option may not reinitialize the axis scale on
+            DynamicMap updates (axis type can get "stuck"). This hook forces
+            the scale to match current settings on every render/update.
+            """
+            try:
+                from bokeh.models import LinearScale, LogScale
+            except Exception:  # noqa: BLE001
+                return
+
+            fig = getattr(plot, "state", None)
+            if fig is None:
+                return
+
+            want_log = bool(getattr(self.settings, "freq_log", False))
+            try:
+                fig.y_scale = LogScale() if want_log else LinearScale()
+            except Exception:  # noqa: BLE001
+                pass
+
         # Streams.
         FreqStream = hv.streams.Stream.define("Freq", freq=float(self.settings.freq))
         freq_stream = self._add_stream(FreqStream())
@@ -68,7 +91,7 @@ class PSDExplorerLayer(TensorLayer):
         self._watch(
             self.settings,
             lambda _e: _bump_refresh(),
-            ["window_size", "method", "db", "nperseg", "noverlap", "bandwidth", "freq_min", "freq_max"],
+            ["window_size", "method", "db", "nperseg", "noverlap", "bandwidth", "freq_min", "freq_max", "freq_log"],
         )
 
         chain = getattr(self.state, "processing", None)
@@ -114,7 +137,7 @@ class PSDExplorerLayer(TensorLayer):
                 nperseg=int(self.settings.nperseg),
                 noverlap=int(self.settings.noverlap) if str(self.settings.method) == "welch" else None,
                 bandwidth=float(self.settings.bandwidth),
-                fmin=float(self.settings.freq_min),
+                fmin=float(max(float(self.settings.freq_min), 1e-6)) if bool(self.settings.freq_log) else float(self.settings.freq_min),
                 fmax=float(self.settings.freq_max),
             )
 
@@ -153,7 +176,12 @@ class PSDExplorerLayer(TensorLayer):
                 ylabel="Frequency (Hz)",
                 title="PSD heatmap",
                 tools=["hover"],
-                ylim=(float(self.settings.freq_min), float(self.settings.freq_max)),
+                ylim=(
+                    float(max(float(self.settings.freq_min), 1e-6)) if bool(self.settings.freq_log) else float(self.settings.freq_min),
+                    float(self.settings.freq_max),
+                ),
+                logy=bool(self.settings.freq_log),
+                hooks=[_apply_logf_axis],
             )
 
         def _avg(time=None, freq=None, tick=None):
@@ -181,12 +209,19 @@ class PSDExplorerLayer(TensorLayer):
                 xlabel="Power (dB)" if bool(self.settings.db) else "Power",
                 ylabel="Frequency (Hz)",
                 title="Average PSD",
-                ylim=(float(self.settings.freq_min), float(self.settings.freq_max)),
+                ylim=(
+                    float(max(float(self.settings.freq_min), 1e-6)) if bool(self.settings.freq_log) else float(self.settings.freq_min),
+                    float(self.settings.freq_max),
+                ),
                 framewise=True,
+                logy=bool(self.settings.freq_log),
+                hooks=[_apply_logf_axis],
             )
             f_sel = float(freq) if freq is not None else float(self.settings.freq)
+            if bool(self.settings.freq_log):
+                f_sel = float(max(f_sel, 1e-6))
             hline = hv.HLine(f_sel).opts(color="#ffcc00", alpha=0.9, line_width=2, line_dash="dashed")
-            return base * hline
+            return (base * hline).opts(framewise=True, hooks=[_apply_logf_axis])
 
         def _spatial_psd(time=None, freq=None, AP=None, ML=None, tick=None):
             psd = _compute_psd(float(time), int(tick))
@@ -267,6 +302,7 @@ class PSDExplorerLayer(TensorLayer):
         )
 
         quick_db = pn.widgets.Checkbox.from_param(self.settings.param.db, name="dB", width=60)
+        quick_logf = pn.widgets.Checkbox.from_param(self.settings.param.freq_log, name="log f", width=70)
         quick_freq = pn.widgets.FloatSlider.from_param(
             self.settings.param.freq,
             name="Freq (Hz)",
@@ -278,6 +314,7 @@ class PSDExplorerLayer(TensorLayer):
             pn.pane.Markdown("## PSD Explorer"),
             pn.Spacer(),
             quick_db,
+            quick_logf,
             quick_freq,
             sizing_mode="stretch_width",
         )

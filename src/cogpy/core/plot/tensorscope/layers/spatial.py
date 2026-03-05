@@ -15,7 +15,7 @@ class SpatialMapLayer(TensorLayer):
         state,
         mode: str = "instantaneous",
         window_s: float = 0.1,
-        colormap: str = "rdbu_r",
+        colormap: str = "jet",
         style: str = "image",
         width: int = 400,
         height: int = 400,

@@ -27,6 +27,7 @@ class PSDSettings(param.Parameterized):
     bandwidth = param.Number(default=4.0, bounds=(0.1, 500.0), doc="Bandwidth (Hz, multitaper)")
 
     # Display range + selection
+    freq_log = param.Boolean(default=False, doc="Log-scale frequency axis")
     freq_min = param.Number(default=0.0, bounds=(0.0, 500.0), doc="Min frequency (Hz)")
     freq_max = param.Number(default=150.0, bounds=(0.0, 500.0), doc="Max frequency (Hz)")
     freq = param.Number(default=40.0, bounds=(0.0, 500.0), doc="Selected frequency (Hz)")
@@ -91,6 +92,7 @@ class PSDSettingsLayer(TensorLayer):
         )
         method_w = pn.widgets.Select.from_param(self.settings.param.method, name="Method", width=220)
         db_w = pn.widgets.Checkbox.from_param(self.settings.param.db, name="dB scale", width=220)
+        freq_log_w = pn.widgets.Checkbox.from_param(self.settings.param.freq_log, name="Log freq axis", width=220)
 
         nperseg_w = pn.widgets.IntInput.from_param(self.settings.param.nperseg, name="FFT", width=220)
         noverlap_w = pn.widgets.IntInput.from_param(self.settings.param.noverlap, name="Overlap", width=220)
@@ -166,6 +168,7 @@ class PSDSettingsLayer(TensorLayer):
             noverlap_w,
             bandwidth_w,
             db_w,
+            freq_log_w,
             pn.layout.Divider(),
             pn.Row(freq_min_w, freq_max_w),
             freq_slider,
@@ -173,4 +176,3 @@ class PSDSettingsLayer(TensorLayer):
             sizing_mode="stretch_width",
         )
         return self._panel
-

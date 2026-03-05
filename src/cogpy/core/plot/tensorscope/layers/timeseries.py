@@ -40,6 +40,8 @@ class TimeseriesLayer(TensorLayer):
                 ch_labels=self._ch_labels,
                 title=self.title,
                 chain=state.processing,
+                detail_height=600,
+                overview_height=160,
             )
         )
 

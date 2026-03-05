@@ -120,6 +120,7 @@ class MultichannelViewer:
         time_dim: str = "time",
         title: str = "Multichannel viewer",
         show_channel_labels: bool = True,
+        framewise: bool = True,
         chain=None,
     ):
         assert sig_z.ndim == 2, "sig_z must be (n_ch, n_time)"
@@ -144,6 +145,7 @@ class MultichannelViewer:
         self._tdim = time_dim
         self._title = title
         self._show_channel_labels = bool(show_channel_labels)
+        self._framewise = bool(framewise)
 
         self._t0 = float(self._t_vals[0])
         self._t1 = float(self._t_vals[-1])
@@ -212,6 +214,14 @@ class MultichannelViewer:
         # Overview — static mean trace
         mean_sig = self._sig_z.mean(axis=0)
         t_ov, y_ov = _downsample(self._t_vals, mean_sig, self._opx)
+        finite = y_ov[np.isfinite(y_ov)]
+        if finite.size:
+            y0 = float(finite.min())
+            y1 = float(finite.max())
+            pad = 0.05 * (y1 - y0) if y1 > y0 else 1.0
+            ylim = (y0 - pad, y1 + pad)
+        else:
+            ylim = (-1.0, 1.0)
         self._overview = hv.Curve(
             (t_ov, y_ov), kdims=self._tdim, vdims="amp"
         ).opts(
@@ -221,6 +231,8 @@ class MultichannelViewer:
             toolbar=None, default_tools=[],
             title="Overview  —  drag to navigate",
             yaxis=None,
+            ylim=ylim,
+            framewise=False,
         )
 
         # Detail DynamicMap
@@ -242,10 +254,23 @@ class MultichannelViewer:
         )
         self._window_slider.param.watch(self._on_window, "value")
 
+        self._framewise_chk = pn.widgets.Checkbox(
+            name="Auto-scale Y",
+            value=bool(self._framewise),
+            width=120,
+        )
+
+        def _on_framewise(event=None) -> None:
+            self._framewise = bool(getattr(event, "new", self._framewise_chk.value))
+            self._apply()
+
+        self._framewise_chk.param.watch(_on_framewise, "value")
+
         self._layout = pn.Column(
             pn.pane.Markdown(f"## {self._title}", styles={"color": TEXT}),
             pn.Row(
                 self._window_slider,
+                self._framewise_chk,
                 styles={"background": BG_PANEL, "padding": "8px", "border-radius": "6px"},
             ),
             self._detail_dmap,
@@ -369,7 +394,7 @@ class MultichannelViewer:
                 show_legend=False, toolbar="above",
                 xlabel=f"{self._tdim} (s)", ylabel="",
                 title=self._title,
-                framewise=True,
+                framewise=bool(self._framewise),
                 shared_axes=False,
                 axiswise=True,
                 yaxis="left",
