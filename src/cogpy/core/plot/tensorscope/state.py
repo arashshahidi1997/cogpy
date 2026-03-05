@@ -406,6 +406,47 @@ class TensorScopeState(param.Parameterized):
         self.register_event_catalog(event_type, catalog, style=style)
         return catalog
 
+    def run_pipeline(
+        self,
+        pipeline: Any,
+        *,
+        signal_id: str | None = None,
+        event_type: str = "events",
+        style: Any | None = None,
+    ):
+        """
+        Run a DetectionPipeline and register its output as an event stream.
+
+        Parameters
+        ----------
+        pipeline
+            `cogpy.core.detect.pipeline.DetectionPipeline` instance.
+        signal_id
+            Which signal to run the pipeline on. If None, uses the active signal.
+        event_type
+            Name to register detected events under.
+        style
+            Optional EventStyle or dict of EventStyle fields for visualization.
+        """
+        from cogpy.core.events import EventCatalog
+
+        if self.signal_registry is None:
+            raise RuntimeError("signal_registry is not initialized")
+
+        signal = self.signal_registry.get_active() if signal_id is None else self.signal_registry.get(str(signal_id))
+        if signal is None:
+            raise ValueError(f"Signal {signal_id!r} not found")
+
+        catalog = pipeline.run(signal.data)
+        if not isinstance(catalog, EventCatalog):
+            raise TypeError(
+                "pipeline.run(...) must return an EventCatalog for TensorScope integration; "
+                f"got {type(catalog)!r}"
+            )
+
+        self.register_event_catalog(event_type, catalog, style=style)
+        return catalog
+
     def jump_to_event(self, stream_name: str, event_id) -> None:
         """Jump to specific event by ID."""
         if self.event_registry is None:
