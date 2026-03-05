@@ -7,6 +7,7 @@ Provides a unified detector interface and concrete detectors that return
 
 from .base import EventDetector
 from .burst import BurstDetector
+from .ripple import RippleDetector, SpindleDetector
+from .threshold import ThresholdDetector
 
-__all__ = ["BurstDetector", "EventDetector"]
-
+__all__ = ["BurstDetector", "EventDetector", "RippleDetector", "SpindleDetector", "ThresholdDetector"]
