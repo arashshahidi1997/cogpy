@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..layers.events import EventOverlayLayer
+from ..layers.event_triggered_average import EventTriggeredAverageLayer
 from ..view_factory import ViewFactory
 from ..view_spec import ViewSpec
 from .base import ViewPresetModule
@@ -112,6 +113,94 @@ def _freq_hist(df):
     )
 
 
+def _duration_hist(df):
+    import holoviews as hv
+
+    hv.extension("bokeh")
+
+    if df.empty:
+        return hv.Div("<b>No events</b>")
+
+    if "duration" in df.columns:
+        dur = np.asarray(df["duration"].to_numpy(), dtype=float)
+    elif ("t0" in df.columns) and ("t1" in df.columns):
+        dur = np.asarray(df["t1"].to_numpy(), dtype=float) - np.asarray(df["t0"].to_numpy(), dtype=float)
+    else:
+        return hv.Div("<b>No interval columns (t0/t1) or duration</b>")
+
+    dur = dur[np.isfinite(dur)]
+    if dur.size == 0:
+        return hv.Div("<b>No finite durations</b>")
+
+    hist = np.histogram(dur, bins=30)
+    return hv.Histogram(hist, kdims=["duration"], vdims=["count"]).opts(
+        width=260,
+        height=180,
+        tools=["hover"],
+        xlabel="Duration (s)",
+        ylabel="Count",
+        title="Duration",
+    )
+
+
+def _onset_rate_curve(df, *, bin_s: float = 0.5):
+    import holoviews as hv
+
+    hv.extension("bokeh")
+
+    if df.empty or ("t0" not in df.columns):
+        return hv.Div("<b>No interval onset column (t0)</b>")
+
+    t = np.asarray(df["t0"].to_numpy(), dtype=float)
+    t = t[np.isfinite(t)]
+    if t.size == 0:
+        return hv.Div("<b>No finite t0 values</b>")
+
+    t_min = float(np.nanmin(t))
+    t_max = float(np.nanmax(t))
+    if not np.isfinite(t_min) or not np.isfinite(t_max) or t_min == t_max:
+        return hv.Div("<b>Invalid t0 range</b>")
+
+    edges = np.arange(t_min, t_max + bin_s, bin_s, dtype=float)
+    counts, _edges = np.histogram(t, bins=edges)
+    centers = (_edges[:-1] + _edges[1:]) / 2.0
+    rate = counts.astype(float) / float(bin_s)
+
+    return hv.Curve((centers, rate), kdims=["time"], vdims=["onset_rate"]).opts(
+        width=520,
+        height=180,
+        tools=["hover"],
+        xlabel="Time (s)",
+        ylabel="Events/s",
+        title="Onset rate",
+    )
+
+
+def _iei_hist(df):
+    import holoviews as hv
+
+    hv.extension("bokeh")
+
+    if df.empty or ("t0" not in df.columns):
+        return hv.Div("<b>No interval onset column (t0)</b>")
+
+    t0 = np.asarray(df["t0"].to_numpy(), dtype=float)
+    t0 = np.sort(t0[np.isfinite(t0)])
+    if t0.size < 2:
+        return hv.Div("<b>Not enough events for IEI</b>")
+
+    iei = np.diff(t0)
+    hist = np.histogram(iei, bins=30)
+    return hv.Histogram(hist, kdims=["iei"], vdims=["count"]).opts(
+        width=260,
+        height=180,
+        tools=["hover"],
+        xlabel="Inter-event interval (s)",
+        ylabel="Count",
+        title="IEI",
+    )
+
+
 def create_event_explorer_module(*, stream_name: str | None = None) -> ViewPresetModule:
     """
     Create an Event Explorer preset module.
@@ -150,15 +239,21 @@ def create_event_explorer_module(*, stream_name: str | None = None) -> ViewPrese
         rate = _event_rate_curve(df, time_col=stream.time_col)
         spatial_dist = _spatial_heatmap(df)
         freq_dist = _freq_hist(df)
+        duration_dist = _duration_hist(df)
+        onset_rate = _onset_rate_curve(df)
+        iei_dist = _iei_hist(df)
+
+        eta = EventTriggeredAverageLayer(state, name, pre=0.2, post=0.2).create_view()
 
         header = hv.Div(
             "<b>Event Explorer</b><br>"
             f"stream={name!r} (n={len(stream)})"
         )
 
-        top = hv.Layout([header, rate, spatial_dist, freq_dist]).cols(2)
+        top = hv.Layout([header, rate, spatial_dist, freq_dist, duration_dist, iei_dist]).cols(2)
+        mid = hv.Layout([onset_rate, eta]).cols(1)
         bottom = hv.Layout([spatial_view, temporal_view]).cols(2)
-        return (top + bottom).cols(1)
+        return (top + mid + bottom).cols(1)
 
     return ViewPresetModule(
         name="event_explorer",
@@ -187,4 +282,3 @@ class EventExplorerModule:
 
 
 MODULE = create_event_explorer_module()
-

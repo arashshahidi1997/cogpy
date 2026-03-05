@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 
 import numpy as np
+import pandas as pd
 import panel as pn
 
 from .base import TensorLayer
@@ -232,6 +233,34 @@ class EventOverlayLayer(TensorLayer):
             color = self.stream.style.color
             alpha = float(self.stream.style.alpha)
             lw = float(self.stream.style.line_width)
+
+            has_intervals = ("t0" in df.columns) and ("t1" in df.columns)
+
+            overlays: list[hv.Element] = []
+            if has_intervals:
+                t0v = pd.to_numeric(df["t0"], errors="coerce").to_numpy(dtype=float, copy=False)
+                t1v = pd.to_numeric(df["t1"], errors="coerce").to_numpy(dtype=float, copy=False)
+                tv = pd.to_numeric(df[self.stream.time_col], errors="coerce").to_numpy(dtype=float, copy=False)
+
+                for t0_i, t_i, t1_i in zip(t0v, tv, t1v):
+                    if np.isfinite(t0_i) and np.isfinite(t1_i) and (t1_i > t0_i):
+                        overlays.append(
+                            hv.VSpan(float(t0_i), float(t1_i)).opts(
+                                color=color,
+                                alpha=alpha * 0.15,
+                                line_width=0,
+                            )
+                        )
+                    if np.isfinite(t_i):
+                        overlays.append(
+                            hv.VLine(float(t_i)).opts(
+                                color=color,
+                                alpha=alpha * 0.7,
+                                line_width=lw,
+                                line_dash="dashed",
+                            )
+                        )
+                return hv.Overlay(overlays) if overlays else hv.Overlay([])
 
             vlines = [
                 hv.VLine(float(row[self.stream.time_col])).opts(color=color, alpha=alpha * 0.6, line_width=lw)
