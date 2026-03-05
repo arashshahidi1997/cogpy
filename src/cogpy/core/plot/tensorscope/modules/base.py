@@ -71,13 +71,14 @@ class ModuleRegistry:
         self._register_builtin()
 
     def _register_builtin(self) -> None:
-        from . import basic, comparison, electrode_panel, montage, orthoslicer
+        from . import basic, comparison, electrode_panel, event_explorer, montage, orthoslicer
 
         self.register(basic.MODULE)
         self.register(comparison.MODULE)
         self.register(montage.MODULE)
         self.register(electrode_panel.MODULE)
         self.register(orthoslicer.MODULE)
+        self.register(event_explorer.MODULE)
 
     def register(self, module: ViewPresetModule) -> None:
         self._modules[str(module.name)] = module

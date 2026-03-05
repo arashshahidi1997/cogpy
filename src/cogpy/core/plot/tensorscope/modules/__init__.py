@@ -3,6 +3,6 @@
 from __future__ import annotations
 
 from .base import ModuleRegistry, ViewPresetModule
+from .event_explorer import EventExplorerModule
 
-__all__ = ["ModuleRegistry", "ViewPresetModule"]
-
+__all__ = ["EventExplorerModule", "ModuleRegistry", "ViewPresetModule"]

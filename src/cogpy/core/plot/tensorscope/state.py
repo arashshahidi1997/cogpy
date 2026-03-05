@@ -317,6 +317,95 @@ class TensorScopeState(param.Parameterized):
             pass
         self.event_registry.register(stream)
 
+    def register_event_catalog(self, name: str, catalog: Any, *, style: Any | None = None) -> None:
+        """
+        Register an EventCatalog as a TensorScope EventStream.
+
+        This is an additive convenience bridge for v2.6.x detector workflows.
+
+        Parameters
+        ----------
+        name
+            Name under which the event stream will be registered.
+        catalog
+            `cogpy.core.events.EventCatalog` instance.
+        style
+            Optional EventStyle or dict of EventStyle fields.
+        """
+        from cogpy.core.events import EventCatalog
+
+        if not isinstance(catalog, EventCatalog):
+            raise TypeError(f"catalog must be an EventCatalog, got {type(catalog)!r}")
+
+        stream = catalog.to_event_stream(style=style)
+        self.register_events(str(name), stream)
+
+    def run_detector(
+        self,
+        detector: Any,
+        *,
+        signal_id: str | None = None,
+        event_type: str = "events",
+        transform_result: Any | None = None,
+        style: Any | None = None,
+    ):
+        """
+        Run an EventDetector and register its results as an event stream.
+
+        Parameters
+        ----------
+        detector
+            Detector instance (e.g. `cogpy.core.detect.BurstDetector`).
+        signal_id
+            Which signal to run detection on. If None, uses the active signal.
+        event_type
+            Name to register detected events under.
+        transform_result
+            Optional pre-computed transform to pass to the detector (e.g. spectrogram).
+            If provided, `signal_id` is only used for provenance/selection.
+        style
+            Optional EventStyle or dict of EventStyle fields for visualization.
+
+        Returns
+        -------
+        EventCatalog
+            Detected events.
+        """
+        from cogpy.core.events import EventCatalog
+
+        if self.signal_registry is None:
+            raise RuntimeError("signal_registry is not initialized")
+
+        signal = None
+        if signal_id is None:
+            signal = self.signal_registry.get_active()
+        else:
+            signal = self.signal_registry.get(str(signal_id))
+            if signal is None:
+                # Allow lookup by human-readable signal name as a convenience.
+                try:
+                    for _sid, sig in self.signal_registry.signals.items():
+                        if getattr(sig, "name", None) == signal_id:
+                            signal = sig
+                            break
+                except Exception:  # noqa: BLE001
+                    signal = None
+
+        if signal is None and transform_result is None:
+            raise ValueError(f"Signal {signal_id!r} not found and no transform_result provided")
+
+        data = transform_result if transform_result is not None else signal.data
+
+        catalog = detector.detect(data)
+        if not isinstance(catalog, EventCatalog):
+            raise TypeError(
+                "detector.detect(...) must return an EventCatalog for TensorScope integration; "
+                f"got {type(catalog)!r}"
+            )
+
+        self.register_event_catalog(event_type, catalog, style=style)
+        return catalog
+
     def jump_to_event(self, stream_name: str, event_id) -> None:
         """Jump to specific event by ID."""
         if self.event_registry is None:
