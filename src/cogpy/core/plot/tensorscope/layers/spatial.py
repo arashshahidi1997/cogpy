@@ -16,6 +16,9 @@ class SpatialMapLayer(TensorLayer):
         mode: str = "instantaneous",
         window_s: float = 0.1,
         colormap: str = "rdbu_r",
+        style: str = "image",
+        width: int = 400,
+        height: int = 400,
     ):
         super().__init__(state)
         self.layer_id = "spatial_map"
@@ -36,6 +39,9 @@ class SpatialMapLayer(TensorLayer):
                 colormap=colormap,
                 symmetric=(mode_s == "instantaneous"),
                 title=self.title,
+                style=str(style),
+                width=int(width),
+                height=int(height),
             )
         )
 

@@ -166,14 +166,23 @@ class TensorScopeApp:
         layer = self.layer_manager.add(layer_id, instance_id)
         iid = getattr(layer, "instance_id", instance_id or layer_id)
 
-        header = BLUE if layer_id in {"timeseries", "spatial_map"} else TEAL
-        panel = pn.Card(
-            layer.panel(),
-            title=getattr(layer, "title", layer_id),
-            header_background=header,
-            styles={"background": BG_PANEL},
-            sizing_mode="stretch_both",
-        )
+        preset = str(getattr(self.layout_manager, "current_preset", "default"))
+        if (layer_id == "navigator") and (preset == "psd_explorer"):
+            # Render navigation as a bottom bar (not a card) for the PSD explorer layout.
+            panel = pn.Row(
+                layer.panel(),
+                sizing_mode="stretch_width",
+                styles={"background": BG_PANEL, "padding": "8px", "border-radius": "6px"},
+            )
+        else:
+            header = BLUE if layer_id in {"timeseries", "spatial_map"} else TEAL
+            panel = pn.Card(
+                layer.panel(),
+                title=getattr(layer, "title", layer_id),
+                header_background=header,
+                styles={"background": BG_PANEL},
+                sizing_mode="stretch_both",
+            )
 
         self._panels[str(iid)] = panel
         return self
@@ -196,7 +205,19 @@ class TensorScopeApp:
         sidebar_ids = self.layout_manager.sidebar_panels_for(preset)
         sidebar_widgets = [self._panels[i] for i in sidebar_ids if i in self._panels]
 
-        template = self.layout_manager.build_template(sidebar=sidebar_widgets)
+        if str(preset) == "psd_explorer":
+            # Reduce sidebar clutter for PSD Explorer by grouping controls into tabs.
+            sidebar_map = {i: self._panels[i] for i in sidebar_ids if i in self._panels}
+            tabs = pn.Tabs(
+                ("Selection", pn.Column(sidebar_map.get("selector"), sizing_mode="stretch_width")),
+                ("Processing", pn.Column(sidebar_map.get("processing"), sizing_mode="stretch_width")),
+                ("PSD", pn.Column(sidebar_map.get("psd_settings"), sizing_mode="stretch_width")),
+                dynamic=True,
+                sizing_mode="stretch_width",
+            )
+            template = self.layout_manager.build_template(sidebar=[tabs])
+        else:
+            template = self.layout_manager.build_template(sidebar=sidebar_widgets)
         self.layout_manager.apply_preset(preset, self._panels)
         return template
 

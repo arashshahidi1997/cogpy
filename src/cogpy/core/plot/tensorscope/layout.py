@@ -67,12 +67,15 @@ class LayoutManager:
             ),
             "psd_explorer": LayoutPreset(
                 name="psd_explorer",
-                description="Basic views + PSD explorer panel",
+                description="PSD analysis with timeseries and spatial views",
                 grid_assignments={
-                    "spatial_map": (0, 5, 0, 4),
-                    "navigator": (0, 5, 4, 12),
-                    "timeseries": (5, 10, 0, 12),
-                    "psd_explorer": (10, 18, 0, 12),
+                    # Top row: timeseries (left ~60%) + spatial LFP (right ~40%).
+                    "timeseries": (0, 9, 0, 7),
+                    "spatial_map": (0, 9, 7, 12),
+                    # Bottom row: PSD panel.
+                    "psd_explorer": (9, 14, 0, 12),
+                    # Footer: time navigation.
+                    "navigator": (14, 16, 0, 12),
                 },
                 sidebar_panels=["selector", "processing", "psd_settings"],
             ),

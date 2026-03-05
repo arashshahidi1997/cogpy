@@ -338,9 +338,9 @@ class ProcessingChain(param.Parameterized):
         )
 
         bp_chk = pn.widgets.Checkbox.from_param(self.param.bandpass_on, name="Bandpass")
-        bp_lo = pn.widgets.FloatInput.from_param(self.param.bandpass_lo, name="Lo (Hz)", width=110)
-        bp_hi = pn.widgets.FloatInput.from_param(self.param.bandpass_hi, name="Hi (Hz)", width=110)
-        bp_ord = pn.widgets.IntInput.from_param(self.param.bandpass_order, name="Order", width=110)
+        bp_lo = pn.widgets.FloatInput.from_param(self.param.bandpass_lo, name="Lo (Hz)", width=140)
+        bp_hi = pn.widgets.FloatInput.from_param(self.param.bandpass_hi, name="Hi (Hz)", width=140)
+        bp_ord = pn.widgets.IntInput.from_param(self.param.bandpass_order, name="Order", width=140)
         self._bp_group = pn.Column(
             pn.GridBox(bp_lo, bp_hi, ncols=2),
             bp_ord,
@@ -365,7 +365,7 @@ class ProcessingChain(param.Parameterized):
         notch_freqs_input = pn.widgets.TextInput(
             name="Frequencies (Hz, comma-separated)",
             value=",".join(str(float(f)) for f in (self.notch_freqs or [])),
-            width=250,
+            width=320,
             placeholder="60.0, 120.0, 180.0",
         )
 
@@ -380,15 +380,15 @@ class ProcessingChain(param.Parameterized):
         notch_freqs_input.param.watch(_update_notch_freqs, "value")
 
         notch_fund = pn.widgets.FloatInput.from_param(
-            self.param.notch_fundamental, name="Fundamental (Hz)", width=150
+            self.param.notch_fundamental, name="Fundamental (Hz)", width=180
         )
         notch_harm = pn.widgets.IntSlider.from_param(
-            self.param.notch_harmonics, name="N harmonics", width=200
+            self.param.notch_harmonics, name="N harmonics", width=220
         )
         notch_q_slider = pn.widgets.FloatSlider.from_param(
             self.param.notch_q,
             name="Q factor (narrowness)",
-            width=200,
+            width=220,
             start=1.0,
             end=100.0,
             step=1.0,
@@ -418,7 +418,7 @@ class ProcessingChain(param.Parameterized):
             self.param.spatial_median_on, name="Spatial median"
         )
         spat_size = pn.widgets.IntSlider.from_param(
-            self.param.spatial_median_size, name="Kernel size"
+            self.param.spatial_median_size, name="Kernel size", width=320
         )
         if not self._is_grid:
             spat_chk.disabled = True
@@ -455,18 +455,23 @@ class ProcessingChain(param.Parameterized):
         self._controls_view = pn.Column(
             pn.pane.Markdown("**Reference**"),
             cmr_chk,
+            pn.Spacer(height=8),
             pn.pane.Markdown("**Temporal filter**"),
             bp_chk,
             bp_visible,
+            pn.Spacer(height=8),
             pn.pane.Markdown("**Notch filter**"),
             notch_chk,
             notch_visible,
+            pn.Spacer(height=8),
             pn.pane.Markdown("**Spatial filter (grid only)**"),
             spat_chk,
             spat_visible,
+            pn.Spacer(height=8),
             pn.pane.Markdown("**Normalization**"),
             z_chk,
             zrob_visible,
+            sizing_mode="stretch_width",
         )
         return self._controls_view
 

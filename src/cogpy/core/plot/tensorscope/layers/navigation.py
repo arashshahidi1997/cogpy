@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import panel as pn
+
 from cogpy.core.plot.time_player import PlayerWithRealTime
 
 from .base import TensorLayer
@@ -29,6 +31,23 @@ class TimeNavigatorLayer(TensorLayer):
 
     def panel(self):
         if self._panel is None:
-            self._panel = self._player.view
-        return self._panel
+            jump_btn = pn.widgets.Button(name="Jump to selected time", button_type="primary", width=180)
 
+            def _jump(_event=None) -> None:
+                t = getattr(self.state, "current_time", None)
+                if t is None:
+                    return
+                try:
+                    self._player.t_player.value = float(t)
+                except Exception:  # noqa: BLE001
+                    pass
+
+            jump_btn.on_click(_jump)
+
+            self._panel = pn.Row(
+                self._player.view,
+                pn.Spacer(width=12),
+                jump_btn,
+                sizing_mode="stretch_width",
+            )
+        return self._panel

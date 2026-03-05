@@ -11,151 +11,13 @@ PSD Explorer is an *add-on* to the existing TensorScope app:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import numpy as np
 import panel as pn
-import param
 
 from cogpy.core.plot.tensorscope.data.alignment import find_nearest_time_index
 
 from .base import TensorLayer
-
-
-class PSDSettings(param.Parameterized):
-    """PSD parameters shared between the sidebar controls and PSD views."""
-
-    window_size = param.Number(default=1.0, bounds=(0.01, 60.0), doc="Window size (s)")
-    nperseg = param.Integer(default=256, bounds=(16, 8192), doc="FFT size (Welch)")
-    method = param.ObjectSelector(default="welch", objects=["welch", "multitaper"])
-    db = param.Boolean(default=False, doc="Display PSD in dB")
-    freq_min = param.Number(default=0.0, bounds=(0.0, 500.0), doc="Min frequency (Hz)")
-    freq_max = param.Number(default=150.0, bounds=(0.0, 500.0), doc="Max frequency (Hz)")
-    freq = param.Number(default=40.0, bounds=(0.0, 500.0), doc="Selected frequency (Hz)")
-
-
-def _ensure_psd_settings(state) -> PSDSettings:
-    settings = getattr(state, "psd_settings", None)
-    if isinstance(settings, PSDSettings):
-        return settings
-
-    settings = PSDSettings(name="psd_settings")
-    try:
-        setattr(state, "psd_settings", settings)
-    except Exception:  # noqa: BLE001
-        pass
-    return settings
-
-
-def _fs_from_signal(sig) -> float:
-    try:
-        fs = float(getattr(sig, "attrs", {}).get("fs", 1.0) or 1.0)
-    except Exception:  # noqa: BLE001
-        fs = 1.0
-    return fs if np.isfinite(fs) and fs > 0 else 1.0
-
-
-@dataclass(frozen=True, slots=True)
-class _PsdCacheKey:
-    time: float
-    tick: int
-
-
-class PSDSettingsLayer(TensorLayer):
-    """Sidebar controls for PSD settings."""
-
-    def __init__(self, state):
-        super().__init__(state)
-        self.layer_id = "psd_settings"
-        self.title = "PSD Settings"
-        self.settings = _ensure_psd_settings(state)
-
-    def panel(self) -> pn.viewable.Viewable:
-        if self._panel is not None:
-            return self._panel
-
-        sig = (
-            self.state.signal_registry.get_active()
-            if getattr(self.state, "signal_registry", None) is not None
-            else None
-        )
-        fs = _fs_from_signal(getattr(sig, "data", None) if sig is not None else None)
-        fmax = max(1.0, fs / 2.0)
-        fmax_default = float(min(150.0, fmax))
-        for pname in ("freq", "freq_min", "freq_max"):
-            try:
-                self.settings.param[pname].bounds = (0.0, float(fmax))
-            except Exception:  # noqa: BLE001
-                pass
-
-        if float(self.settings.freq_max) > fmax_default:
-            self.settings.freq_max = fmax_default
-        if float(self.settings.freq) > float(self.settings.freq_max):
-            self.settings.freq = float(self.settings.freq_max)
-
-        window_size_w = pn.widgets.FloatInput.from_param(
-            self.settings.param.window_size, name="Window (s)", width=220
-        )
-        nperseg_w = pn.widgets.IntInput.from_param(self.settings.param.nperseg, name="FFT", width=220)
-        method_w = pn.widgets.Select.from_param(self.settings.param.method, name="Method", width=220)
-        db_w = pn.widgets.Checkbox.from_param(self.settings.param.db, name="dB scale", width=220)
-
-        freq_min_w = pn.widgets.FloatInput.from_param(
-            self.settings.param.freq_min, name="Freq min (Hz)", width=105
-        )
-        freq_max_w = pn.widgets.FloatInput.from_param(
-            self.settings.param.freq_max, name="Freq max (Hz)", width=105
-        )
-
-        freq_slider = pn.widgets.FloatSlider.from_param(
-            self.settings.param.freq,
-            name="Freq (Hz)",
-            width=220,
-            step=0.5,
-        )
-        freq_input = pn.widgets.FloatInput.from_param(
-            self.settings.param.freq,
-            name="Freq (Hz)",
-            width=220,
-        )
-
-        def _clamp_range(_event=None) -> None:
-            lo = float(self.settings.freq_min)
-            hi = float(self.settings.freq_max)
-            if not np.isfinite(lo):
-                lo = 0.0
-            if not np.isfinite(hi):
-                hi = float(fmax_default)
-            if hi < lo:
-                hi = lo
-            self.settings.freq_min = lo
-            self.settings.freq_max = hi
-            try:
-                self.settings.param["freq"].bounds = (float(lo), float(hi))
-            except Exception:  # noqa: BLE001
-                pass
-            if float(self.settings.freq) < lo:
-                self.settings.freq = lo
-            if float(self.settings.freq) > hi:
-                self.settings.freq = hi
-
-        self._watch(self.settings, lambda _e: _clamp_range(), ["freq_min", "freq_max"])
-        _clamp_range()
-
-        self._panel = pn.Column(
-            pn.pane.Markdown("### PSD Settings"),
-            window_size_w,
-            nperseg_w,
-            method_w,
-            db_w,
-            pn.layout.Divider(),
-            pn.Row(freq_min_w, freq_max_w),
-            freq_slider,
-            freq_input,
-            sizing_mode="stretch_width",
-        )
-        return self._panel
-
+from .psd_settings import PSDSettings, _ensure_psd_settings
 
 class PSDExplorerLayer(TensorLayer):
     """PSD views (heatmap + average curve + spatial PSD map)."""
@@ -203,7 +65,11 @@ class PSDExplorerLayer(TensorLayer):
         def _bump_refresh(_e=None) -> None:
             refresh_stream.event(tick=int(refresh_stream.tick) + 1)
 
-        self._watch(self.settings, lambda _e: _bump_refresh(), ["window_size", "nperseg", "method", "db"])
+        self._watch(
+            self.settings,
+            lambda _e: _bump_refresh(),
+            ["window_size", "method", "db", "nperseg", "noverlap", "bandwidth", "freq_min", "freq_max"],
+        )
 
         chain = getattr(self.state, "processing", None)
         if chain is not None and hasattr(chain, "param"):
@@ -228,7 +94,7 @@ class PSDExplorerLayer(TensorLayer):
         psd_cache: dict[str, object] = {"key": None, "psd": None}
 
         def _compute_psd(time: float, tick: int):
-            key = _PsdCacheKey(time=float(time), tick=int(tick))
+            key = (float(time), int(tick))
             if psd_cache["key"] == key and psd_cache["psd"] is not None:
                 return psd_cache["psd"]
 
@@ -246,6 +112,8 @@ class PSDExplorerLayer(TensorLayer):
                 axis="time",
                 method=str(self.settings.method),  # type: ignore[arg-type]
                 nperseg=int(self.settings.nperseg),
+                noverlap=int(self.settings.noverlap) if str(self.settings.method) == "welch" else None,
+                bandwidth=float(self.settings.bandwidth),
                 fmin=float(self.settings.freq_min),
                 fmax=float(self.settings.freq_max),
             )
@@ -298,21 +166,27 @@ class PSDExplorerLayer(TensorLayer):
             y = np.asarray(mu.values, dtype=float)
             s = np.asarray(sd.values, dtype=float)
 
-            curve = hv.Curve((f, y), kdims=["freq"], vdims=["power"]).opts(color="#2a6fdb", line_width=2)
-            band = hv.Area((f, y - s, y + s), kdims=["freq"], vdims=["lower", "upper"]).opts(
-                color="#2a6fdb", alpha=0.2, line_width=0
+            curve = hv.Curve((y, f), kdims=["power"], vdims=["freq"]).opts(color="#2a6fdb", line_width=2)
+            xs = np.concatenate([y - s, (y + s)[::-1]])
+            ys = np.concatenate([f, f[::-1]])
+            band = hv.Polygons([{"power": xs, "freq": ys}], kdims=["power", "freq"]).opts(
+                fill_color="#2a6fdb",
+                fill_alpha=0.2,
+                line_width=0,
+            )
+            base = (band * curve).opts(
+                width=280,
+                height=420,
+                tools=["hover"],
+                xlabel="Power (dB)" if bool(self.settings.db) else "Power",
+                ylabel="Frequency (Hz)",
+                title="Average PSD",
+                ylim=(float(self.settings.freq_min), float(self.settings.freq_max)),
+                framewise=True,
             )
             f_sel = float(freq) if freq is not None else float(self.settings.freq)
-            vline = hv.VLine(f_sel).opts(color="#ffcc00", alpha=0.9, line_width=2)
-            return (band * curve * vline).opts(
-                width=520,
-                height=280,
-                tools=["hover"],
-                xlabel="Frequency (Hz)",
-                ylabel="Power (dB)" if bool(self.settings.db) else "Power",
-                title="Average PSD",
-                xlim=(float(self.settings.freq_min), float(self.settings.freq_max)),
-            )
+            hline = hv.HLine(f_sel).opts(color="#ffcc00", alpha=0.9, line_width=2, line_dash="dashed")
+            return base * hline
 
         def _spatial_psd(time=None, freq=None, AP=None, ML=None, tick=None):
             psd = _compute_psd(float(time), int(tick))
@@ -352,8 +226,8 @@ class PSDExplorerLayer(TensorLayer):
             ml_i = np.arange(len(ml_u), dtype=int)
 
             img = hv.Image((ml_i, ap_i, z), kdims=["ML", "AP"], vdims=["power"]).opts(
-                width=420,
-                height=420,
+                width=400,
+                height=400,
                 cmap="hot",
                 colorbar=True,
                 xlabel="ML (index)",
@@ -361,15 +235,9 @@ class PSDExplorerLayer(TensorLayer):
                 title=f"Spatial power @ {f_actual:.1f} Hz",
                 tools=["hover"],
                 aspect="equal",
+                data_aspect=1,
+                invert_yaxis=True,
             )
-
-            ap_sel = AP if AP is not None else getattr(self.state.spatial_space, "get_selection", lambda _d: None)("AP")
-            ml_sel = ML if ML is not None else getattr(self.state.spatial_space, "get_selection", lambda _d: None)("ML")
-            if ap_sel is not None and ml_sel is not None:
-                marker = hv.Points([(float(ml_sel), float(ap_sel))], kdims=["ML", "AP"]).opts(
-                    color="#00ffff", marker="x", size=14, line_width=3
-                )
-                return img * marker
             return img
 
         heatmap_view = hv.DynamicMap(_heatmap, streams=[time_stream, refresh_stream])
@@ -378,30 +246,45 @@ class PSDExplorerLayer(TensorLayer):
 
         heatmap_card = pn.Card(
             pn.pane.HoloViews(heatmap_view, sizing_mode="fixed", width=520, height=420),
-            title="PSD Heatmap",
+            title="PSD Heatmap (freq × channel)",
             sizing_mode="fixed",
-            min_width=540,
+            min_width=560,
+            min_height=480,
+        )
+        avg_card = pn.Card(
+            pn.pane.HoloViews(avg_view, sizing_mode="fixed", width=280, height=420),
+            title="Average PSD (power × freq)",
+            sizing_mode="fixed",
+            min_width=320,
             min_height=480,
         )
         spatial_card = pn.Card(
-            pn.pane.HoloViews(spatial_view, sizing_mode="fixed", width=420, height=420),
-            title="Spatial PSD",
+            pn.pane.HoloViews(spatial_view, sizing_mode="fixed", width=400, height=400),
+            title="Spatial PSD @ freq",
             sizing_mode="fixed",
             min_width=440,
             min_height=480,
         )
-        avg_card = pn.Card(
-            pn.pane.HoloViews(avg_view, sizing_mode="fixed", width=520, height=280),
-            title="Average PSD",
-            sizing_mode="fixed",
-            min_width=540,
-            min_height=340,
+
+        quick_db = pn.widgets.Checkbox.from_param(self.settings.param.db, name="dB", width=60)
+        quick_freq = pn.widgets.FloatSlider.from_param(
+            self.settings.param.freq,
+            name="Freq (Hz)",
+            width=260,
+            step=0.5,
+        )
+
+        header = pn.Row(
+            pn.pane.Markdown("## PSD Explorer"),
+            pn.Spacer(),
+            quick_db,
+            quick_freq,
+            sizing_mode="stretch_width",
         )
 
         self._panel = pn.Column(
-            pn.pane.Markdown("## PSD Explorer"),
-            pn.Row(heatmap_card, spatial_card, sizing_mode="fixed"),
-            avg_card,
+            header,
+            pn.Row(heatmap_card, avg_card, spatial_card, sizing_mode="fixed"),
             sizing_mode="fixed",
         )
         return self._panel

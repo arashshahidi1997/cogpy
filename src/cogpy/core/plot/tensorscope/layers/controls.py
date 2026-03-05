@@ -21,11 +21,9 @@ class ChannelSelectorLayer(TensorLayer):
 
     def panel(self):
         if self._panel is None:
-            self._panel = pn.Card(
-                self._widget.panel(),
-                title=self.title,
-                collapsible=True,
-                collapsed=True,
+            self._panel = pn.Accordion(
+                (self.title, self._widget.panel()),
+                active=[0],
                 sizing_mode="stretch_width",
             )
         return self._panel
