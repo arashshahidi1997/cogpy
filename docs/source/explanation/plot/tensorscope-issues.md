@@ -3,6 +3,7 @@
 This document tracks known issues, Panel/HoloViews quirks, and their solutions.
 
 > For environment/runtime setup commands, see [tensorscope-runtime.md](tensorscope-runtime.md).
+> For fast orientation + current debugging context, see [TensorScope Context Snapshot](tensorscope-context/index.md).
 
 ---
 

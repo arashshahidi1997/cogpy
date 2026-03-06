@@ -2011,7 +2011,7 @@ def ultra_fast_but_unreadable_code():
 **Fix:** Measure first, optimize second
 
 ### ❌ Testing Implementation
-```python
+```pycthon
 assert obj._internal_count == 5  # Fragile!
 ```
 **Fix:** Test observable behavior

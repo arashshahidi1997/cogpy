@@ -3,6 +3,8 @@
 This guide is for developers extending TensorScope or contributing layers,
 modalities, and tooling.
 
+Start here for fast orientation (version-agnostic): [TensorScope Context Snapshot](tensorscope-context/index.md)
+
 ## Architecture (v1.0)
 
 Core components:
@@ -140,4 +142,3 @@ Avoid:
 3. Run unit tests + optional benchmarks
 4. Validate session serialization round-trip
 5. Add CLI entry point
-
