@@ -1,29 +1,16 @@
-"""TensorScope - Signal-centric neurophysiology visualization."""
+"""TensorScope - Tensor-centric neurophysiology visualization (v3.0)."""
 
 from __future__ import annotations
 
 from .app import TensorScopeApp
-from .layout_persistence import load_layout, save_layout
-from .modules import ModuleRegistry, ViewPresetModule
-from .signal import SignalObject, SignalRegistry
-from .state import TensorScopeState
-from .ui import ModuleSelectorLayer, ViewBuilderLayer
-from .view_factory import ViewFactory
-from .view_spec import ViewSpec
+from .state import SelectionState, TensorNode, TensorRegistry, TensorScopeState
 
 __all__ = [
+    "TensorNode",
+    "TensorRegistry",
+    "SelectionState",
     "TensorScopeState",
     "TensorScopeApp",
-    "SignalObject",
-    "SignalRegistry",
-    "ViewSpec",
-    "ViewFactory",
-    "ModuleRegistry",
-    "ViewPresetModule",
-    "ViewBuilderLayer",
-    "ModuleSelectorLayer",
-    "save_layout",
-    "load_layout",
 ]
 
-__version__ = "0.6.0"  # Signal-centric refactor
+__version__ = "3.0.0"

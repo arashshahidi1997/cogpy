@@ -1,166 +1,154 @@
-"""Tests for TensorScopeState."""
+"""Tests for TensorScope v3 state."""
 
-from __future__ import annotations
+import numpy as np
+import pytest
+import xarray as xr
 
-def test_state_initialization(small_ieeg):
-    """Test TensorScopeState initialization with valid data."""
-
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    assert state.time_hair is not None
-    assert state.time_window is not None
-    assert state.channel_grid is not None
-    assert state.processing is not None
-
-    assert state.data_registry is not None
-    assert state.event_registry is not None
-
-    assert "grid_lfp" in state.data_registry.list()
+from cogpy.core.plot.tensorscope.state import (
+    SelectionState,
+    TensorNode,
+    TensorRegistry,
+    TensorScopeState,
+)
 
 
-def test_state_delegation_current_time(small_ieeg):
-    """Test current_time delegates to TimeHair."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    state.current_time = 5.3
-    assert state.time_hair.t == 5.3
-    assert state.current_time == 5.3
-
-
-def test_state_delegation_selection(small_ieeg):
-    """Test selection delegates to ChannelGrid."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    state.channel_grid.select_cell(2, 3)
-    assert (2, 3) in state.selected_channels
-
-
-def test_state_serialization_roundtrip(small_ieeg):
-    """Test state can be serialized and restored."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-    state.current_time = 5.3
-    state.channel_grid.select_cell(1, 1)
-    state.channel_grid.select_cell(2, 2)
-
-    state_dict = state.to_dict()
-
-    assert state_dict["version"] == "1.0"
-    assert state_dict["current_time"] == 5.3
-    assert len(state_dict["selected_channels"]) == 2
-
-    state2 = TensorScopeState.from_dict(state_dict, data_resolver=lambda: small_ieeg)
-
-    assert state2.current_time == 5.3
-    assert len(state2.selected_channels) == 2
-    assert (1, 1) in state2.selected_channels
-    assert (2, 2) in state2.selected_channels
-
-
-def test_state_signal_registry(small_ieeg):
-    """Test state initializes signal registry."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    assert state.signal_registry is not None
-    assert len(state.signal_registry.list()) == 1
-
-    active = state.signal_registry.get_active()
-    assert active is not None
-    assert active.name == "Raw LFP"
-    assert active.metadata.get("is_base") is True
-
-
-def test_state_create_derived_signal(small_ieeg):
-    """Test state.create_derived_signal()."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    base_id = state.signal_registry.list()[0]
-    hg_id = state.create_derived_signal(
-        base_id,
-        "High Gamma",
-        {"bandpass_on": True, "bandpass_lo": 70.0, "bandpass_hi": 150.0},
-    )
-
-    hg_signal = state.signal_registry.get(hg_id)
-    assert hg_signal is not None
-    assert hg_signal.name == "High Gamma"
-    assert hg_signal.processing.bandpass_on is True
-    assert float(hg_signal.processing.bandpass_lo) == 70.0
-    assert float(hg_signal.processing.bandpass_hi) == 150.0
-
-
-def test_state_selected_time(small_ieeg):
-    """Test selected_time feature."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    state.time_hair.t = 5.0
-    state.set_selected_time_from_cursor()
-    assert state.selected_time == 5.0
-
-    state.time_hair.t = 7.0
-    assert state.selected_time == 5.0
-
-
-def test_state_legacy_processing_accessor(small_ieeg):
-    """Test legacy state.processing accessor."""
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    state = TensorScopeState(small_ieeg)
-
-    proc = state.processing
-    assert proc is not None
-    assert proc is state.signal_registry.get_active().processing
-
-
-def test_state_rejects_invalid_data():
-    """Test state validates data schema on init."""
-    import numpy as np
-    import pytest
-    import xarray as xr
-
-    from cogpy.core.plot.tensorscope import TensorScopeState
-    from cogpy.core.plot.tensorscope.schema import SchemaError
-
-    bad_data = xr.DataArray(
-        np.random.randn(100, 8),
-        dims=("time", "channel"),
-    )
-
-    with pytest.raises(SchemaError, match="must have dimensions"):
-        TensorScopeState(bad_data)
-
-
-def test_state_normalizes_dimension_order():
-    """Test state corrects dimension order."""
-    import numpy as np
-    import xarray as xr
-
-    from cogpy.core.plot.tensorscope import TensorScopeState
-
-    data = xr.DataArray(
-        np.random.randn(100, 8, 8),
-        dims=("time", "ML", "AP"),
+@pytest.fixture
+def sample_signal():
+    """Create sample signal tensor (time, AP, ML)."""
+    rng = np.random.default_rng(0)
+    return xr.DataArray(
+        rng.standard_normal((100, 8, 8)),
+        dims=("time", "AP", "ML"),
         coords={
-            "time": np.arange(100),
-            "ML": np.arange(8),
+            "time": np.arange(100) / 10.0,
             "AP": np.arange(8),
+            "ML": np.arange(8),
         },
     )
 
-    state = TensorScopeState(data)
 
-    modality = state.data_registry.get("grid_lfp")
-    assert modality.data.dims == ("time", "AP", "ML")
+def test_tensor_node_creation(sample_signal):
+    """Test TensorNode creation."""
+    node = TensorNode(
+        name="signal",
+        data=sample_signal,
+        source=None,
+        transform="signal",
+        params={},
+    )
+
+    assert node.name == "signal"
+    assert node.dims == ("time", "AP", "ML")
+    assert node.shape == (100, 8, 8)
+    assert node.source is None
+
+
+def test_tensor_node_lineage(sample_signal):
+    """Test lineage strings."""
+    signal_node = TensorNode(name="signal", data=sample_signal)
+    assert signal_node.lineage_str() == "signal (original)"
+
+    psd_node = TensorNode(
+        name="psd",
+        data=sample_signal,
+        source="signal",
+        transform="psd",
+        params={"nperseg": 256},
+    )
+    assert "psd" in psd_node.lineage_str()
+    assert "signal" in psd_node.lineage_str()
+
+
+def test_tensor_registry(sample_signal):
+    """Test tensor registry operations."""
+    registry = TensorRegistry()
+
+    node = TensorNode(name="signal", data=sample_signal)
+    registry.add(node)
+
+    assert "signal" in registry
+    assert len(registry) == 1
+    assert registry.list() == ["signal"]
+
+    retrieved = registry.get("signal")
+    assert retrieved.name == "signal"
+
+
+def test_tensor_registry_duplicate_error(sample_signal):
+    """Test error on duplicate names."""
+    registry = TensorRegistry()
+
+    node = TensorNode(name="signal", data=sample_signal)
+    registry.add(node)
+
+    with pytest.raises(ValueError, match="already registered"):
+        registry.add(node)
+
+
+def test_tensor_registry_missing_error():
+    """Test error on missing tensor."""
+    registry = TensorRegistry()
+
+    with pytest.raises(KeyError, match="not found"):
+        registry.get("nonexistent")
+
+
+def test_selection_state():
+    """Test SelectionState."""
+    selection = SelectionState()
+
+    assert selection.time == 0.0
+    assert selection.freq == 0.0
+    assert selection.ap == 0
+    assert selection.ml == 0
+
+    selection.time = 5.0
+    assert selection.time == 5.0
+
+    selection.update(freq=40.0, ap=8, ml=6)
+    assert selection.freq == 40.0
+    assert selection.ap == 8
+    assert selection.ml == 6
+
+
+def test_tensorscope_state(sample_signal):
+    """Test TensorScopeState."""
+    state = TensorScopeState()
+
+    node = TensorNode(name="signal", data=sample_signal)
+    state.tensors.add(node)
+
+    state.set_active_tensor("signal")
+    assert state.active_tensor == "signal"
+
+    active = state.get_active_node()
+    assert active.name == "signal"
+
+    state.update_selection(time=7.5, ap=8)
+    assert state.selection.time == 7.5
+    assert state.selection.ap == 8
+
+
+def test_tensorscope_state_invalid_active():
+    """Test error setting invalid active tensor."""
+    state = TensorScopeState()
+
+    with pytest.raises(ValueError, match="not in registry"):
+        state.set_active_tensor("nonexistent")
+
+
+def test_selection_state_reactivity():
+    """Test SelectionState param reactivity."""
+    selection = SelectionState()
+
+    changes = []
+
+    def on_change(event):
+        changes.append(event.new)
+
+    selection.param.watch(on_change, "time")
+    selection.time = 5.0
+
+    assert len(changes) == 1
+    assert changes[0] == 5.0
+

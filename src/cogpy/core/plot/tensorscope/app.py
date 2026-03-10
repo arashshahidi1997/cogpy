@@ -1,269 +1,180 @@
 """
-TensorScope application shell.
+TensorScope application (v3.0).
 
-Main composition root that owns state, layers, and layout.
+Tensor-centric UI with tabs and an adaptive sidebar.
 """
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
+import numpy as np
 import panel as pn
+import xarray as xr
 
-from cogpy.core.plot.theme import BG_PANEL, BLUE, TEAL
+from .state import TensorNode, TensorScopeState
+from .views import get_available_views
 
-from .layout import LayoutManager
-from .layers.manager import LayerManager, LayerSpec
-from .state import TensorScopeState
-
-if TYPE_CHECKING:
-    import xarray as xr
+__all__ = ["TensorScopeApp"]
 
 
 class TensorScopeApp:
     """
-    TensorScope application composition root.
+    TensorScope application (v3.0).
 
-    Owns:
-    - TensorScopeState (central state)
-    - LayerManager (layer instances)
-    - LayoutManager (UI layout)
+    Features
+    --------
+    - Tensor registry
+    - Tensor tabs
+    - Dimension-based view discovery
+    - Linked selection via `SelectionState`
     """
 
-    def __init__(self, data: Any, title: str = "TensorScope", theme: str = "dark"):
-        self.state = TensorScopeState(data)
-        self.layer_manager = LayerManager(self.state)
-        self.layout_manager = LayoutManager(title=title, theme=theme)
-        self._register_default_layers()
-        self._panels: dict[str, pn.viewable.Viewable] = {}
+    def __init__(self) -> None:
+        self.state = TensorScopeState()
 
-    def _register_default_layers(self) -> None:
-        from .layers import (
-            ChannelSelectorLayer,
-            EventOverlayLayer,
-            EventTableLayer,
-            PSDExplorerLayer,
-            PSDSettingsLayer,
-            ProcessingControlsLayer,
-            SignalManagerLayer,
-            SpatialMapLayer,
-            SpectrogramLayer,
-            TimeseriesLayer,
-            TimeNavigatorLayer,
+    def add_tensor(
+        self,
+        name: str,
+        data: xr.DataArray,
+        *,
+        source: str | None = None,
+        transform: str = "signal",
+        params: dict[str, Any] | None = None,
+    ) -> None:
+        node = TensorNode(
+            name=str(name),
+            data=data,
+            source=None if source is None else str(source),
+            transform=str(transform),
+            params={} if params is None else dict(params),
+        )
+        self.state.tensors.add(node)
+
+    def add_psd_tensor(
+        self,
+        name: str,
+        *,
+        source: str,
+        window: float = 1.0,
+        nperseg: int = 256,
+        method: str = "welch",
+    ) -> None:
+        from cogpy.core.spectral.psd_utils import compute_psd_window
+
+        src = self.state.tensors.get(source)
+        psd = compute_psd_window(
+            src.data,
+            t_center=float(self.state.selection.time),
+            window_size=float(window),
+            nperseg=int(nperseg),
+            method=str(method),
         )
 
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="timeseries",
-                title="Timeseries",
-                factory=lambda s: TimeseriesLayer(s),
-                description="Stacked timeseries traces",
-                layer_type="timeseries",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="spatial_map",
-                title="Spatial Map",
-                factory=lambda s: SpatialMapLayer(s),
-                description="Time-linked spatial scalar map",
-                layer_type="spatial",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="selector",
-                title="Channel Selector",
-                factory=lambda s: ChannelSelectorLayer(s),
-                description="Interactive channel grid selection",
-                layer_type="controls",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="processing",
-                title="Processing",
-                factory=lambda s: ProcessingControlsLayer(s),
-                description="Transform controls",
-                layer_type="controls",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="signal_manager",
-                title="Signal Manager",
-                factory=lambda s: SignalManagerLayer(s),
-                description="Manage signal objects and processing pipelines",
-                layer_type="controls",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="psd_settings",
-                title="PSD Settings",
-                factory=lambda s: PSDSettingsLayer(s),
-                description="PSD controls (window/FFT/method/frequency)",
-                layer_type="controls",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="navigator",
-                title="Time Navigator",
-                factory=lambda s: TimeNavigatorLayer(s),
-                description="Play/pause/step controls",
-                layer_type="navigation",
-            )
+        # Canonicalize dims for view discovery and semantic clarity.
+        if "freq" in psd.dims:
+            spatial = [d for d in ("AP", "ML", "channel") if d in psd.dims]
+            psd = psd.transpose("freq", *spatial)
+
+        self.add_tensor(
+            name=str(name),
+            data=psd,
+            source=str(source),
+            transform="psd",
+            params={"window": float(window), "nperseg": int(nperseg), "method": str(method)},
         )
 
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="psd_explorer",
-                title="PSD Explorer",
-                factory=lambda s: PSDExplorerLayer(s),
-                description="PSD views (heatmap, average curve, spatial PSD map)",
-                layer_type="analysis",
+    def add_spectrogram_tensor(self, name: str, *, source: str, nperseg: int = 256, noverlap: int = 128) -> None:
+        raise NotImplementedError("Spectrogram tensor is deferred (v3.0 only implements signal + PSD).")
+
+    def build(self) -> pn.template.FastListTemplate:
+        pn.extension()
+
+        tensor_names = self.state.tensors.list()
+        if not tensor_names:
+            template = pn.template.FastListTemplate(
+                title="TensorScope v3.0",
+                sidebar=[pn.pane.Markdown("Add tensors via `TensorScopeApp.add_tensor()` before building.")],
+                main=[pn.pane.Markdown("No tensors registered.")],
             )
+            return template
+
+        # Keep active tensor consistent with tabs.
+        if self.state.active_tensor not in self.state.tensors:
+            self.state.active_tensor = tensor_names[0]
+
+        tabs = pn.Tabs(*[(name, self._create_tensor_panel(name)) for name in tensor_names], dynamic=True)
+
+        def _sync_active(_event) -> None:
+            try:
+                idx = int(tabs.active)
+            except Exception:  # noqa: BLE001
+                return
+            if 0 <= idx < len(tensor_names):
+                try:
+                    self.state.set_active_tensor(tensor_names[idx])
+                except Exception:  # noqa: BLE001
+                    pass
+
+        tabs.param.watch(_sync_active, "active")
+
+        template = pn.template.FastListTemplate(
+            title="TensorScope v3.0",
+            sidebar_width=360,
+            sidebar=[self._create_sidebar()],
+            main=[tabs],
         )
-
-        # Phase 5: spectrogram layer (only renders when active_modality == "spectrogram")
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="spectrogram",
-                title="Spectrogram",
-                factory=lambda s: SpectrogramLayer(s),
-                description="Spectrogram heatmap (active when modality is spectrogram)",
-                layer_type="spectrogram",
-            )
-        )
-
-        # Phase 4: event layers (default stream name: "bursts")
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="event_table",
-                title="Event Table",
-                factory=lambda s: EventTableLayer(s, "bursts"),
-                description="Event table with navigation",
-                layer_type="events",
-            )
-        )
-        self.layer_manager.register(
-            LayerSpec(
-                layer_id="event_overlay",
-                title="Event Overlay",
-                factory=lambda s: EventOverlayLayer(s, "bursts"),
-                description="Event markers overlay (placeholder)",
-                layer_type="events",
-            )
-        )
-
-    def add_layer(self, layer_id: str, instance_id: str | None = None) -> "TensorScopeApp":
-        # Default instance_id: use the layer_id itself (so layout presets can
-        # refer to stable panel IDs like "timeseries", "spatial_map", etc.).
-        if instance_id is None and (layer_id not in self._panels) and (self.layer_manager.get(layer_id) is None):
-            instance_id = layer_id
-
-        layer = self.layer_manager.add(layer_id, instance_id)
-        iid = getattr(layer, "instance_id", instance_id or layer_id)
-
-        preset = str(getattr(self.layout_manager, "current_preset", "default"))
-        if (layer_id == "navigator") and (preset == "psd_explorer"):
-            # Render navigation as a bottom bar (not a card) for the PSD explorer layout.
-            panel = pn.Row(
-                layer.panel(),
-                sizing_mode="stretch_width",
-                styles={"background": BG_PANEL, "padding": "8px", "border-radius": "6px"},
-            )
-        else:
-            header = BLUE if layer_id in {"timeseries", "spatial_map"} else TEAL
-            panel = pn.Card(
-                layer.panel(),
-                title=getattr(layer, "title", layer_id),
-                header_background=header,
-                styles={"background": BG_PANEL},
-                sizing_mode="stretch_both",
-            )
-
-        self._panels[str(iid)] = panel
-        return self
-
-    def remove_layer(self, instance_id: str) -> "TensorScopeApp":
-        self.layer_manager.remove(instance_id)
-        self._panels.pop(instance_id, None)
-        return self
-
-    def with_layout(self, preset_name: str) -> "TensorScopeApp":
-        self.layout_manager._current_preset = str(preset_name)
-        try:
-            self.state.active_layout_preset = str(preset_name)
-        except Exception:  # noqa: BLE001
-            pass
-        return self
-
-    def build(self) -> pn.template.FastGridTemplate:
-        preset = self.layout_manager.current_preset
-        sidebar_ids = self.layout_manager.sidebar_panels_for(preset)
-        sidebar_widgets = [self._panels[i] for i in sidebar_ids if i in self._panels]
-
-        if str(preset) == "psd_explorer":
-            # Reduce sidebar clutter for PSD Explorer by grouping controls into tabs.
-            sidebar_map = {i: self._panels[i] for i in sidebar_ids if i in self._panels}
-            tabs = pn.Tabs(
-                ("Selection", pn.Column(sidebar_map.get("selector"), sizing_mode="stretch_width")),
-                ("Processing", pn.Column(sidebar_map.get("processing"), sizing_mode="stretch_width")),
-                ("PSD", pn.Column(sidebar_map.get("psd_settings"), sizing_mode="stretch_width")),
-                dynamic=True,
-                sizing_mode="stretch_width",
-            )
-            template = self.layout_manager.build_template(sidebar=[tabs])
-        else:
-            template = self.layout_manager.build_template(sidebar=sidebar_widgets)
-        self.layout_manager.apply_preset(preset, self._panels)
         return template
 
-    def servable(self) -> pn.template.FastGridTemplate:
-        template = self.build()
-        template.servable()
-        return template
+    def _create_tensor_panel(self, tensor_name: str) -> pn.Row:
+        node = self.state.tensors.get(tensor_name)
+        view_classes = get_available_views(node)
 
-    def shutdown(self) -> None:
-        self.layer_manager.dispose_all()
-        self._panels.clear()
+        if not view_classes:
+            return pn.Row(pn.pane.Markdown(f"No views available for dims: `{node.dims}`"))
 
-    def to_session(self) -> dict[str, Any]:
-        return {
-            "version": "1.0",
-            "state": self.state.to_dict(),
-            "layout": self.layout_manager.to_dict(),
-            # Store layer *types* in order. (Instance IDs are implementation detail.)
-            "layers": list(self.layer_manager.list_instance_types()),
-        }
+        panes: list[pn.viewable.Viewable] = []
 
-    @classmethod
-    def from_session(cls, session: dict[str, Any], *, data_resolver) -> "TensorScopeApp":
-        data = data_resolver()
-        layout_config = session.get("layout", {}) or {}
+        for view_cls in view_classes[:2]:  # fixed layout in v3.0
+            view = view_cls()
 
-        app = cls(
-            data,
-            title=layout_config.get("title", "TensorScope"),
-            theme=layout_config.get("theme", "dark"),
+            def _render(_time, _freq, _ap, _ml, _channel, *, _node=node, _view=view):
+                return _view.render(_node.data, self.state.selection)
+
+            bound = pn.bind(
+                _render,
+                self.state.selection.param.time,
+                self.state.selection.param.freq,
+                self.state.selection.param.ap,
+                self.state.selection.param.ml,
+                self.state.selection.param.channel,
+            )
+            panes.append(pn.pane.HoloViews(bound, sizing_mode="stretch_both"))
+
+        return pn.Row(*panes, sizing_mode="stretch_both")
+
+    def _create_sidebar(self) -> pn.Column:
+        sel = self.state.selection
+
+        # Selection controls (v3.0 minimal): time + freq always visible.
+        time_slider = pn.widgets.FloatSlider.from_param(sel.param.time, name="Time (s)")
+        freq_slider = pn.widgets.FloatSlider.from_param(sel.param.freq, name="Freq (Hz)")
+
+        # Give reasonable default ranges if bounds are open-ended.
+        if time_slider.end is None or not np.isfinite(float(time_slider.end)):  # type: ignore[name-defined]
+            time_slider.start = 0.0
+            time_slider.end = 10.0
+        if freq_slider.end is None or not np.isfinite(float(freq_slider.end)):  # type: ignore[name-defined]
+            freq_slider.start = 0.0
+            freq_slider.end = 150.0
+
+        lineage = pn.bind(lambda _t: f"**Active tensor:** `{self.state.active_tensor}`", sel.param.time)
+        return pn.Column(
+            pn.pane.Markdown("### Tensor Info"),
+            pn.pane.Markdown(lineage),
+            pn.layout.Divider(),
+            pn.pane.Markdown("### Selection"),
+            time_slider,
+            freq_slider,
+            sizing_mode="stretch_width",
         )
-
-        # Restore state (and rebuild managers bound to that restored state).
-        state_dict = session.get("state", {}) or {}
-        app.state = TensorScopeState.from_dict(state_dict, data_resolver=lambda: data)
-        app.layer_manager = LayerManager(app.state)
-        app.layout_manager = LayoutManager.from_dict(layout_config)
-        app._register_default_layers()
-        app._panels = {}
-
-        preset = layout_config.get("current_preset", "default")
-        app.with_layout(preset)
-
-        for layer_type in session.get("layers", []) or []:
-            if not layer_type:
-                continue
-            app.add_layer(str(layer_type))
-
-        return app
