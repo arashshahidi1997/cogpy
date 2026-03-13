@@ -309,3 +309,86 @@ def test_coerce_from_burst_dict():
     assert result.table.loc[0, "t"] == 1.25
     assert result.table.loc[0, "f0"] == 30.0
 
+
+# ---------------------------------------------------------------------------
+# GridWindowedSpectrum validate / coerce
+# ---------------------------------------------------------------------------
+
+class TestGridWindowedSpectrum:
+    """Tests for validate_grid_windowed_spectrum and coerce_grid_windowed_spectrum."""
+
+    @staticmethod
+    def _canonical_da():
+        return xr.DataArray(
+            np.random.default_rng(0).random((10, 4, 8, 64)),
+            dims=("time_win", "AP", "ML", "freq"),
+            coords={
+                "time_win": np.linspace(0, 9, 10),
+                "AP": np.arange(4),
+                "ML": np.arange(8),
+                "freq": np.linspace(1, 200, 64),
+            },
+        )
+
+    def test_validate_canonical_passes(self):
+        from cogpy.datasets.schemas import validate_grid_windowed_spectrum
+
+        da = self._canonical_da()
+        out = validate_grid_windowed_spectrum(da)
+        assert tuple(out.dims) == ("time_win", "AP", "ML", "freq")
+
+    def test_validate_wrong_order_raises(self):
+        from cogpy.datasets.schemas import validate_grid_windowed_spectrum
+
+        da = self._canonical_da().transpose("freq", "time_win", "AP", "ML")
+        with pytest.raises(ValueError, match="GridWindowedSpectrum"):
+            validate_grid_windowed_spectrum(da)
+
+    def test_coerce_from_spectrogramx_output(self):
+        """spectrogramx emits (ML, AP, freq, time) — coerce should handle it."""
+        from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
+
+        da = xr.DataArray(
+            np.random.default_rng(1).random((8, 4, 64, 10)),
+            dims=("ML", "AP", "freq", "time"),
+            coords={
+                "ML": np.arange(8),
+                "AP": np.arange(4),
+                "freq": np.linspace(1, 200, 64),
+                "time": np.linspace(0, 9, 10),
+            },
+        )
+        out = coerce_grid_windowed_spectrum(da)
+        assert tuple(out.dims) == ("time_win", "AP", "ML", "freq")
+        assert "time_win" in out.coords
+
+    def test_coerce_lowercase_dims(self):
+        from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
+
+        da = xr.DataArray(
+            np.random.default_rng(2).random((10, 4, 8, 64)),
+            dims=("time_win", "ap", "ml", "freq"),
+            coords={
+                "time_win": np.linspace(0, 9, 10),
+                "ap": np.arange(4),
+                "ml": np.arange(8),
+                "freq": np.linspace(1, 200, 64),
+            },
+        )
+        out = coerce_grid_windowed_spectrum(da)
+        assert tuple(out.dims) == ("time_win", "AP", "ML", "freq")
+
+    def test_coerce_any_permutation(self):
+        from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
+
+        da = self._canonical_da().transpose("freq", "ML", "time_win", "AP")
+        out = coerce_grid_windowed_spectrum(da)
+        assert tuple(out.dims) == ("time_win", "AP", "ML", "freq")
+
+    def test_coerce_wrong_dims_raises(self):
+        from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
+
+        da = xr.DataArray(np.zeros((3, 4)), dims=("x", "y"))
+        with pytest.raises(ValueError, match="GridWindowedSpectrum"):
+            coerce_grid_windowed_spectrum(da)
+

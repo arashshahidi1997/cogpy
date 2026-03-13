@@ -20,6 +20,8 @@ __all__ = [
     "merge_intervals",
     "dual_threshold_events_1d",
     "score_to_bouts",
+    "bout_occupancy",
+    "bout_duration_summary",
 ]
 
 
@@ -224,4 +226,56 @@ def score_to_bouts(
         events = [e for e in events if e["duration"] >= float(min_duration)]
 
     return events
+
+
+def bout_occupancy(bouts: list[dict[str, Any]], total_duration: float) -> float:
+    """
+    Fraction of *total_duration* occupied by bouts.
+
+    Parameters
+    ----------
+    bouts : list[dict]
+        Each dict must have a ``"duration"`` key (as returned by
+        :func:`score_to_bouts`).
+    total_duration : float
+        Total recording or epoch duration (seconds).
+
+    Returns
+    -------
+    float
+        Occupancy in ``[0, 1]``.  Returns ``0.0`` when *bouts* is empty.
+    """
+    if total_duration <= 0:
+        raise ValueError(f"total_duration must be > 0, got {total_duration}")
+    if not bouts:
+        return 0.0
+    return float(min(sum(b["duration"] for b in bouts) / total_duration, 1.0))
+
+
+def bout_duration_summary(bouts: list[dict[str, Any]]) -> dict[str, float]:
+    """
+    Summary statistics of bout durations.
+
+    Parameters
+    ----------
+    bouts : list[dict]
+        Each dict must have a ``"duration"`` key.
+
+    Returns
+    -------
+    dict
+        Keys: ``count``, ``mean``, ``median``, ``std``, ``p5``, ``p95``.
+        All values are ``0.0`` when *bouts* is empty (``count`` is ``0``).
+    """
+    if not bouts:
+        return {"count": 0, "mean": 0.0, "median": 0.0, "std": 0.0, "p5": 0.0, "p95": 0.0}
+    durations = np.array([b["duration"] for b in bouts], dtype=float)
+    return {
+        "count": len(durations),
+        "mean": float(np.mean(durations)),
+        "median": float(np.median(durations)),
+        "std": float(np.std(durations, ddof=1)) if len(durations) > 1 else 0.0,
+        "p5": float(np.percentile(durations, 5)),
+        "p95": float(np.percentile(durations, 95)),
+    }
 

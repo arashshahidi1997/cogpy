@@ -43,6 +43,8 @@ __all__ = [
     "coerce_multichannel",
     "coerce_multichannel_windowed",
     "coerce_spectrogram4d",
+    "validate_grid_windowed_spectrum",
+    "coerce_grid_windowed_spectrum",
     "coerce_ieeg_time_channel",
     "assert_attrs_survive",
     "AtlasImageOverlay",
@@ -521,6 +523,66 @@ def coerce_spectrogram4d(da: xr.DataArray) -> xr.DataArray:
     if tuple(da.dims) != DIMS_SPECTROGRAM4D:
         da = da.transpose(*DIMS_SPECTROGRAM4D)
     return validate_spectrogram4d(da)
+
+
+def validate_grid_windowed_spectrum(
+    da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()
+) -> xr.DataArray:
+    """
+    Validate GridWindowedSpectrum schema (compute-oriented, uppercase).
+
+    Canonical dims: ("time_win", "AP", "ML", "freq").
+    Returns da unchanged so it can be used inline.
+    """
+    _check_type(da, xr.DataArray, "GridWindowedSpectrum")
+    _check_dims(
+        da,
+        DIMS_GRID_WINDOWED_SPECTRUM,
+        "GridWindowedSpectrum",
+        hint="coerce_grid_windowed_spectrum(da)",
+    )
+    _check_coord_1d_increasing(da, "time_win", "GridWindowedSpectrum")
+    _check_coord_1d_increasing(da, "freq", "GridWindowedSpectrum")
+    _check_coord_1d(da, "AP", "GridWindowedSpectrum")
+    _check_coord_1d(da, "ML", "GridWindowedSpectrum")
+    _check_required_attrs(da, required_attrs, "GridWindowedSpectrum")
+    return da
+
+
+def coerce_grid_windowed_spectrum(da: xr.DataArray) -> xr.DataArray:
+    """
+    Best-effort coercion to GridWindowedSpectrum schema.
+
+    Canonical dims: ("time_win", "AP", "ML", "freq").
+
+    Accepts common input forms:
+    - ``spectrogramx()`` output ``("ML", "AP", "freq", "time")`` — renames
+      ``time`` → ``time_win`` and transposes.
+    - Lowercase ``ml``/``ap`` variants — uppercased automatically.
+    - Any permutation of the four canonical dims.
+    """
+    _check_type(da, xr.DataArray, "GridWindowedSpectrum")
+
+    # Rename lowercase spatial dims to uppercase.
+    renames = {}
+    if "ml" in da.dims and "ML" not in da.dims:
+        renames["ml"] = "ML"
+    if "ap" in da.dims and "AP" not in da.dims:
+        renames["ap"] = "AP"
+    # Rename "time" → "time_win" when it carries window-center semantics.
+    if "time" in da.dims and "time_win" not in da.dims:
+        renames["time"] = "time_win"
+    if renames:
+        da = da.rename(renames)
+
+    if set(da.dims) != set(DIMS_GRID_WINDOWED_SPECTRUM):
+        raise ValueError(
+            f"GridWindowedSpectrum must have dims {DIMS_GRID_WINDOWED_SPECTRUM} "
+            f"(permutation allowed), got {tuple(da.dims)}"
+        )
+    if tuple(da.dims) != DIMS_GRID_WINDOWED_SPECTRUM:
+        da = da.transpose(*DIMS_GRID_WINDOWED_SPECTRUM)
+    return validate_grid_windowed_spectrum(da)
 
 
 def coerce_ieeg_time_channel(da: xr.DataArray, *, fs: float | None = None) -> xr.DataArray:

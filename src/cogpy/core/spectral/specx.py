@@ -34,6 +34,7 @@ __all__ = [
     "psdx",
     "spectrogramx",
     "coherencex",
+    "normalize_spectrogram",
 ]
 
 
@@ -289,3 +290,50 @@ def coherencex(
         attrs=out_attrs,
         name="coherence",
     )
+
+
+def normalize_spectrogram(
+    spec: xr.DataArray,
+    *,
+    method: str = "robust_zscore",
+    dim: str = "freq",
+) -> xr.DataArray:
+    """
+    Normalize a spectrogram along a dimension.
+
+    Parameters
+    ----------
+    spec : xr.DataArray
+        Input spectrogram (any dim order).
+    method : {"robust_zscore", "db"}
+        ``"robust_zscore"`` — ``(x - median) / (MAD * 1.4826)`` along *dim*
+        via :func:`cogpy.core.preprocess.filtering.normalization.zscorex`.
+        ``"db"`` — ``10 * log10(x)``, no dim reduction.
+    dim : str
+        Dimension to normalize along.  Typically ``"freq"``.
+
+    Returns
+    -------
+    xr.DataArray
+        Same shape/dims as input.  ``attrs`` updated with normalization
+        metadata (``normalization``, ``normalization_dim``).
+    """
+    if not isinstance(spec, xr.DataArray):
+        raise TypeError("Expected xr.DataArray")
+
+    if method == "robust_zscore":
+        from cogpy.core.preprocess.filtering.normalization import zscorex
+
+        out = zscorex(spec, dim=dim, robust=True)
+    elif method == "db":
+        out = spec.copy(data=10.0 * np.log10(np.maximum(spec.values, np.finfo(float).tiny)))
+        out.attrs = dict(spec.attrs)
+        out.attrs["units"] = "dB"
+    else:
+        raise ValueError(
+            f"Unknown normalization method: {method!r}. Use 'robust_zscore' or 'db'."
+        )
+
+    out.attrs["normalization"] = method
+    out.attrs["normalization_dim"] = dim
+    return out

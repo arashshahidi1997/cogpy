@@ -18,6 +18,7 @@ Convention:
 from __future__ import annotations
 
 import numpy as np
+import xarray as xr
 
 EPS = 1e-12
 
@@ -36,6 +37,7 @@ __all__ = [
     "am_depth",
     "aperiodic_exponent",
     "fooof_periodic",
+    "reduce_tf_bands",
 ]
 
 
@@ -538,4 +540,61 @@ def fooof_periodic(psd, freqs, *, freq_range=None):
             ) from e
 
     return np.apply_along_axis(_fit_one, -1, psd)
+
+
+_REDUCE_METHODS = {
+    "mean": lambda da, dim: da.mean(dim=dim),
+    "median": lambda da, dim: da.median(dim=dim),
+    "max": lambda da, dim: da.max(dim=dim),
+    "sum": lambda da, dim: da.sum(dim=dim),
+}
+
+
+def reduce_tf_bands(
+    score: xr.DataArray,
+    bands: dict[str, tuple[float, float]],
+    *,
+    freq_dim: str = "freq",
+    method: str = "mean",
+) -> xr.Dataset:
+    """
+    Reduce a frequency axis to per-band scalars.
+
+    Parameters
+    ----------
+    score : xr.DataArray
+        Input with a *freq_dim* dimension and associated coordinate in Hz.
+    bands : dict
+        Mapping of ``band_name → (fmin_hz, fmax_hz)``.
+    freq_dim : str
+        Name of the frequency dimension (default ``"freq"``).
+    method : {"mean", "median", "max", "sum"}
+        Reduction applied within each band.
+
+    Returns
+    -------
+    xr.Dataset
+        One variable per band, *freq_dim* removed.
+    """
+    if freq_dim not in score.dims:
+        raise ValueError(f"Dimension {freq_dim!r} not in score.dims={tuple(score.dims)}")
+    if freq_dim not in score.coords:
+        raise ValueError(f"Coordinate {freq_dim!r} required for frequency selection")
+    reduce_fn = _REDUCE_METHODS.get(method)
+    if reduce_fn is None:
+        raise ValueError(f"Unknown method {method!r}. Use one of {sorted(_REDUCE_METHODS)}")
+
+    freqs = score[freq_dim].values
+    variables: dict[str, xr.DataArray] = {}
+    for name, (fmin, fmax) in bands.items():
+        mask = (freqs >= fmin) & (freqs <= fmax)
+        if not np.any(mask):
+            raise ValueError(
+                f"Band {name!r} ({fmin}, {fmax}) has no overlap with freq range "
+                f"[{freqs.min():.1f}, {freqs.max():.1f}]"
+            )
+        band_slice = score.isel({freq_dim: mask})
+        variables[name] = reduce_fn(band_slice, freq_dim)
+
+    return xr.Dataset(variables)
 

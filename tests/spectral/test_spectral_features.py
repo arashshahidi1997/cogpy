@@ -221,3 +221,110 @@ class TestFtestLineScan:
         idx_120 = np.argmin(np.abs(freqs - 120.0))
         assert sig_mask[idx_60]
         assert sig_mask[idx_120]
+
+
+# ---------------------------------------------------------------------------
+# reduce_tf_bands
+# ---------------------------------------------------------------------------
+
+class TestReduceTfBands:
+    @staticmethod
+    def _score_da():
+        """(time_win, freq) score array."""
+        import xarray as xr
+        return xr.DataArray(
+            np.ones((10, 100)),
+            dims=("time_win", "freq"),
+            coords={"time_win": np.arange(10), "freq": np.linspace(1, 200, 100)},
+        )
+
+    def test_basic_mean(self):
+        from cogpy.core.spectral.features import reduce_tf_bands
+
+        da = self._score_da()
+        bands = {"alpha": (8, 13), "beta": (13, 30)}
+        ds = reduce_tf_bands(da, bands)
+        assert "alpha" in ds
+        assert "beta" in ds
+        assert "freq" not in ds.dims
+        assert ds["alpha"].dims == ("time_win",)
+
+    def test_median_method(self):
+        from cogpy.core.spectral.features import reduce_tf_bands
+
+        da = self._score_da()
+        ds = reduce_tf_bands(da, {"low": (1, 50)}, method="median")
+        assert ds["low"].dims == ("time_win",)
+
+    def test_no_overlap_raises(self):
+        from cogpy.core.spectral.features import reduce_tf_bands
+
+        da = self._score_da()
+        with pytest.raises(ValueError, match="no overlap"):
+            reduce_tf_bands(da, {"oob": (500, 600)})
+
+    def test_unknown_method_raises(self):
+        from cogpy.core.spectral.features import reduce_tf_bands
+
+        da = self._score_da()
+        with pytest.raises(ValueError, match="Unknown method"):
+            reduce_tf_bands(da, {"a": (1, 50)}, method="bad")
+
+    def test_preserves_batch_dims(self):
+        """Batch dims beyond (time_win, freq) are preserved."""
+        import xarray as xr
+        from cogpy.core.spectral.features import reduce_tf_bands
+
+        da = xr.DataArray(
+            np.ones((5, 10, 100)),
+            dims=("batch", "time_win", "freq"),
+            coords={"freq": np.linspace(1, 200, 100)},
+        )
+        ds = reduce_tf_bands(da, {"gamma": (30, 100)})
+        assert ds["gamma"].dims == ("batch", "time_win")
+
+
+# ---------------------------------------------------------------------------
+# normalize_spectrogram
+# ---------------------------------------------------------------------------
+
+class TestNormalizeSpectrogram:
+    @staticmethod
+    def _spec_da():
+        import xarray as xr
+        rng = np.random.default_rng(42)
+        return xr.DataArray(
+            rng.random((4, 8, 64, 10)) + 0.01,
+            dims=("AP", "ML", "freq", "time_win"),
+            coords={
+                "AP": np.arange(4),
+                "ML": np.arange(8),
+                "freq": np.linspace(1, 200, 64),
+                "time_win": np.linspace(0, 9, 10),
+            },
+        )
+
+    def test_robust_zscore(self):
+        from cogpy.core.spectral.specx import normalize_spectrogram
+
+        spec = self._spec_da()
+        out = normalize_spectrogram(spec, method="robust_zscore", dim="freq")
+        assert out.shape == spec.shape
+        assert out.attrs["normalization"] == "robust_zscore"
+
+    def test_db(self):
+        from cogpy.core.spectral.specx import normalize_spectrogram
+
+        spec = self._spec_da()
+        out = normalize_spectrogram(spec, method="db")
+        assert out.shape == spec.shape
+        assert out.attrs["normalization"] == "db"
+        assert out.attrs["units"] == "dB"
+        # dB of values in (0,1) should be negative
+        assert float(out.max()) < 0 or float(out.min()) < 0
+
+    def test_unknown_method_raises(self):
+        from cogpy.core.spectral.specx import normalize_spectrogram
+
+        with pytest.raises(ValueError, match="Unknown normalization"):
+            normalize_spectrogram(self._spec_da(), method="bad")
