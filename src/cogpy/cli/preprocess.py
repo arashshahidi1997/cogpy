@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""CLI entry point for Snakemake-based ECoG preprocessing."""
 import textwrap
 import re
 import yaml

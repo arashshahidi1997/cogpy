@@ -16,13 +16,18 @@ cogpy.core
    :toctree:
    :recursive:
 
+   base
    brainstates
    burst
    decomposition
    depth_probe
+   detect
+   events
+   measures
    model
    plot
    preprocess
    spectral
+   tensorscope
    utils
    wave

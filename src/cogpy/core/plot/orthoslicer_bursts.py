@@ -79,7 +79,7 @@ import warnings
 
 warnings.warn(
     f"{__name__} is deprecated. "
-    "For new projects, use TensorScope (cogpy.core.plot.tensorscope). "
+    "For new projects, use TensorScope (cogpy.core.tensorscope). "
     "For maintenance of existing orthoslicer code, prefer orthoslicer_rangercopy.py.",
     DeprecationWarning,
     stacklevel=2,

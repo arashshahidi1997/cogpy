@@ -15,15 +15,19 @@ Safe to remove: no
 import numpy as np
 from statsmodels.tsa.ar_model import AutoReg
 from scipy.signal import lfilter
-from ..preprocess.filt import Filter
 from ..utils import xarr as xut
 
 
-class AR_whiten(Filter):
-    """
-    Autoregressive whitening
-    params:
-    order: int
+class AR_whiten:
+    """Autoregressive whitening filter.
+
+    Fits an AR model to multichannel data, selects the median-coefficient
+    channel, and applies the resulting FIR whitening filter.
+
+    Parameters
+    ----------
+    lags : list of int
+        AR lag indices.
     """
 
     _dim = "temporal"
@@ -35,6 +39,29 @@ class AR_whiten(Filter):
         self.coefs = None
         self.kernel = None
 
+    # -- metadata properties (formerly from Filter base class) --
+
+    @property
+    def params(self):
+        return self.__dict__
+
+    @property
+    def name(self):
+        return self._dim + " " + self._type + " " + self._tech
+
+    @property
+    def acr(self):
+        return self._dim[0] + self._type[0] + self._tech[0]
+
+    @property
+    def abr(self):
+        return "_".join([self._dim, self._type, self._tech])
+
+    def info(self):
+        return {"name": self.abr, "params": self.params}
+
+    # -- AR filter properties --
+
     @property
     def ar_filter(self):
         return np.array([1, *-np.array(self.kernel)])
@@ -44,18 +71,12 @@ class AR_whiten(Filter):
         return self.ar_filter, 1
 
     def fit(self, x):
-        """
-        Fit the autoregressive model to the input data.
+        """Fit the autoregressive model to the input data.
 
         Parameters
         ----------
-        x: array-like
+        x : array-like
             Input data array. The first dimension should be the number of channels.
-
-        Returns
-        -------
-        None
-
         """
         params = []
         models = []
@@ -74,8 +95,7 @@ class AR_whiten(Filter):
 
     @xut.xarr_wrap
     def _filt(self, x, axis=-1):
-        """
-        Apply AR filter to the input array along the specified axis.
+        """Apply AR filter to the input array along the specified axis.
 
         Parameters
         ----------
@@ -83,8 +103,8 @@ class AR_whiten(Filter):
             Input data array.
         axis : int, optional
             Axis along which to apply the filter (default is -1).
-        dim: str, optional
-            Axis name to apply the filter along. If provided, the filter is applied along this axis.
+        dim : str, optional
+            Axis name to apply the filter along.
 
         Returns
         -------
@@ -110,23 +130,26 @@ class AR_whiten(Filter):
 
 
 def AR_whitening(y, ar_params):
-    """
-    y: array (time,)
-    ar_params: autoregressive kernel
+    """Apply AR whitening to a 1-D signal.
+
+    Parameters
+    ----------
+    y : array, shape (time,)
+        Input signal.
+    ar_params : array-like
+        Autoregressive kernel coefficients.
 
     Returns
     -------
-    whitened_y
+    whitened_y : ndarray
+        Whitened signal.
     """
     ar_filt = [1, *-np.array(ar_params)]
     return np.convolve(ar_filt, y, mode="full")[: -len(ar_params)]
 
 
 def autocovariance(X, p):
-    """
-    calculate autocovariance for some data X
-    p: time lag
-    """
+    """Calculate autocovariance for data X at time lag p."""
     scale = len(X) - p
     autoCov = 0
     for i in np.arange(0, len(X) - p):
@@ -135,14 +158,20 @@ def autocovariance(X, p):
 
 
 def AR_yule(p, X):
-    """
-    estimate AR(p) coefficients a for data X by solving the Yule-
-    Walker equation in matrix form
+    """Estimate AR(p) coefficients for data X via the Yule-Walker equation.
 
-    p: order of AR model
+    Parameters
+    ----------
+    p : int
+        Order of AR model.
+    X : array-like
+        Input data.
+
+    Returns
+    -------
+    a : ndarray
+        AR coefficients.
     """
-    # x = zscore(X)
-    # rxx = np.convolve(x, x[::-1], mode='full')[:len(x)-1][::-1][:p+1]/(np.arange(len(x)-p-1, len(x))[::-1])
     rxx = [autocovariance(X, i) for i in range(p + 1)]
 
     Rxx_mat = np.zeros((p, p))

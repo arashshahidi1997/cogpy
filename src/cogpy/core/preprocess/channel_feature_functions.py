@@ -33,6 +33,15 @@ Constants:
 Example:
 """
 
+import warnings as _warnings
+
+_warnings.warn(
+    "cogpy.core.preprocess.channel_feature_functions is deprecated. "
+    "Use cogpy.core.preprocess.badchannel instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import numpy as np
 import xarray as xr
 import dask.array as da

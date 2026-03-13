@@ -1,3 +1,4 @@
+"""Brain-state detection and classification."""
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 

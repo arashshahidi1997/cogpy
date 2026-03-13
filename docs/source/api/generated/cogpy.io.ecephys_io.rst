@@ -14,6 +14,8 @@ cogpy.io.ecephys\_io
 
    load_ecephys_metadata
 
+   resolve_ecephys_sidecars
+
 
 
 

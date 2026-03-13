@@ -10,6 +10,10 @@ cogpy.plot.time\_player
 .. autosummary::
 
 
+   add_axis_hair
+
+   add_time_hair
+
    example_1
 
 
@@ -21,7 +25,11 @@ cogpy.plot.time\_player
 .. autosummary::
 
 
+   AxisHair
+
    PlayerWithRealTime
+
+   TimeHair
 
 
 

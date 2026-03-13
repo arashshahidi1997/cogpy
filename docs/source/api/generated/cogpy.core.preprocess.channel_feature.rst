@@ -12,6 +12,12 @@ cogpy.core.preprocess.channel\_feature
 
    ensure_footprint
 
+   feature_distribution_image
+
+   feature_distribution_images
+
+   feature_grid_movie_holomap
+
    save_features
 
    transform_dask

@@ -1,4 +1,4 @@
-﻿cogpy.io
+cogpy.io
 ========
 
 .. automodule:: cogpy.io
@@ -20,7 +20,9 @@
    ecephys_io
    ecog_io
    ieeg_io
+   ieeg_sidecars
    load_meta
    save_utils
+   sidecars
    xml_anat_map
    xml_io

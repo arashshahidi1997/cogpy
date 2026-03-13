@@ -1,4 +1,4 @@
-cogpy.core.plot.orthoslicer\_rangercopy
+﻿cogpy.core.plot.orthoslicer\_rangercopy
 =======================================
 
 .. automodule:: cogpy.core.plot.orthoslicer_rangercopy

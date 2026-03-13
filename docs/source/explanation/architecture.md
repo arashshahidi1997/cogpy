@@ -1,10 +1,32 @@
 # Architecture And Design Principles
 
-This document captures the current design direction for `cogpy` as we refactor
-preprocess pipelines and shared utilities. It focuses on keeping compute logic
-clean and reusable while consolidating file-format and sidecar handling into IO.
+This document captures the design direction for `cogpy`: what the package is for,
+how its pieces fit together, and what conventions new code should follow.
 
-## Goals
+## Package Goals
+
+`cogpy` is a Python toolkit for **ECoG / iEEG signal processing and analysis**.
+Its purpose is to provide:
+
+1. **Reusable compute primitives** — filtering, spectral analysis, event detection,
+   bad-channel identification, brain-state classification — that operate on
+   `xarray.DataArray` objects with standardized schemas.
+2. **Structured I/O** — readers/writers for common electrophysiology formats
+   (binary LFP, Zarr, BIDS-iEEG) with sidecar and metadata management.
+3. **Reproducible preprocessing pipelines** — Snakemake workflows that compose
+   I/O and compute into auditable, configurable processing chains.
+4. **A backend API for visualization tools** — cogpy serves as the data and
+   compute backend for frontends such as
+   TensorScope (see note below).
+
+### What cogpy is *not*
+
+- A GUI application. Interactive visualization has migrated to a separate
+  React + TypeScript project (TensorScope) that calls cogpy as its backend.
+- A storage-format authority. Format decisions belong to the I/O layer; core
+  algorithms are format-agnostic.
+
+## Design Principles
 
 - Keep core processing code file-agnostic and testable.
 - Centralize IO and file-format concerns in `cogpy.io`.
@@ -64,24 +86,51 @@ Snakemake rules should:
 - Use `cogpy.core` for transformations.
 - Avoid custom per-pipeline logic when a shared IO helper exists.
 
-## Preprocess Channel Features
+## Preprocessing Structure
 
-For channel-feature workflows, prefer the canonical badchannel stack:
+The preprocessing module is organized into focused subpackages:
 
-- Raw feature functions and xarray wrappers:
-  - `cogpy.core.preprocess.badchannel.channel_features`
-- Spatial normalization and sliding feature-map orchestration:
-  - `cogpy.core.preprocess.badchannel.pipeline`
-  - `cogpy.core.preprocess.badchannel.spatial`
-- Outlier labeling:
-  - `cogpy.core.preprocess.badchannel.badlabel`
+### Filtering (`cogpy.core.preprocess.filtering/`)
 
-Legacy compatibility modules remain available, but are not the design target for
-new code:
+xarray-native signal filters, split by domain:
 
-- `cogpy.core.preprocess.channel_feature_functions` (deprecated)
-- `cogpy.core.preprocess.channel_feature` (legacy)
-- `cogpy.core.preprocess.detect_bads` (legacy)
+- `temporal.py` — Butterworth bandpass/lowpass/highpass, notch, decimation
+- `spatial.py` — Gaussian, median, median-highpass over (AP, ML) grids
+- `reference.py` — Common median reference (CMR)
+- `normalization.py` — Z-score normalization
+
+The legacy `filtx.py` module is a backward-compatible shim that re-exports
+everything from `filtering/`.
+
+### Bad-Channel Detection (`cogpy.core.preprocess.badchannel/`)
+
+For channel-feature workflows, use the canonical badchannel stack:
+
+- `channel_features` — raw feature functions and xarray wrappers
+- `pipeline` — sliding feature-map orchestration
+- `spatial` — spatial normalization relative to grid neighbors
+- `badlabel` — DBSCAN outlier labeling
+- `grid` — grid adjacency construction
+
+### Legacy Modules (deprecated)
+
+These emit `DeprecationWarning` on import. Use `badchannel` instead:
+
+- `channel_feature_functions` → `badchannel.channel_features`
+- `channel_feature` → `badchannel.pipeline`
+- `detect_bads` → `badchannel.badlabel`
+
+## TensorScope: Legacy Subpackage
+
+TensorScope was originally developed as a Panel/HoloViews interactive viewer
+inside `cogpy.core.plot.tensorscope`. It has since **migrated to its own
+standalone React + TypeScript project**, with cogpy serving as the data and
+compute backend via a Python API.
+
+The `cogpy.core.plot.tensorscope` subpackage and its associated specification
+documents (v2.x, v3.x) are retained for historical reference but are no longer
+the active development target. New visualization work should target the
+standalone TensorScope frontend and use cogpy's public API for data access.
 
 ## Open Questions
 

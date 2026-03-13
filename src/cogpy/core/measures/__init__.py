@@ -1,3 +1,4 @@
+"""Temporal and spatial signal measures."""
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 

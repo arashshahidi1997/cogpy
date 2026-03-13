@@ -9,11 +9,15 @@ Superseded by: n/a
 Safe to remove: no
 
 Grid convention:
-    grid : (AP, ML, ...)  — AP rows, ML columns
-    All functions expect the grid as the first two axes unless noted.
+    grid : (..., AP, ML)  — AP rows, ML columns
+    Batch dims (time, freq, etc.) are leading; spatial axes are always last.
+    Scalar measures reduce (AP, ML) → scalar, so output shape is (...).
+    2D input returns a Python float for backward compatibility.
 """
 
 from __future__ import annotations
+
+import functools
 
 import numpy as np
 
@@ -23,10 +27,48 @@ __all__ = [
     "moran_i",
     "csd_power",
     "spatial_coherence_profile",
+    "marginal_energy_outlier",
+    "gradient_anisotropy",
 ]
 
 
-def moran_i(grid: np.ndarray, *, adjacency: str = "queen") -> float:
+@functools.lru_cache(maxsize=16)
+def _build_adjacency(ap, ml, adjacency):
+    """Build binary adjacency matrix for an (AP, ML) grid.
+
+    Returns (N, N) array where N = ap * ml.  Symmetric.
+    """
+    _valid_adj = {"queen", "rook", "ap_only", "ml_only"}
+    if adjacency not in _valid_adj:
+        raise ValueError(f"adjacency must be one of {_valid_adj}, got {adjacency!r}.")
+
+    n = int(ap * ml)
+    W = np.zeros((n, n), dtype=float)
+
+    if adjacency == "ap_only":
+        offsets = [(-1, 0), (1, 0)]
+    elif adjacency == "ml_only":
+        offsets = [(0, -1), (0, 1)]
+    elif adjacency == "rook":
+        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    else:  # queen
+        offsets = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1),           (0, 1),
+            (1, -1),  (1, 0),  (1, 1),
+        ]
+
+    for i in range(ap):
+        for j in range(ml):
+            idx = i * ml + j
+            for di, dj in offsets:
+                ii, jj = i + di, j + dj
+                if 0 <= ii < ap and 0 <= jj < ml:
+                    W[idx, ii * ml + jj] = 1.0
+    return W
+
+
+def moran_i(grid: np.ndarray, *, adjacency: str = "queen"):
     """
     Moran's I spatial autocorrelation for a scalar grid map.
 
@@ -40,79 +82,72 @@ def moran_i(grid: np.ndarray, *, adjacency: str = "queen") -> float:
 
     Parameters
     ----------
-    grid : (AP, ML) — scalar value per electrode.
-        NaN entries excluded from computation.
-    adjacency : str — "queen" (8-connected) | "rook" (4-connected)
+    grid : (..., AP, ML) — scalar value per electrode.
+        Batch dimensions are leading; spatial axes are always last two.
+        NaN entries excluded from computation (single mask across batch —
+        bad electrodes are assumed constant across time/freq slices).
+    adjacency : str
+        "queen" (8-connected) | "rook" (4-connected) |
+        "ap_only" (vertical neighbors only) |
+        "ml_only" (horizontal neighbors only)
+
+        Directional modes enable stripe vs checkerboard discrimination:
+        - Row-striped artifact: high I for ml_only, low/negative for ap_only
+        - Column-striped artifact: high I for ap_only, low/negative for ml_only
+        - Checkerboard: negative I for both
 
     Returns
     -------
-    I : float
-
-    Implementation
-    --------------
-    1. Build binary adjacency matrix W (N x N) where N = AP*ML
-       queen: includes diagonal neighbors
-       rook:  only cardinal neighbors
-    2. Flatten grid, mask NaN electrodes (zero their W rows/cols)
-    3. Apply Moran's I formula
-    W = sum of all weights
-    Use pure numpy — no scipy.sparse needed for grids up to 256 electrodes
+    I : (...) float array (or scalar float for 2D input)
     """
     g = np.asarray(grid, dtype=float)
-    if g.ndim != 2:
-        raise ValueError(f"grid must have shape (AP, ML), got {g.shape}.")
-    ap, ml = g.shape
-    if adjacency not in {"queen", "rook"}:
-        raise ValueError('adjacency must be "queen" or "rook".')
+    if g.ndim < 2:
+        raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
+    ap, ml = g.shape[-2], g.shape[-1]
+    batch_shape = g.shape[:-2]
+    scalar_output = g.ndim == 2
+    n = ap * ml
 
-    n = int(ap * ml)
-    W = np.zeros((n, n), dtype=float)
+    W = _build_adjacency(ap, ml, adjacency)
 
-    if adjacency == "rook":
-        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    else:  # queen
-        offsets = [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-        ]
+    # Flatten spatial dims: (..., N)
+    x = g.reshape(batch_shape + (n,))
 
-    for i in range(ap):
-        for j in range(ml):
-            idx = i * ml + j
-            for di, dj in offsets:
-                ii = i + di
-                jj = j + dj
-                if 0 <= ii < ap and 0 <= jj < ml:
-                    jdx = ii * ml + jj
-                    W[idx, jdx] = 1.0
+    # Single NaN mask: electrode is valid only if finite across ALL batch slices.
+    # This is the practical case — bad electrodes are constant per recording.
+    finite = np.isfinite(x)
+    batch_axes = tuple(range(len(batch_shape)))
+    valid = np.all(finite, axis=batch_axes) if batch_axes else finite.reshape(-1)
 
-    x = g.reshape(-1)
-    valid = np.isfinite(x)
     if not np.any(valid):
-        return float("nan")
+        return float("nan") if scalar_output else np.full(batch_shape, np.nan)
 
-    x = x[valid]
-    W = W[valid][:, valid]
+    # Subset to valid electrodes
+    x_v = x[..., valid]              # (..., n_valid)
+    W_v = W[np.ix_(valid, valid)]    # (n_valid, n_valid)
 
-    Wsum = float(np.sum(W))
+    Wsum = float(np.sum(W_v))
     if Wsum <= 0:
-        return float("nan")
+        return float("nan") if scalar_output else np.full(batch_shape, np.nan)
 
-    xmean = float(np.mean(x))
-    xc = x - xmean
-    denom = float(np.sum(xc**2))
-    if denom <= EPS:
-        return float("nan")
+    n_valid = x_v.shape[-1]
+    xmean = np.mean(x_v, axis=-1, keepdims=True)   # (..., 1)
+    xc = x_v - xmean                                # (..., n_valid)
 
-    num = float(xc @ (W @ xc))
-    n_valid = int(x.shape[0])
-    return float((n_valid / Wsum) * (num / denom))
+    denom = np.sum(xc ** 2, axis=-1)                # (...)
+
+    # Numerator: xc^T @ W @ xc  per batch element
+    # W is symmetric, so xc @ W gives the same as (W @ xc^T)^T
+    Wxc = xc @ W_v                                   # (..., n_valid)
+    num = np.sum(xc * Wxc, axis=-1)                  # (...)
+
+    result = np.where(
+        denom > EPS,
+        (n_valid / Wsum) * (num / (denom + EPS)),
+        np.nan,
+    )
+
+    return float(result) if scalar_output else result
 
 
 def csd_power(
@@ -287,3 +322,98 @@ def spatial_coherence_profile(
     coh_profile = np.clip(coh_profile, 0.0, 1.0)
 
     return coh_profile, distance_bins, freqs
+
+
+def marginal_energy_outlier(grid, *, robust=True, threshold=3.0):
+    """
+    Row and column energy outlier scores for a spatial grid.
+
+    Marginalizes power along each grid axis, then z-scores the
+    resulting row/column energy profiles to flag outliers.
+    Directly detects striped high-power artifacts.
+
+    Parameters
+    ----------
+    grid : (..., AP, ML) — scalar per electrode (e.g. band power, variance).
+        Batch dimensions are leading; spatial axes are always last two.
+    robust : bool — use median/MAD instead of mean/std (default True)
+    threshold : float — |z-score| threshold for outlier flag (default 3.0)
+
+    Returns
+    -------
+    dict with keys:
+        'row_energy'  : (..., AP) — total energy per row
+        'col_energy'  : (..., ML) — total energy per column
+        'row_zscore'  : (..., AP) — z-score of row energy
+        'col_zscore'  : (..., ML) — z-score of column energy
+        'row_outlier' : (..., AP) — boolean, |z| > threshold
+        'col_outlier' : (..., ML) — boolean, |z| > threshold
+    """
+    g = np.asarray(grid, dtype=float)
+    if g.ndim < 2:
+        raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
+
+    g_sq = g ** 2
+    row_energy = np.nansum(g_sq, axis=-1)   # (..., AP)
+    col_energy = np.nansum(g_sq, axis=-2)   # (..., ML)
+
+    def _zscore(x):
+        # z-score along the last axis (the row/col dimension)
+        if robust:
+            center = np.nanmedian(x, axis=-1, keepdims=True)
+            mad = np.nanmedian(np.abs(x - center), axis=-1, keepdims=True)
+            scale = 1.4826 * mad + EPS
+        else:
+            center = np.nanmean(x, axis=-1, keepdims=True)
+            scale = np.nanstd(x, axis=-1, keepdims=True) + EPS
+        return (x - center) / scale
+
+    row_z = _zscore(row_energy)
+    col_z = _zscore(col_energy)
+
+    return {
+        "row_energy": row_energy,
+        "col_energy": col_energy,
+        "row_zscore": row_z,
+        "col_zscore": col_z,
+        "row_outlier": np.abs(row_z) > float(threshold),
+        "col_outlier": np.abs(col_z) > float(threshold),
+    }
+
+
+def gradient_anisotropy(grid):
+    """
+    Gradient anisotropy ratio for a spatial grid.
+
+    Measures directional imbalance of spatial gradients.
+    Striped artifacts produce strong gradients along one axis
+    but not the other.
+
+    Parameters
+    ----------
+    grid : (..., AP, ML) — scalar per electrode.
+        Batch dimensions are leading; spatial axes are always last two.
+
+    Returns
+    -------
+    anisotropy : (...) float array (or scalar float for 2D input)
+        log2(mean|dV/dAP| / mean|dV/dML|)
+        0.0 = isotropic (balanced gradients)
+        positive = AP-dominant gradient (column-striped pattern)
+        negative = ML-dominant gradient (row-striped pattern)
+    """
+    g = np.asarray(grid, dtype=float)
+    if g.ndim < 2:
+        raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
+    if g.shape[-2] < 2 or g.shape[-1] < 2:
+        result = np.full(g.shape[:-2], np.nan)
+        return float(result) if g.ndim == 2 else result
+
+    grad_ap = np.abs(np.diff(g, axis=-2))  # (..., AP-1, ML)
+    grad_ml = np.abs(np.diff(g, axis=-1))  # (..., AP, ML-1)
+
+    mean_ap = np.nanmean(grad_ap, axis=(-2, -1))  # (...)
+    mean_ml = np.nanmean(grad_ml, axis=(-2, -1))  # (...)
+
+    result = np.log2((mean_ap + EPS) / (mean_ml + EPS))
+    return float(result) if g.ndim == 2 else result

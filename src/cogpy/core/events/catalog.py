@@ -119,7 +119,7 @@ class EventCatalog:
 
     def to_event_stream(self, style: Any | None = None):
         """Convert to TensorScope `EventStream`."""
-        from cogpy.core.plot.tensorscope.events.model import EventStyle, EventStream
+        from cogpy.core.tensorscope.events.model import EventStyle, EventStream
 
         style_obj = None
         if style is None:

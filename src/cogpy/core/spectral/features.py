@@ -25,9 +25,12 @@ __all__ = [
     "band_power",
     "relative_band_power",
     "spectral_entropy",
+    "spectral_flatness",
     "spectral_edge",
     "broadband_snr",
     "line_noise_ratio",
+    "narrowband_ratio",
+    "ftest_line_scan",
     "am_artifact_score",
     "am_depth",
     "aperiodic_exponent",
@@ -252,6 +255,138 @@ def am_depth(psd, freqs, *, fc, fm, carrier_bw=2.0, sideband_bw=2.0):
     p_side = p_sb1 + p_sb2
     p_car = band_power(psd, freqs, (fc - carrier_bw, fc + carrier_bw))
     return np.log10((p_side + EPS) / (p_car + EPS))
+
+
+def spectral_flatness(psd, freqs):
+    """
+    Spectral flatness (Wiener entropy).
+
+    Ratio of geometric mean to arithmetic mean of the PSD.
+    1.0 = white noise (maximally flat), 0.0 = pure tone.
+
+    More robust to bandwidth than Shannon spectral_entropy.
+
+    Parameters
+    ----------
+    psd : (..., freq)
+    freqs : (freq,) — unused, kept for API consistency
+
+    Returns
+    -------
+    flatness : (...,) — in [0, 1]
+    """
+    psd = np.asarray(psd, dtype=np.float64)
+    log_mean = np.mean(np.log(psd + EPS), axis=-1)
+    arith_mean = np.mean(psd, axis=-1)
+    return np.exp(log_mean) / (arith_mean + EPS)
+
+
+def narrowband_ratio(psd, freqs, *, flank_hz=5.0):
+    """
+    Narrowband prominence ratio per frequency bin.
+
+    For each bin, ratio of its power to the median power of flanking
+    bins within ±flank_hz. Values >> 1 indicate narrowband peaks
+    (line noise, artifact). Values near 1 indicate broadband.
+
+    Parameters
+    ----------
+    psd : (..., freq)
+    freqs : (freq,)  — Hz, strictly increasing
+    flank_hz : float — half-width of flanking window in Hz (default 5.0)
+
+    Returns
+    -------
+    ratio : (..., freq) — power / median(flanking power).
+        NaN where fewer than 2 flank bins exist.
+
+    Examples
+    --------
+    >>> ratio = narrowband_ratio(psd, freqs, flank_hz=5.0)
+    >>> line_mask = ratio > 5.0  # strong narrowband peaks
+    """
+    freqs = np.asarray(freqs, dtype=np.float64)
+    psd = np.asarray(psd, dtype=np.float64)
+    flank_hz = float(flank_hz)
+    nf = freqs.shape[0]
+
+    flank_median = np.full(psd.shape, np.nan, dtype=np.float64)
+    for i in range(nf):
+        mask = (np.abs(freqs - freqs[i]) <= flank_hz) & (np.arange(nf) != i)
+        if np.sum(mask) < 2:
+            continue
+        flank_median[..., i] = np.median(psd[..., mask], axis=-1)
+
+    return psd / (flank_median + EPS)
+
+
+def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
+    """
+    F-test line scan across all frequency bins.
+
+    Computes the Thomson (1982) F-statistic at every frequency bin
+    in a single pass, using eigenvalue-weighted DPSS tapers. Identifies
+    narrowband sinusoidal components against the broadband background.
+
+    Parameters
+    ----------
+    signal : (time,) — 1D signal window
+    fs : float — sampling rate Hz
+    NW : float — time-bandwidth product (default 4.0)
+    p_threshold : float — significance level for boolean mask (default 0.05)
+
+    Returns
+    -------
+    fstat : (freq,) — F-statistic at each frequency bin
+    freqs : (freq,) — frequency axis in Hz
+    sig_mask : (freq,) — boolean, True where F exceeds critical value
+
+    Notes
+    -----
+    Uses the proper eigenvalue-weighted Thomson F-test:
+        mu_hat(f) = sum_k(lambda_k * H_k(0) * Y_k(f)) / sum_k(lambda_k * H_k(0)^2)
+    where H_k(0) is the DC value of the k-th DPSS taper and lambda_k is its
+    eigenvalue. Under H0, F ~ F(2, 2K-2).
+    """
+    from scipy.signal.windows import dpss
+    from scipy.stats import f as f_dist
+
+    from .multitaper import multitaper_fft
+
+    signal = np.asarray(signal, dtype=np.float64)
+    if signal.ndim != 1:
+        raise ValueError(f"signal must be 1D, got shape {signal.shape}")
+
+    N = signal.shape[0]
+    NW = float(NW)
+    K = int(2 * NW - 1)
+
+    # Get DPSS tapers and eigenvalues for weighting
+    tapers, eigenvalues = dpss(N, NW, Kmax=K, return_ratios=True)
+    # H_k(0) = sum of k-th taper (DC response)
+    H0 = np.sum(tapers, axis=1)  # (K,)
+
+    mtfft = multitaper_fft(signal, NW=NW, K_max=K)  # (K, freq)
+    freqs = np.fft.rfftfreq(N, d=1.0 / fs)
+
+    # Eigenvalue-weighted line amplitude estimate (Thomson 1982)
+    weights = eigenvalues * H0  # (K,)
+    w_norm = np.sum(eigenvalues * H0 ** 2)  # scalar
+    # mu_hat(f) = sum_k(w_k * Y_k(f)) / w_norm
+    mu_hat = np.sum(weights[:, None] * mtfft, axis=0) / (w_norm + EPS)  # (freq,)
+
+    # Total power per frequency
+    S = np.mean(np.abs(mtfft) ** 2, axis=0)  # (freq,)
+    mu2 = np.abs(mu_hat) ** 2
+
+    # Residual (broadband) power
+    residual = S - mu2 * w_norm / K + EPS
+    fstat = (K - 1) * mu2 * w_norm / (K * residual)
+
+    f_crit = f_dist.ppf(1.0 - float(p_threshold), 2, 2 * K - 2)
+    sig_mask = fstat > f_crit
+
+    return fstat, freqs, sig_mask
 
 
 def aperiodic_exponent(psd, freqs, *, freq_range=(30.0, 45.0)):

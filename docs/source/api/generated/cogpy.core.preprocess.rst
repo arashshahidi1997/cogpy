@@ -1,4 +1,4 @@
-cogpy.core.preprocess
+﻿cogpy.core.preprocess
 =====================
 
 .. automodule:: cogpy.core.preprocess
@@ -16,10 +16,11 @@ cogpy.core.preprocess
    :toctree:
    :recursive:
 
+   badchannel
    channel_feature
    channel_feature_functions
    detect_bads
-   filt
+   filtering
    filtx
    interpolate
    linenoise

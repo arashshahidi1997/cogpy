@@ -16,5 +16,8 @@ cogpy.datasets
    :toctree:
    :recursive:
 
+   entities
+   gui_bundles
    load
+   schemas
    tensor

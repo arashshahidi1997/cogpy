@@ -24,6 +24,7 @@
    decomposition
    depth_probe
    io
+   measures
    model
    plot
    preprocess
