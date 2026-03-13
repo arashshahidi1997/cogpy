@@ -5,6 +5,7 @@ import pytest
 
 from cogpy.core.spectral.features import (
     narrowband_ratio,
+    spectral_peak_freqs,
     ftest_line_scan,
     spectral_flatness,
 )
@@ -111,6 +112,62 @@ class TestNarrowbandRatio:
         ratio = narrowband_ratio(psd, freqs, flank_hz=1.0)
         # With 2.5 Hz spacing and 1 Hz flank, most bins have <2 flanks
         assert np.any(np.isnan(ratio))
+
+
+# ---------------------------------------------------------------------------
+# spectral_peak_freqs
+# ---------------------------------------------------------------------------
+
+class TestSpectralPeakFreqs:
+    def test_single_peak(self):
+        """Single narrow peak detected."""
+        psd, freqs = _line_psd(f_line=60.0, line_power=100.0)
+        peaks = spectral_peak_freqs(psd, freqs, prominence=5.0)
+        assert isinstance(peaks, np.ndarray)
+        assert len(peaks) >= 1
+        assert np.any(np.abs(peaks - 60.0) < 5.0)
+
+    def test_two_peaks(self):
+        """Two peaks at different frequencies."""
+        psd, freqs = _line_psd(f_line=60.0, line_power=100.0)
+        idx_120 = np.argmin(np.abs(freqs - 120.0))
+        psd[idx_120] = 80.0
+        peaks = spectral_peak_freqs(psd, freqs, prominence=5.0, min_distance_hz=10.0)
+        near_60 = np.any(np.abs(peaks - 60.0) < 5.0)
+        near_120 = np.any(np.abs(peaks - 120.0) < 5.0)
+        assert near_60 and near_120
+
+    def test_flat_psd_no_peaks(self):
+        """Flat PSD → no peaks above prominence."""
+        psd = np.ones(256)
+        freqs = np.linspace(0, 500, 256)
+        peaks = spectral_peak_freqs(psd, freqs, prominence=2.0)
+        assert len(peaks) == 0
+
+    def test_batch_returns_list(self):
+        """Batched PSD → list of arrays."""
+        psd, freqs = _line_psd(f_line=60.0, line_power=100.0)
+        psd_batch = np.stack([psd, np.ones_like(psd)], axis=0)  # (2, nf)
+        result = spectral_peak_freqs(psd_batch, freqs, prominence=5.0)
+        assert isinstance(result, list)
+        assert len(result) == 2
+        # First element has a peak, second (flat) does not
+        assert len(result[0]) >= 1
+        assert len(result[1]) == 0
+
+    def test_min_distance(self):
+        """Peaks closer than min_distance_hz are suppressed."""
+        freqs = np.linspace(0, 500, 1000)
+        psd = np.ones(1000)
+        # Two peaks 3 Hz apart
+        idx_a = np.argmin(np.abs(freqs - 100.0))
+        idx_b = np.argmin(np.abs(freqs - 103.0))
+        psd[idx_a] = 50.0
+        psd[idx_b] = 40.0
+        # With 5 Hz min distance, only the larger peak survives
+        peaks = spectral_peak_freqs(psd, freqs, prominence=5.0, min_distance_hz=5.0)
+        assert len(peaks) == 1
+        assert np.abs(peaks[0] - 100.0) < 2.0
 
 
 # ---------------------------------------------------------------------------

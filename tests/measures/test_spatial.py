@@ -7,6 +7,8 @@ from cogpy.core.measures.spatial import (
     moran_i,
     marginal_energy_outlier,
     gradient_anisotropy,
+    spatial_kurtosis,
+    spatial_noise_concentration,
 )
 
 
@@ -310,3 +312,101 @@ class TestBatchMoranI:
         result = moran_i(grids)
         assert result.shape == (3,)
         assert np.all(np.isnan(result))
+
+
+# ---------------------------------------------------------------------------
+# spatial_kurtosis
+# ---------------------------------------------------------------------------
+
+class TestSpatialKurtosis:
+    def test_uniform_zero(self):
+        """Uniform grid → excess kurtosis near -1.2 (platykurtic uniform)."""
+        g = np.ones((8, 8))
+        # All identical → zero variance → kurtosis is nan or degenerate
+        # Use a uniform random grid instead
+        rng = np.random.default_rng(42)
+        g = rng.uniform(0, 1, (8, 8))
+        k = spatial_kurtosis(g)
+        assert np.isfinite(k)
+        assert k < 0  # uniform distribution is platykurtic
+
+    def test_single_hotspot_high_kurtosis(self):
+        """One very high electrode → high kurtosis."""
+        g = np.ones((8, 8))
+        g[3, 3] = 1000.0
+        k = spatial_kurtosis(g)
+        assert k > 10.0
+
+    def test_output_scalar_for_2d(self):
+        """2D input → Python float."""
+        g = np.ones((4, 4))
+        k = spatial_kurtosis(g)
+        assert isinstance(k, float)
+
+    def test_batch_shape(self):
+        """Batch dims preserved: (5, 8, 8) → (5,)."""
+        rng = np.random.default_rng(42)
+        grids = rng.normal(0, 1, (5, 8, 8))
+        k = spatial_kurtosis(grids)
+        assert k.shape == (5,)
+
+    def test_4d_batch(self):
+        """(2, 3, 8, 8) → (2, 3)."""
+        rng = np.random.default_rng(42)
+        grids = rng.normal(0, 1, (2, 3, 8, 8))
+        k = spatial_kurtosis(grids)
+        assert k.shape == (2, 3)
+
+    def test_rejects_1d(self):
+        with pytest.raises(ValueError, match="AP, ML"):
+            spatial_kurtosis(np.ones((4,)))
+
+
+# ---------------------------------------------------------------------------
+# spatial_noise_concentration
+# ---------------------------------------------------------------------------
+
+class TestSpatialNoiseConcentration:
+    def test_uniform_grid(self):
+        """Uniform grid → concentration = k / n."""
+        g = np.ones((8, 8))
+        c = spatial_noise_concentration(g, k=3)
+        expected = 3.0 / 64.0
+        assert c == pytest.approx(expected, rel=1e-6)
+
+    def test_single_dominant_channel(self):
+        """One dominant channel → concentration near 1."""
+        g = np.zeros((8, 8))
+        g[0, 0] = 1000.0
+        c = spatial_noise_concentration(g, k=1)
+        assert c > 0.99
+
+    def test_k_larger_than_grid(self):
+        """k >= total channels → concentration = 1."""
+        g = np.ones((2, 2))
+        c = spatial_noise_concentration(g, k=10)
+        assert c == pytest.approx(1.0, rel=1e-6)
+
+    def test_output_scalar_for_2d(self):
+        """2D input → Python float."""
+        g = np.ones((4, 4))
+        c = spatial_noise_concentration(g, k=2)
+        assert isinstance(c, float)
+
+    def test_batch_shape(self):
+        """(5, 8, 8) → (5,)."""
+        rng = np.random.default_rng(42)
+        grids = rng.normal(0, 1, (5, 8, 8))
+        c = spatial_noise_concentration(grids, k=3)
+        assert c.shape == (5,)
+
+    def test_concentration_in_range(self):
+        """Output is in [0, 1]."""
+        rng = np.random.default_rng(42)
+        g = np.abs(rng.normal(0, 1, (8, 8)))
+        c = spatial_noise_concentration(g, k=5)
+        assert 0.0 <= c <= 1.0
+
+    def test_rejects_1d(self):
+        with pytest.raises(ValueError, match="AP, ML"):
+            spatial_noise_concentration(np.ones((4,)))

@@ -29,6 +29,8 @@ __all__ = [
     "spatial_coherence_profile",
     "marginal_energy_outlier",
     "gradient_anisotropy",
+    "spatial_kurtosis",
+    "spatial_noise_concentration",
 ]
 
 
@@ -417,3 +419,78 @@ def gradient_anisotropy(grid):
 
     result = np.log2((mean_ap + EPS) / (mean_ml + EPS))
     return float(result) if g.ndim == 2 else result
+
+
+def spatial_kurtosis(grid):
+    """
+    Excess kurtosis of the spatial amplitude distribution.
+
+    Flattens the (AP, ML) grid and computes excess kurtosis. High
+    kurtosis indicates energy concentrated in a few electrodes (hot
+    spots); low kurtosis indicates spatially diffuse energy.
+
+    Parameters
+    ----------
+    grid : (..., AP, ML) — scalar per electrode.
+        Batch dimensions are leading; spatial axes are always last two.
+
+    Returns
+    -------
+    kurt : (...) float array (or scalar float for 2D input)
+        Excess kurtosis (Fisher definition: normal = 0).
+    """
+    from scipy.stats import kurtosis as _scipy_kurtosis
+
+    g = np.asarray(grid, dtype=float)
+    if g.ndim < 2:
+        raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
+    scalar_output = g.ndim == 2
+    batch_shape = g.shape[:-2]
+    flat = g.reshape(batch_shape + (-1,))  # (..., AP*ML)
+    result = _scipy_kurtosis(flat, axis=-1, nan_policy="omit", fisher=True)
+    result = np.asarray(result, dtype=float)
+    return float(result) if scalar_output else result
+
+
+def spatial_noise_concentration(grid, *, k=3):
+    """
+    Fraction of total grid energy in the top-k electrodes.
+
+    Values near 1.0 indicate energy concentrated in a few channels
+    (likely artifact or bad channels). Values near k/(AP*ML) indicate
+    spatially uniform energy.
+
+    Parameters
+    ----------
+    grid : (..., AP, ML) — scalar per electrode (e.g. power, variance).
+        Batch dimensions are leading; spatial axes are always last two.
+    k : int
+        Number of top electrodes to sum (default 3).
+
+    Returns
+    -------
+    concentration : (...) float array (or scalar float for 2D input)
+        Fraction of total energy in top-k, in [0, 1].
+    """
+    g = np.asarray(grid, dtype=float)
+    if g.ndim < 2:
+        raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
+    scalar_output = g.ndim == 2
+    batch_shape = g.shape[:-2]
+    n = g.shape[-2] * g.shape[-1]
+    k = min(int(k), n)
+
+    energy = g ** 2
+    flat = energy.reshape(batch_shape + (n,))
+
+    # Partition to find top-k without full sort
+    # np.partition: k-th smallest, so we want (n-k)-th for top-k
+    if k >= n:
+        top_k_sum = np.nansum(flat, axis=-1)
+    else:
+        partitioned = np.partition(flat, n - k, axis=-1)
+        top_k_sum = np.nansum(partitioned[..., n - k :], axis=-1)
+
+    total = np.nansum(flat, axis=-1)
+    result = top_k_sum / (total + EPS)
+    return float(result) if scalar_output else result

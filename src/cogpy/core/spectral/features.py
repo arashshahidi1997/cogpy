@@ -30,6 +30,7 @@ __all__ = [
     "broadband_snr",
     "line_noise_ratio",
     "narrowband_ratio",
+    "spectral_peak_freqs",
     "ftest_line_scan",
     "am_artifact_score",
     "am_depth",
@@ -318,6 +319,54 @@ def narrowband_ratio(psd, freqs, *, flank_hz=5.0):
         flank_median[..., i] = np.median(psd[..., mask], axis=-1)
 
     return psd / (flank_median + EPS)
+
+
+def spectral_peak_freqs(psd, freqs, *, prominence=2.0, min_distance_hz=2.0):
+    """
+    Detect discrete peak frequencies in a PSD.
+
+    Thin wrapper around ``scipy.signal.find_peaks`` applied to the last
+    (frequency) axis.  Useful for enumerating narrowband peaks found by
+    ``narrowband_ratio`` or for identifying line-noise harmonics.
+
+    Parameters
+    ----------
+    psd : (..., freq)
+    freqs : (freq,)  — Hz, strictly increasing
+    prominence : float
+        Minimum prominence (in PSD units) for a peak to be reported.
+        Default 2.0.
+    min_distance_hz : float
+        Minimum separation between peaks in Hz.  Converted to bins
+        internally.  Default 2.0.
+
+    Returns
+    -------
+    peak_freqs : ndarray (1D input) or list[ndarray] (batched input)
+        Frequency values at detected peaks.  For 1D ``psd``, a single
+        1D array.  For batched ``psd``, a list with one array per
+        batch element (peak count may vary across elements).
+    """
+    from scipy.signal import find_peaks as _find_peaks
+
+    freqs = np.asarray(freqs, dtype=np.float64)
+    psd = np.asarray(psd, dtype=np.float64)
+
+    df = float(np.median(np.diff(freqs))) if freqs.size > 1 else 1.0
+    distance = max(1, int(round(float(min_distance_hz) / df)))
+
+    if psd.ndim == 1:
+        idx, _ = _find_peaks(psd, prominence=float(prominence), distance=distance)
+        return freqs[idx]
+
+    batch_shape = psd.shape[:-1]
+    flat = psd.reshape(-1, psd.shape[-1])
+    results = []
+    for i in range(flat.shape[0]):
+        idx, _ = _find_peaks(flat[i], prominence=float(prominence), distance=distance)
+        results.append(freqs[idx])
+
+    return results
 
 
 def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
