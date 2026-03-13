@@ -19,6 +19,7 @@ __all__ = [
     "find_true_runs",
     "merge_intervals",
     "dual_threshold_events_1d",
+    "score_to_bouts",
 ]
 
 
@@ -148,5 +149,79 @@ def dual_threshold_events_1d(
                 "duration": float(tv[i1] - tv[i0]),
             }
         )
+    return events
+
+
+def score_to_bouts(
+    score: np.ndarray,
+    times: np.ndarray,
+    *,
+    low: float,
+    high: float,
+    min_duration: float = 0.0,
+    merge_gap: float = 0.0,
+) -> list[dict[str, Any]]:
+    """
+    Convert a 1D score time series to event bouts via dual threshold.
+
+    Composes :func:`dual_threshold_events_1d` with gap merging and
+    minimum-duration filtering.  Useful for converting any continuous
+    noise/artifact score into discrete event intervals.
+
+    Parameters
+    ----------
+    score : (N,) — 1D score array
+    times : (N,) — corresponding time stamps (seconds)
+    low : float — lower threshold (event boundary)
+    high : float — upper threshold (event must contain at least one
+        sample above this value)
+    min_duration : float — discard events shorter than this (seconds,
+        default 0.0)
+    merge_gap : float — merge events separated by less than this
+        (seconds, default 0.0)
+
+    Returns
+    -------
+    events : list[dict]
+        Each dict has keys ``t0``, ``t1``, ``t``, ``value``, ``duration``.
+    """
+    score = np.asarray(score, dtype=float)
+    times = np.asarray(times, dtype=float)
+
+    events = dual_threshold_events_1d(score, times, low=low, high=high)
+
+    if merge_gap > 0 and len(events) > 1:
+        # Convert time-domain events to sample-index intervals for merging.
+        # find_true_runs / merge_intervals work on integer sample indices.
+        dt = float(np.median(np.diff(times))) if times.size > 1 else 1.0
+        gap_samples = max(0, int(round(float(merge_gap) / dt)))
+
+        above_low = score >= float(low)
+        above_high = score >= float(high)
+
+        # Re-detect with merged intervals
+        runs = find_true_runs(above_low)
+        merged = merge_intervals(runs, gap=gap_samples)
+
+        events = []
+        for i0, i1 in merged:
+            seg = score[i0 : i1 + 1]
+            if not np.any(above_high[i0 : i1 + 1]):
+                continue
+            k = int(np.argmax(seg))
+            ip = i0 + k
+            events.append(
+                {
+                    "t0": float(times[i0]),
+                    "t": float(times[ip]),
+                    "t1": float(times[i1]),
+                    "value": float(score[ip]),
+                    "duration": float(times[i1] - times[i0]),
+                }
+            )
+
+    if min_duration > 0:
+        events = [e for e in events if e["duration"] >= float(min_duration)]
+
     return events
 

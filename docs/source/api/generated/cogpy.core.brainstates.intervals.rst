@@ -1,4 +1,4 @@
-cogpy.core.brainstates.intervals
+﻿cogpy.core.brainstates.intervals
 ================================
 
 .. automodule:: cogpy.core.brainstates.intervals
@@ -15,6 +15,10 @@ cogpy.core.brainstates.intervals
    map_numbers_to_disjoint_intervals
 
    map_numbers_to_intervals
+
+   perievent_epochs
+
+   restrict
 
    subtract_intervals
 

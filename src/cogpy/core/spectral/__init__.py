@@ -1,3 +1,4 @@
+"""Spectral analysis: PSD, spectrograms, coherence, and multitaper methods."""
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 

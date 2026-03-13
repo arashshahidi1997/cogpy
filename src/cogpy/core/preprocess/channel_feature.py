@@ -5,6 +5,15 @@ Canonical implementation for new code lives under
 `cogpy.core.preprocess.badchannel.*`.
 """
 
+import warnings as _warnings
+
+_warnings.warn(
+    "cogpy.core.preprocess.channel_feature is deprecated. "
+    "Use cogpy.core.preprocess.badchannel instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import numpy as np
 import xarray as xr
 import zarr

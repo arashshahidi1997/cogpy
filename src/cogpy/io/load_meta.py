@@ -1,11 +1,23 @@
+"""Parse and write XML metadata for OpenEphys-style recordings."""
 from pathlib import Path
 import xmltodict
 from ..io.save_utils import save_options
 from .xml_anat_map import read_anat_map
 
 
-# %% .xml file
 def parse_xml(xml_file):
+    """Read an XML metadata file and return its contents as a nested dict.
+
+    Parameters
+    ----------
+    xml_file : str or Path
+        Path to the ``.xml`` file (extension added if missing).
+
+    Returns
+    -------
+    dict
+        Parsed XML contents.
+    """
     xml_file = Path(xml_file).with_suffix(".xml")
     with open(xml_file, "rb") as file:
         xml_dict = xmltodict.parse(file.read())
@@ -14,6 +26,17 @@ def parse_xml(xml_file):
 
 
 def unparse_xml(xml_dict, xml_file, **save_kwargs):
+    """Write a dict back to an XML file.
+
+    Parameters
+    ----------
+    xml_dict : dict
+        Nested dict to serialize (as returned by :func:`parse_xml`).
+    xml_file : str or Path
+        Output path.
+    **save_kwargs
+        Forwarded to :func:`cogpy.io.save_utils.save_options`.
+    """
     xml_output = save_options(xml_file, ".xml", **save_kwargs)
     # write to output file
     with open(xml_output, "w") as out:
@@ -23,7 +46,23 @@ def unparse_xml(xml_dict, xml_file, **save_kwargs):
 
 
 def parse_meta_from_xml(xml_file):
-    # Use the existing 'ld' module functions directly
+    """Extract recording metadata (grid shape, fs, dtype) from an XML file.
+
+    Parameters
+    ----------
+    xml_file : str or Path
+        Path to the ``.xml`` metadata file.
+
+    Returns
+    -------
+    dict
+        Keys: ``nchan``, ``nrow``, ``ncol``, ``fs``, ``dtype``, ``anat_map``.
+
+    Raises
+    ------
+    ValueError
+        If electrode shanks have unequal heights (non-rectangular grid).
+    """
     xml_dict = parse_xml(xml_file)
 
     # Acquisition system information
@@ -71,9 +110,11 @@ def parse_meta_from_xml(xml_file):
 
 
 def read_dtype(xml_dict):
+    """Return the data-type string (e.g. ``'int16'``) from a parsed XML dict."""
     acq = read_acquistionSystem(xml_dict)
     return "int{nbits}".format(nbits=acq["nBits"])
 
 
 def read_acquistionSystem(xml_dict):
+    """Return the ``acquisitionSystem`` subtree from a parsed XML dict."""
     return xml_dict["parameters"]["acquisitionSystem"]

@@ -1,4 +1,4 @@
-cogpy.utils.sliding\_core
+﻿cogpy.utils.sliding\_core
 =========================
 
 .. automodule:: cogpy.utils.sliding_core
@@ -14,11 +14,23 @@ cogpy.utils.sliding\_core
 
    running_blockwise
 
+   running_blockwise_xr
+
    running_reduce
+
+   running_reduce_xr
 
    sliding_window
 
    sliding_window_naive
+
+   window_centers_idx
+
+   window_centers_time
+
+   window_ends
+
+   window_onsets
 
 
 

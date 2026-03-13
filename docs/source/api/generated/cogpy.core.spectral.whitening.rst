@@ -1,4 +1,4 @@
-cogpy.core.spectral.whitening
+﻿cogpy.core.spectral.whitening
 =============================
 
 .. automodule:: cogpy.core.spectral.whitening

@@ -24,6 +24,7 @@ __all__ = [
     "standard_deviation",
     "amplitude",
     "time_derivative",
+    "temporal_stability",
     "hurst_exponent",
     "dfa_exponent",
     "sample_entropy",
@@ -57,6 +58,30 @@ def amplitude(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
 def time_derivative(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
     grad = np.gradient(arr, axis=axis)
     return np.nanmean(np.abs(grad), axis=axis)
+
+
+def temporal_stability(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:
+    """
+    Coefficient of variation across the given axis.
+
+    Measures how stable a scalar feature is over time (or windows).
+    Lower values indicate more stable features; higher values indicate
+    transient or non-stationary behavior.
+
+    Parameters
+    ----------
+    arr : (..., time)
+        Windowed scalar feature values (e.g. one value per time window).
+    axis : int
+        Axis to reduce (default -1).
+
+    Returns
+    -------
+    cv : (...)
+        std(arr) / (|mean(arr)| + EPS).  Dimensionless.
+    """
+    arr = np.asarray(arr, dtype=np.float64)
+    return np.nanstd(arr, axis=axis) / (np.abs(np.nanmean(arr, axis=axis)) + EPS)
 
 
 def hurst_exponent(arr: np.ndarray, *, axis: int = -1) -> np.ndarray:

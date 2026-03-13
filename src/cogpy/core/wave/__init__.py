@@ -1,3 +1,4 @@
+"""Waveform detection, extraction, and feature analysis."""
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 

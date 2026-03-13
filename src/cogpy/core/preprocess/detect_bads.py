@@ -5,6 +5,15 @@ Canonical implementation for new code lives under
 `cogpy.core.preprocess.badchannel.badlabel`.
 """
 
+import warnings as _warnings
+
+_warnings.warn(
+    "cogpy.core.preprocess.detect_bads is deprecated. "
+    "Use cogpy.core.preprocess.badchannel.badlabel instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 # static TLS
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler

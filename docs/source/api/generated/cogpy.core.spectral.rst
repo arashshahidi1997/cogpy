@@ -16,9 +16,14 @@ cogpy.core.spectral
    :toctree:
    :recursive:
 
-   bivariate_spectral
+   bivariate
+   features
    multitaper
    process_spectrogram
+   psd
+   psd_utils
+   spectrogram_burst
+   specx
    ssa
    superlet
    whitening

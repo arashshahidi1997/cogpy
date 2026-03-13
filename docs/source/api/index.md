@@ -7,6 +7,10 @@
 brainstates
 burst
 datasets
+detect
+events
+io
+measures
 preprocess
 spectral
 utils

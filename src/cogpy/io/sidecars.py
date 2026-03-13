@@ -1,3 +1,4 @@
+"""BIDS-style sidecar management: JSON metadata, channel/electrode TSVs, and symlink propagation."""
 from __future__ import annotations
 
 import json
@@ -7,6 +8,20 @@ from typing import Any, Iterable
 
 
 def read_json_metadata(path: str | Path, *, required_keys: tuple[str, ...] = ()) -> dict[str, Any]:
+    """Read a JSON sidecar file and optionally validate required keys.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to the JSON file.
+    required_keys : tuple of str, optional
+        Keys that must be present; raises ``KeyError`` if missing.
+
+    Returns
+    -------
+    dict
+        Parsed JSON contents.
+    """
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Missing JSON sidecar: {p}")
@@ -22,6 +37,7 @@ def read_json_metadata(path: str | Path, *, required_keys: tuple[str, ...] = ())
 
 
 def write_json_metadata(path: str | Path, meta: dict[str, Any]) -> None:
+    """Write a dict as a formatted JSON sidecar file."""
     p = Path(path)
     p.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
 
@@ -51,22 +67,26 @@ def _strip_datatype_suffix(stem: str) -> str:
 
 
 def sidecar_json(lfp_path: str | Path) -> Path:
+    """Return the ``.json`` sidecar path for a given LFP file."""
     return Path(lfp_path).with_suffix(".json")
 
 
 def sidecar_channels(lfp_path: str | Path) -> Path:
+    """Return the ``_channels.tsv`` sidecar path for a given LFP file."""
     p = Path(lfp_path)
     stem = _strip_datatype_suffix(p.stem)
     return p.with_name(f"{stem}_channels.tsv")
 
 
 def sidecar_electrodes(lfp_path: str | Path) -> Path:
+    """Return the ``_electrodes.tsv`` sidecar path for a given LFP file."""
     p = Path(lfp_path)
     stem = _strip_datatype_suffix(p.stem)
     return p.with_name(f"{stem}_electrodes.tsv")
 
 
 def sidecar_xml(lfp_path: str | Path) -> Path:
+    """Return the ``.xml`` sidecar path for a given LFP file."""
     return Path(lfp_path).with_suffix(".xml")
 
 

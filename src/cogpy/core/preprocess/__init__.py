@@ -1,33 +1,42 @@
+"""Signal preprocessing: filtering, bad-channel detection, resampling, and interpolation."""
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 
-__getattr__, __dir__, __all__ = attach(
+__getattr__, __dir__, _submod_all = attach(
     __name__,
     submodules=[
-        # Legacy compatibility surfaces (prefer `badchannel` for new code):
-        "channel_feature_functions",
-        "channel_feature",
-        "detect_bads",
-        "filt",
+        "filtering",
         "filtx",
         "interpolate",
         "linenoise",
-        "linenoise_io",
         "resample",
         "badchannel",
+        # Legacy — importable but not in __all__:
+        "channel_feature_functions",
+        "channel_feature",
+        "detect_bads",
     ],
 )
 
+# Curated public API
+__all__ = [
+    "filtering",
+    "filtx",
+    "interpolate",
+    "linenoise",
+    "resample",
+    "badchannel",
+]
+
 if TYPE_CHECKING:
     from . import (
-        channel_feature_functions,
-        channel_feature,
-        detect_bads,
-        filt,
+        filtering,
         filtx,
         interpolate,
         linenoise,
-        linenoise_io,
         resample,
         badchannel,
+        channel_feature_functions,
+        channel_feature,
+        detect_bads,
     )

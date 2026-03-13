@@ -12,8 +12,6 @@ cogpy.io.ieeg\_io
 
    from_file
 
-   load_ieeg_metadata
-
 
 
 

@@ -8,14 +8,10 @@ Signal preprocessing pipeline utilities.
 .. autosummary::
    :recursive:
 
-   cogpy.preprocess.channel_feature
-   cogpy.preprocess.channel_feature_functions
-   cogpy.preprocess.detect_bads
-   cogpy.preprocess.filt
-   cogpy.preprocess.filtx
-   cogpy.preprocess.interpolate
+   cogpy.preprocess.filtering
    cogpy.preprocess.linenoise
-   cogpy.preprocess.resample
+   cogpy.preprocess.interpolate
+   cogpy.preprocess.badchannel
 ```
 
 ```{eval-rst}
