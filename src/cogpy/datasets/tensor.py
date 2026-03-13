@@ -527,6 +527,203 @@ class AROscillatorGrid:
         return cls(raw=raw_da, spectrogram=spec, bursts=bursts_df, fs=float(fs))
 
 
+# ---------------------------------------------------------------------------
+# TensorScope demo bundle helper
+# ---------------------------------------------------------------------------
+
+def make_tensorscope_demo_bundle(
+    *,
+    duration: float = 6.0,
+    fs: float = 200.0,
+    nap: int = 8,
+    nml: int = 8,
+    n_bursts: int = 6,
+    f_min: float = 6.0,
+    f_max: float = 24.0,
+    burst_amp: float = 1.5,
+    background_noise: float = 0.025,
+    seed: int = 0,
+) -> dict:
+    """Build a complete, deterministic TensorScope demo bundle from one simulation.
+
+    All outputs share the same underlying ``AROscillatorGrid`` simulation so
+    that signal, spectrogram, events, and brainstates have a consistent timebase
+    and ground truth.
+
+    Parameters
+    ----------
+    duration, fs, nap, nml, n_bursts, f_min, f_max, burst_amp, background_noise, seed
+        Forwarded to :meth:`AROscillatorGrid.make`.
+
+    Returns
+    -------
+    dict with keys:
+
+    ``"signal"``
+        :class:`xarray.DataArray` with dims ``(time, AP, ML)``.
+    ``"spectrogram"``
+        :class:`xarray.DataArray` with dims ``(time, freq, AP, ML)``.
+    ``"events"``
+        :class:`pandas.DataFrame` with columns ``event_id, t, AP, ML,
+        freq, amplitude, label``.
+    ``"brainstates"``
+        :class:`xarray.DataArray` with dim ``(time,)``, integer state codes
+        (0=theta, 1=alpha, 2=beta) derived deterministically from the
+        spectrogram.  The ``state_names`` attr maps code → label.
+    ``"meta"``
+        Plain dict with provenance metadata (seed, fs, shapes, …).
+    """
+    grid = AROscillatorGrid.make(
+        duration=duration,
+        fs=fs,
+        nap=nap,
+        nml=nml,
+        n_bursts=n_bursts,
+        f_min=f_min,
+        f_max=f_max,
+        burst_amp=burst_amp,
+        background_noise=background_noise,
+        seed=seed,
+    )
+
+    # ------------------------------------------------------------------
+    # signal: (ap, ml, time) → rename → (time, AP, ML)
+    # ------------------------------------------------------------------
+    signal = grid.raw.rename({"ap": "AP", "ml": "ML"}).transpose("time", "AP", "ML")
+    signal.name = "signal"
+    signal.attrs.update(
+        {
+            "units": "a.u.",
+            "source": "cogpy.datasets.tensor.AROscillatorGrid.make",
+            "description": "Deterministic demo LFP grid for TensorScope UI development",
+            "fs": fs,
+            "seed": seed,
+        }
+    )
+
+    # ------------------------------------------------------------------
+    # spectrogram: (ml, ap, time, freq) → rename → (time, freq, AP, ML)
+    # ------------------------------------------------------------------
+    spectrogram = (
+        grid.spectrogram
+        .rename({"ap": "AP", "ml": "ML"})
+        .transpose("time", "freq", "AP", "ML")
+    )
+    spectrogram.name = "spectrogram"
+    spectrogram.attrs.update(
+        {
+            "units": "power",
+            "source": "cogpy.datasets.tensor.AROscillatorGrid.make",
+            "description": "Multitaper spectrogram of demo LFP grid",
+            "fs": fs,
+            "seed": seed,
+        }
+    )
+
+    # ------------------------------------------------------------------
+    # events: map cogpy burst columns → TensorScope field names
+    #   x=ml → ML, y=ap → AP, z=freq → freq, t=t, value=amplitude
+    # ------------------------------------------------------------------
+    bursts = grid.bursts.copy()
+    events = pd.DataFrame(
+        {
+            "event_id": bursts["burst_id"].astype(int).values,
+            "t": bursts["t"].astype(float).values,
+            "AP": bursts["y"].astype(float).values,
+            "ML": bursts["x"].astype(float).values,
+            "freq": bursts["z"].astype(float).values,
+            "amplitude": bursts["value"].astype(float).values,
+            "label": "burst",
+        }
+    ).sort_values("t").reset_index(drop=True)
+
+    # ------------------------------------------------------------------
+    # brainstates: dominant spectral band per spectrogram time step
+    #   theta=0 (4–8 Hz), alpha=1 (8–13 Hz), beta=2 (13–30 Hz)
+    # ------------------------------------------------------------------
+    _bands = [("theta", 4.0, 8.0), ("alpha", 8.0, 13.0), ("beta", 13.0, 30.0)]
+    freq_vals = spectrogram.coords["freq"].values
+
+    # Mean power over space → (time, freq)
+    spec_mean = spectrogram.mean(dim=["AP", "ML"])
+
+    band_powers = []
+    for _bname, lo, hi in _bands:
+        mask = (freq_vals >= lo) & (freq_vals <= hi)
+        if mask.any():
+            band_powers.append(spec_mean.isel(freq=mask).mean(dim="freq").values)
+        else:
+            # Band not covered by this spectrogram — assign zero power
+            band_powers.append(np.zeros(int(spectrogram.sizes["time"]), dtype=float))
+
+    # Shape (time, n_bands) → dominant band index per time step
+    band_matrix = np.stack(band_powers, axis=1)
+    state_codes = np.argmax(band_matrix, axis=1).astype(np.int8)
+    state_names = [b[0] for b in _bands]
+
+    brainstates = xr.DataArray(
+        state_codes,
+        dims=("time",),
+        coords={"time": spectrogram.coords["time"].values},
+        name="brainstate",
+        attrs={
+            "description": "Dominant spectral band per time step (0=theta,1=alpha,2=beta)",
+            # Stored as comma-joined string for NetCDF compatibility; split on ',' to decode.
+            "state_names": ",".join(state_names),
+            "source": "cogpy.datasets.tensor.make_tensorscope_demo_bundle",
+            "seed": seed,
+        },
+    )
+
+    # ------------------------------------------------------------------
+    # meta
+    # ------------------------------------------------------------------
+    meta: dict = {
+        "seed": seed,
+        "fs": fs,
+        "duration": duration,
+        "nap": nap,
+        "nml": nml,
+        "n_bursts": n_bursts,
+        "f_min": f_min,
+        "f_max": f_max,
+        "burst_amp": burst_amp,
+        "background_noise": background_noise,
+        "source": "cogpy.datasets.tensor.AROscillatorGrid.make + make_tensorscope_demo_bundle",
+        "files": {
+            "signal.nc": {
+                "dims": list(signal.dims),
+                "shape": list(signal.shape),
+                "description": "Raw LFP grid",
+            },
+            "spectrogram.nc": {
+                "dims": list(spectrogram.dims),
+                "shape": list(spectrogram.shape),
+                "description": "Multitaper spectrogram",
+            },
+            "events.parquet": {
+                "columns": list(events.columns),
+                "n_events": len(events),
+                "description": "Ground-truth burst events",
+            },
+            "brainstates.nc": {
+                "dims": list(brainstates.dims),
+                "shape": list(brainstates.shape),
+                "state_names": state_names,  # list form preserved in manifest
+                "description": "Dominant spectral band per time step",
+            },
+        },
+    }
+
+    return {
+        "signal": signal,
+        "spectrogram": spectrogram,
+        "events": events,
+        "brainstates": brainstates,
+        "meta": meta,
+    }
+
+
 def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000, fs=1000):
     sig = xr.DataArray(
         np.random.randn(nchannel, ntime),  # (channel, time)
