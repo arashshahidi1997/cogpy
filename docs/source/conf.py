@@ -55,6 +55,7 @@ html_js_files = [
     "https://cdn.bokeh.org/bokeh/release/bokeh-tables-3.3.2.min.js",
 ]
 nb_execution_mode = "cache"
+nb_execution_timeout = 300  # allow up to 5 min for heavy cells (e.g. erpPCA varimax)
 myst_enable_extensions = [
     "colon_fence",
     "dollarmath",

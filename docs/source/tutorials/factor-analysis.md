@@ -65,16 +65,26 @@ plt.tight_layout()
 We use `spectrogramx` (ghostipy backend) to compute a time-frequency
 representation for every electrode in the grid.
 
-Two practical considerations for the PCA step:
+Three practical considerations for the PCA step:
 
 - **Frequency range**: clip to frequencies of interest (1–50 Hz)
   to avoid inflating the variable count.
+- **Frequency coarsening**: average adjacent frequency bins to reduce
+  dimensionality while preserving spectral structure. This is the
+  single most effective knob for controlling runtime.
 - **Grid subsampling**: for large grids, subsample spatially to keep
   the covariance matrix tractable.
 
 The PCA variable count is `n_AP × n_ML × n_freq`. The covariance
 matrix is `(n_vars × n_vars)`, so keeping this under ~3000 is
 recommended for interactive use.
+
+:::{note}
+This tutorial uses aggressive subsampling (8×8 grid, 12 freq bins →
+768 variables) to keep the docs build fast (~45 s). For real analyses
+you can use the full 16×16 grid with 10–25 frequency bins. See
+[Computational considerations](#computational-considerations) at the end.
+:::
 
 ```{code-cell} python
 from cogpy.spectral.specx import spectrogramx
@@ -85,6 +95,10 @@ spec = spec.compute() if hasattr(spec.data, "compute") else spec
 # Clip frequency range and subsample grid
 spec = spec.sel(freq=slice(1, 50))
 spec = spec.isel(AP=slice(None, None, 2), ML=slice(None, None, 2))  # 8×8
+
+# Coarsen frequency: average pairs of adjacent bins → ~12 bins
+# This is the key step for keeping the eigendecomposition fast.
+spec = spec.coarsen(freq=2, boundary="trim").mean()
 
 n_vars = spec.sizes["AP"] * spec.sizes["ML"] * spec.sizes["freq"]
 print(f"Spectrogram: {spec.shape}")
@@ -393,8 +407,9 @@ variable count:
 |-----------|-----------|---------------|--------|
 | Grid | 16×16 = 256 ch | 8×8 = 64 ch | 2× spatial subsample |
 | Freq range | 0–62 Hz (33 bins) | 1–50 Hz (25 bins) | Drop DC + above-interest |
+| Freq coarsen | 25 bins | 12 bins (pairs averaged) | 2× freq reduction |
 | Overlap | 48/64 → 55 time wins | 56/64 → 109 time wins | More samples for PCA |
-| **PCA variables** | **8,448** | **1,600** | 5× reduction |
+| **PCA variables** | **8,448** | **768** | 11× reduction |
 
 The computational bottleneck is **`np.linalg.eigh`** on the
 `(n_vars × n_vars)` covariance matrix — an O(n³) operation.
