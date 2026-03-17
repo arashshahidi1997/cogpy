@@ -15,8 +15,10 @@ def load_sample():
     """
     load_sample_file = CACHED_DATA_DIR / "sample_signal.dat"
     sigx = ecog_io.from_file(load_sample_file)
+
+    # this sample signal is row-major so we have to swap the AP and ML dimensions and transpose to (AP, ML, time)
     # swap AP and ML dimensions names
-    # sigx = sigx.rename({'AP': 'ML', 'ML': 'AP'})
+    sigx = sigx.rename({'AP': 'ML', 'ML': 'AP'})
     # transpose to (AP, ML, time)
     sigx = sigx.transpose("AP", "ML", "time")
     sigx.name = "signal"
