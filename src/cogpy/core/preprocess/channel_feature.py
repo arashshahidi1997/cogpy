@@ -202,7 +202,7 @@ def feature_grid_movie_holomap(
 
     hv.extension("bokeh", logo=False)
 
-    from cogpy.core.plot.xarray_hv import grid_movie, grid_movie_with_time_curve
+    from cogpy.core.plot.hv.xarray_hv import grid_movie, grid_movie_with_time_curve
 
     names = list(ds.data_vars) if features is None else list(features)
     items: dict[str, Any] = {}

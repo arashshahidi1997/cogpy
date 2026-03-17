@@ -4,7 +4,7 @@
 - Version: 2.6.0
 - Date: 2026-03-05
 - Status: Implementation
-- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`), `cogpy.core.plot.tensorscope.events` (`EventStream`)
+- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`), `cogpy.core.tensorscope.events` (`EventStream`)
 
 ## Overview
 

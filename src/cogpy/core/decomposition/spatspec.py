@@ -164,10 +164,22 @@ class SpatSpecDecomposition:
         if log:
             X.data[np.where(X.data == 0)] = 1e-10
             X = np.log10(X).reset_index("hwf")
+
+        # Compute step (seconds per time window)
+        fs = float(getattr(mtx, "fs", mtx.attrs.get("fs", 1.0)))
+        if hasattr(mtx, "window_step"):
+            step = float(mtx.window_step) / fs
+        elif "window_step" in mtx.attrs:
+            step = float(mtx.attrs["window_step"]) / fs
+        elif mtx.sizes["time"] > 1:
+            step = float(mtx.time[1] - mtx.time[0])
+        else:
+            step = 1.0 / fs
+
         X.attrs = {
             "hwf_shape": self.spatspec_shape,
-            "fs": mtx.fs,
-            "step": mtx.window_step / mtx.fs,
+            "fs": fs,
+            "step": step,
         }
         return X
 

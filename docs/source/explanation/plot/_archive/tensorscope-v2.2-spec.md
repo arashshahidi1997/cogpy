@@ -158,9 +158,9 @@ TensorScopeState / CoordinateSpace / SignalRegistry
 ### Creating Views Programmatically
 
 ```python
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.view_spec import ViewSpec
-from cogpy.core.plot.tensorscope.view_factory import ViewFactory
+from cogpy.core.tensorscope import TensorScopeState
+from cogpy.core.tensorscope.view_spec import ViewSpec
+from cogpy.core.tensorscope.view_factory import ViewFactory
 
 state = TensorScopeState(data)
 
@@ -173,7 +173,7 @@ layout = (spatial + temporal).cols(1)
 ### Using Preset Modules
 
 ```python
-from cogpy.core.plot.tensorscope.modules import ModuleRegistry
+from cogpy.core.tensorscope.modules import ModuleRegistry
 
 registry = ModuleRegistry()
 basic = registry.get("basic")

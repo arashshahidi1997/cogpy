@@ -1,4 +1,4 @@
-cogpy.datasets.tensor
+﻿cogpy.datasets.tensor
 =====================
 
 .. automodule:: cogpy.datasets.tensor
@@ -19,6 +19,8 @@ cogpy.datasets.tensor
    make_dataset
 
    make_flat_blob_dataset
+
+   make_tensorscope_demo_bundle
 
 
 

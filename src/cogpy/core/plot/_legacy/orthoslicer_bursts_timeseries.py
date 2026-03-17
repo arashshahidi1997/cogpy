@@ -60,8 +60,8 @@ import param
 from holoviews import streams
 
 from .orthoslicer_bursts import OrthoSlicerRangerBursts
-from .orthoslicer_rangercopy import _clip_pair
-from .multichannel_timeseries import multichannel_timeseries_view
+from cogpy.core.plot.hv.orthoslicer import _clip_pair
+from cogpy.core.plot.hv.multichannel_timeseries import multichannel_timeseries_view
 
 
 hv.extension("bokeh")

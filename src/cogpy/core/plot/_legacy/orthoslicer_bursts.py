@@ -92,7 +92,7 @@ import param
 from holoviews import streams
 import numpy as np
 
-from .orthoslicer_rangercopy import OrthoSlicerRanger, _clip_pair
+from cogpy.core.plot.hv.orthoslicer import OrthoSlicerRanger, _clip_pair
 
 
 class OrthoSlicerRangerBursts(OrthoSlicerRanger):

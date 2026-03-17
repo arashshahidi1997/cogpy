@@ -323,7 +323,7 @@ class TimeseriesView(SignalView):
             return
         
         # Get processed data for viewer
-        from cogpy.core.plot.tensorscope.schema import flatten_grid_to_channels
+        from cogpy.core.tensorscope.schema import flatten_grid_to_channels
         flat = flatten_grid_to_channels(signal.data)
         
         # Create viewer
@@ -544,7 +544,7 @@ class TensorScopeState(param.Parameterized):
     @property
     def selected_channels_flat(self) -> list[int]:
         """Flat channel indices for selection."""
-        from cogpy.core.plot.tensorscope.schema import flatten_grid_to_channels
+        from cogpy.core.tensorscope.schema import flatten_grid_to_channels
         selected = self.channel_grid.selected
         if not selected:
             return []

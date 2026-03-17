@@ -34,7 +34,11 @@ napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
 templates_path = ["_templates"]
-exclude_patterns: list[str] = []
+exclude_patterns: list[str] = [
+    "explanation/plot/_archive/**",
+    "tutorials/_deprecated/**",
+    "readme.md",
+]
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]

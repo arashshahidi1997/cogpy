@@ -54,9 +54,9 @@ def estimate_template(
         elif method == "trimmean":
             from scipy.stats import trim_mean
 
-            axis = list(epochs.dims).index(event_dim)
+            # apply_ufunc moves core dims to the end, so axis=-1 inside.
             result = xr.apply_ufunc(
-                lambda x: trim_mean(x, proportiontocut=0.1, axis=axis),
+                lambda x: trim_mean(x, proportiontocut=0.1, axis=-1),
                 epochs,
                 input_core_dims=[[event_dim]],
                 vectorize=False,

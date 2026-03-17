@@ -16,8 +16,8 @@ cogpy.decomposition
    :toctree:
    :recursive:
 
-   decomposition
    embed
-   erpPCA
-   erppca
-   manifold
+   match
+   pca
+   scores
+   spatspec

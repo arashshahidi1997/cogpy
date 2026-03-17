@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from cogpy.core.plot.grid_indexing import to_apml_view
+from cogpy.core.plot.hv.grid_indexing import to_apml_view
 
 from .entities import example_ieeg_grid
 from .schemas import validate_ieeg_grid

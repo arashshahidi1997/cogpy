@@ -13,6 +13,7 @@ spectral-conventions
 detection-framework
 preprocessing-pipeline
 design-spec
+primitives
 ```
 
 ## Topic-specific design docs
@@ -27,4 +28,7 @@ events/event-catalog-spec
 detect/detector-architecture-spec
 detect/additional-detectors-spec
 detect/pipeline-spec
+plot/ieeg-toolkit
+plot/ieeg-toolkit-spec
+plot/topomap
 ```

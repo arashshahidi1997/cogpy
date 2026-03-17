@@ -111,7 +111,7 @@ Defaults live in `workflows/preprocess/config.yaml` (packaged). Override via fil
 
 ```python
 from cogpy.io.ecog_io import from_file, to_zarr
-from cogpy.core.preprocess.filters import lowpass
+from cogpy.preprocess.filtering.temporal import lowpass
 
 sig = from_file("rec.lfp", "rec.xml")
 filt = lowpass(sig, cutoff=300, order=4)

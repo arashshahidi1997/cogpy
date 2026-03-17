@@ -60,7 +60,7 @@ from holoviews import streams
 from holoviews.plotting.links import RangeToolLink
 
 # If you have this locally, keep it; otherwise replace with your own time player
-from ..plot.time_player import PlayerWithRealTime
+from .time_player import PlayerWithRealTime
 
 hv.extension("bokeh")
 pn.extension()

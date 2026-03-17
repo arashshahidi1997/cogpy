@@ -61,23 +61,17 @@ def match_nearest(
         empty = np.array([], dtype=int)
         return empty, empty.copy(), np.array([], dtype=float)
 
-    # Binary search for nearest in sorted b
-    idxs_b = np.searchsorted(b, a, side="left")
-    idxs_b = np.clip(idxs_b, 0, len(b) - 1)
+    # Vectorized nearest-neighbor via searchsorted + two-candidate check.
+    j_right = np.searchsorted(b, a, side="left")  # index of first b >= a
+    j_right = np.clip(j_right, 0, len(b) - 1)
+    j_left = np.clip(j_right - 1, 0, len(b) - 1)
 
-    # Check both candidates (searchsorted gives right neighbor)
-    best_idx_b = np.empty(len(a), dtype=int)
-    best_lag = np.empty(len(a), dtype=float)
-    for i, (ta, jb) in enumerate(zip(a, idxs_b)):
-        candidates = []
-        if jb < len(b):
-            candidates.append(jb)
-        if jb > 0:
-            candidates.append(jb - 1)
-        dists = [abs(b[c] - ta) for c in candidates]
-        best = candidates[int(np.argmin(dists))]
-        best_idx_b[i] = best
-        best_lag[i] = b[best] - ta
+    dist_right = np.abs(b[j_right] - a)
+    dist_left = np.abs(b[j_left] - a)
+
+    use_left = dist_left < dist_right  # prefer right on tie
+    best_idx_b = np.where(use_left, j_left, j_right)
+    best_lag = b[best_idx_b] - a
 
     mask = np.abs(best_lag) <= max_lag
     idx_a = np.where(mask)[0]
@@ -165,15 +159,16 @@ def event_lag_histogram(
     n_bins = int(np.ceil(2 * max_lag / bin_width))
     bin_edges = np.linspace(-max_lag, max_lag, n_bins + 1)
 
-    lags_all: list[float] = []
+    # Collect all pairwise lags within max_lag using binary search.
+    lag_chunks: list[np.ndarray] = []
     for ta in a:
-        # Binary search for efficient windowing
         j_lo = np.searchsorted(b, ta - max_lag, side="left")
         j_hi = np.searchsorted(b, ta + max_lag, side="right")
         if j_lo < j_hi:
-            lags_all.extend((b[j_lo:j_hi] - ta).tolist())
+            lag_chunks.append(b[j_lo:j_hi] - ta)
 
-    if lags_all:
+    if lag_chunks:
+        lags_all = np.concatenate(lag_chunks)
         counts, _ = np.histogram(lags_all, bins=bin_edges)
     else:
         counts = np.zeros(n_bins, dtype=int)

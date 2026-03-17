@@ -120,13 +120,12 @@ def event_design_matrix(
 
     for i, s0 in enumerate(event_samples):
         s1 = s0 + n_lag
-        if s0 < 0:
-            # Partial overlap at start
-            t_start = -s0
-            X[0 : min(s1, n_time), col + i] = template[t_start : t_start + min(s1, n_time)]
-        elif s1 > n_time:
-            # Partial overlap at end
-            X[s0:n_time, col + i] = template[: n_time - s0]
-        else:
-            X[s0:s1, col + i] = template
+        # Compute overlap between [s0, s1) and [0, n_time)
+        sig_lo = max(s0, 0)
+        sig_hi = min(s1, n_time)
+        if sig_lo >= sig_hi:
+            continue  # no overlap
+        tmpl_lo = sig_lo - s0
+        tmpl_hi = sig_hi - s0
+        X[sig_lo:sig_hi, col + i] = template[tmpl_lo:tmpl_hi]
     return X

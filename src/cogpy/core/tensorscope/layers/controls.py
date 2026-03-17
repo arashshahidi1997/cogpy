@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.channel_grid_widget import ChannelGridWidget
+from cogpy.core.plot.hv.channel_grid_widget import ChannelGridWidget
 
 from .base import TensorLayer
 

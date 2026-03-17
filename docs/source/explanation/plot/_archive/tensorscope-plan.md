@@ -261,7 +261,7 @@ tests/core/plot/tensorscope/
 - [ ] No regressions in existing cogpy.core.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] `panel serve examples/tensorscope/hello_tensorscope.py` launches without errors
-- [ ] Package imports successfully: `from cogpy.core.plot.tensorscope import TensorScopeApp`
+- [ ] Package imports successfully: `from cogpy.core.tensorscope import TensorScopeApp`
 
 ---
 
@@ -906,7 +906,7 @@ Phase 0–3 (incremental).
 
 ### 6.2 Backward compatibility
 - Do **not** break `ieeg_viewer(...)` initially.
-- Introduce TensorScope modules in a new namespace: `cogpy.core.plot.tensorscope`.
+- Introduce TensorScope modules in a new namespace: `cogpy.core.tensorscope`.
 - For any needed changes in existing components (e.g. `MultichannelViewer` public API), keep the old behavior and add new properties/methods.
 
 ### 6.3 Deprecation timeline

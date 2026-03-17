@@ -20,8 +20,8 @@ This is **additive and non-breaking**: existing TensorScope apps that use `Event
 
 TensorScope already includes:
 
-- `EventStream` / `EventStyle`: `cogpy.core.plot.tensorscope.events.model`
-- `EventRegistry`: `cogpy.core.plot.tensorscope.events.registry`
+- `EventStream` / `EventStyle`: `cogpy.core.tensorscope.events.model`
+- `EventRegistry`: `cogpy.core.tensorscope.events.registry`
 - State navigation helpers:
   - `TensorScopeState.register_events(name, stream)`
   - `TensorScopeState.jump_to_event(stream_name, event_id)`

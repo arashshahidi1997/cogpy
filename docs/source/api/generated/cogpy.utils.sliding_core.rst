@@ -1,4 +1,4 @@
-﻿cogpy.utils.sliding\_core
+cogpy.utils.sliding\_core
 =========================
 
 .. automodule:: cogpy.utils.sliding_core

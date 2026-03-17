@@ -1,4 +1,4 @@
-cogpy.utils
+﻿cogpy.utils
 ===========
 
 .. automodule:: cogpy.utils
@@ -20,6 +20,7 @@ cogpy.utils
    curve
    grid_neighborhood
    imports
+   manifold
    reshape
    sliding
    sliding_core

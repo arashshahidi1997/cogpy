@@ -1,4 +1,4 @@
-cogpy.core
+﻿cogpy.core
 ==========
 
 .. automodule:: cogpy.core
@@ -27,7 +27,9 @@ cogpy.core
    model
    plot
    preprocess
+   regression
    spectral
    tensorscope
+   triggered
    utils
    wave

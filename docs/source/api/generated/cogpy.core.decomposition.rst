@@ -1,4 +1,4 @@
-cogpy.core.decomposition
+﻿cogpy.core.decomposition
 ========================
 
 .. automodule:: cogpy.core.decomposition
@@ -16,8 +16,8 @@ cogpy.core.decomposition
    :toctree:
    :recursive:
 
-   decomposition
    embed
-   erpPCA
-   erppca
-   manifold
+   match
+   pca
+   scores
+   spatspec

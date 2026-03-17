@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cogpy.core.plot.grid_frame_element import GridFrameElement
+from cogpy.core.plot.hv.grid_frame_element import GridFrameElement
 
 from .base import TensorLayer
 
