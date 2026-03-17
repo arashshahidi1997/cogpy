@@ -283,13 +283,15 @@ hv.DynamicMap(
 
 ## 7. Factor scores over time
 
-Factor scores are how strongly each spatio-spectral pattern is
-expressed at each time point.
+Factor scores show how strongly each spatio-spectral pattern is
+expressed at each time point. The traces are stacked vertically
+(each normalised to unit std) and a **gain** slider lets you amplify
+small variations without changing the spacing between traces.
 
 ```{code-cell} python
-from cogpy.core.plot.hv.decomposition import score_traces
+from cogpy.core.plot.hv.decomposition import score_traces_holomap
 
-score_traces(scx, ss.ldx_df)
+score_traces_holomap(scx, ss.ldx_df, gains=(0.3, 0.5, 1.0, 2.0, 4.0))
 ```
 
 ## 8. Score processing
@@ -349,14 +351,15 @@ orig_slc = mtx_z.sel(h=h_sel, w=w_sel)
 recon_slc = mtx_hat.sel(h=h_sel, w=w_sel)
 resid_slc = orig_slc - recon_slc
 
-shared = dict(kdims=["time", "freq"], width=320, height=220, colorbar=True)
-
-img_orig = hv.Image(orig_slc, **shared).opts(
-    cmap="viridis", title="Original (z-scored)")
-img_recon = hv.Image(recon_slc, **shared).opts(
-    cmap="viridis", title=f"Reconstructed ({nfac} factors)")
-img_resid = hv.Image(resid_slc, **shared).opts(
-    cmap="RdBu_r", title="Residual", symmetric=True)
+img_orig = hv.Image(orig_slc, kdims=["time", "freq"]).opts(
+    cmap="viridis", colorbar=True, width=320, height=220,
+    title="Original (z-scored)")
+img_recon = hv.Image(recon_slc, kdims=["time", "freq"]).opts(
+    cmap="viridis", colorbar=True, width=320, height=220,
+    title=f"Reconstructed ({nfac} factors)")
+img_resid = hv.Image(resid_slc, kdims=["time", "freq"]).opts(
+    cmap="RdBu_r", colorbar=True, width=320, height=220,
+    title="Residual", symmetric=True)
 
 img_orig + img_recon + img_resid
 ```

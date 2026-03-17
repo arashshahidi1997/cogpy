@@ -66,6 +66,7 @@ def loading_spatial_layout(
             colorbar=True,
             width=width,
             height=height,
+            aspect="equal",
             invert_yaxis=True,
             title=f"Factor {ifac} — {peak_freq:.1f} Hz",
             tools=["hover"],
@@ -131,10 +132,15 @@ def score_traces(
     scx: xr.DataArray,
     ldx_df=None,
     *,
+    gain: float = 1.0,
     width: int = 800,
-    height_per_factor: int = 80,
-) -> hv.Layout:
-    """Stacked factor score time series.
+    height: int = 500,
+) -> hv.Overlay:
+    """Stacked factor score traces with adjustable gain.
+
+    Each factor is offset vertically by its index. The ``gain`` parameter
+    scales trace amplitudes without changing the gap between traces,
+    making it easy to see low-amplitude variation.
 
     Parameters
     ----------
@@ -142,34 +148,92 @@ def score_traces(
         Factor scores ``(time, factor)``.
     ldx_df : pd.DataFrame or None
         If given, labels include peak frequency.
+    gain : float
+        Amplitude multiplier applied to each trace. Increasing gain
+        makes small variations visible without changing trace spacing.
+    width, height : int
+        Plot dimensions in pixels.
 
     Returns
     -------
-    hv.Layout
-        Vertically stacked ``hv.Curve`` panels.
+    hv.Overlay
+        All traces overlaid with vertical offsets and y-axis labels.
     """
-    panels = []
-    for ifac in scx.factor.values:
-        trace = scx.sel(factor=ifac)
+    factors = scx.factor.values
+    nfac = len(factors)
+    t = scx.time.values
+
+    # Normalise each trace to unit std, then apply gain
+    curves = []
+    yticks = []
+    for i, ifac in enumerate(factors):
+        trace = scx.sel(factor=ifac).values.copy()
+        std = np.nanstd(trace)
+        if std > 0:
+            trace = trace / std
+        offset = nfac - 1 - i  # top-to-bottom stacking
+        y = trace * gain + offset
+
         if ldx_df is not None:
             peak_freq = ldx_df.loc[ifac, "freqmax"]
             label = f"F{ifac} ({peak_freq:.0f} Hz)"
         else:
             label = f"Factor {ifac}"
 
-        curve = hv.Curve(
-            (trace.time.values, trace.values),
-            kdims=["Time (s)"],
-            vdims=["Score"],
-            label=label,
-        ).opts(
-            width=width,
-            height=height_per_factor,
-            title=label,
+        yticks.append((offset, label))
+        curves.append(
+            hv.Curve(
+                (t, y),
+                kdims=["Time (s)"],
+                vdims=["Score"],
+                label=label,
+            )
         )
-        panels.append(curve)
 
-    return hv.Layout(panels).cols(1)
+    overlay = hv.Overlay(curves).opts(
+        width=width,
+        height=height,
+        yticks=yticks,
+        ylabel="",
+        title=f"Factor scores (gain={gain:.1f})",
+        show_legend=False,
+    )
+    return overlay
+
+
+def score_traces_holomap(
+    scx: xr.DataArray,
+    ldx_df=None,
+    *,
+    gains: tuple[float, ...] = (0.3, 0.5, 1.0, 2.0, 4.0),
+    width: int = 800,
+    height: int = 500,
+) -> hv.HoloMap:
+    """HoloMap of stacked score traces at different gain levels.
+
+    Each frame is a ``score_traces`` overlay at a given gain. Use the
+    widget slider to adjust gain interactively on a static site.
+
+    Parameters
+    ----------
+    scx : xr.DataArray
+        Factor scores ``(time, factor)``.
+    ldx_df : pd.DataFrame or None
+        If given, labels include peak frequency.
+    gains : tuple of float
+        Gain levels to include in the HoloMap.
+
+    Returns
+    -------
+    hv.HoloMap
+        Keyed by gain value.
+    """
+    frames = {}
+    for g in gains:
+        frames[g] = score_traces(
+            scx, ldx_df, gain=g, width=width, height=height,
+        )
+    return hv.HoloMap(frames, kdims=["Gain"])
 
 
 def factor_holomap(
@@ -214,6 +278,7 @@ def factor_holomap(
             colorbar=True,
             width=width,
             height=height,
+            aspect="equal",
             invert_yaxis=True,
             title=f"Factor {ifac} — {peak_freq:.1f} Hz",
             tools=["hover"],
