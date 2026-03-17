@@ -91,3 +91,5 @@ deploy:
 website:
 	@echo ">> Docs build directory: $(DOCS_HTML)"
 	@echo ">> Serve locally with: make docs-serve"
+
+-include .projio/projio.mk

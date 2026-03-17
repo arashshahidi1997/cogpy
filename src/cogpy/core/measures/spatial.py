@@ -31,6 +31,7 @@ __all__ = [
     "gradient_anisotropy",
     "spatial_kurtosis",
     "spatial_noise_concentration",
+    "spatial_summary_xr",
 ]
 
 
@@ -494,3 +495,105 @@ def spatial_noise_concentration(grid, *, k=3):
     total = np.nansum(flat, axis=-1)
     result = top_k_sum / (total + EPS)
     return float(result) if scalar_output else result
+
+
+# ---------------------------------------------------------------------------
+# xarray wrapper
+# ---------------------------------------------------------------------------
+
+# Registry of scalar spatial measures: name → (func, extra_kwargs)
+_SCALAR_MEASURES: dict[str, tuple] = {
+    "moran_i": (moran_i, {"adjacency": "queen"}),
+    "moran_ap": (moran_i, {"adjacency": "ap_only"}),
+    "moran_ml": (moran_i, {"adjacency": "ml_only"}),
+    "gradient_anisotropy": (gradient_anisotropy, {}),
+    "spatial_kurtosis": (spatial_kurtosis, {}),
+    "spatial_noise_concentration": (spatial_noise_concentration, {}),
+}
+
+
+def spatial_summary_xr(
+    da,
+    *,
+    measures: tuple[str, ...] | list[str] = (
+        "moran_i",
+        "gradient_anisotropy",
+        "spatial_kurtosis",
+    ),
+    ap_dim: str = "AP",
+    ml_dim: str = "ML",
+    moran_adjacency: str = "queen",
+):
+    """
+    Compute scalar spatial summaries preserving non-spatial coords.
+
+    Applies each named measure to the ``(AP, ML)`` spatial dims of *da*,
+    returning an ``xr.Dataset`` with one variable per measure.  All
+    non-spatial dims and coords are preserved.
+
+    Parameters
+    ----------
+    da : xr.DataArray
+        Input with named *ap_dim* and *ml_dim* dims (any position).
+    measures : sequence of str
+        Measure names.  Supported: ``"moran_i"``, ``"moran_ap"``,
+        ``"moran_ml"``, ``"gradient_anisotropy"``, ``"spatial_kurtosis"``,
+        ``"spatial_noise_concentration"``.
+    ap_dim, ml_dim : str
+        Names of the AP and ML dimensions (default ``"AP"``, ``"ML"``).
+    moran_adjacency : str
+        Default adjacency for ``"moran_i"`` (overridden for ``"moran_ap"``
+        and ``"moran_ml"``).
+
+    Returns
+    -------
+    xr.Dataset
+        One variable per measure.  Spatial dims removed; all other dims
+        and coords preserved.
+    """
+    import xarray as xr
+
+    if not isinstance(da, xr.DataArray):
+        raise TypeError("Expected xr.DataArray")
+    if ap_dim not in da.dims:
+        raise ValueError(f"ap_dim={ap_dim!r} not in da.dims={tuple(da.dims)}")
+    if ml_dim not in da.dims:
+        raise ValueError(f"ml_dim={ml_dim!r} not in da.dims={tuple(da.dims)}")
+
+    # Ensure spatial axes are last two: (..., AP, ML)
+    other_dims = [d for d in da.dims if d not in (ap_dim, ml_dim)]
+    ordered = da.transpose(*other_dims, ap_dim, ml_dim)
+    arr = np.asarray(ordered.values, dtype=float)
+
+    # Non-spatial coords for the output
+    batch_dims = tuple(other_dims)
+    batch_coords = {
+        name: coord
+        for name, coord in da.coords.items()
+        if ap_dim not in getattr(coord, "dims", ())
+        and ml_dim not in getattr(coord, "dims", ())
+    }
+
+    variables: dict[str, xr.DataArray] = {}
+    for name in measures:
+        if name not in _SCALAR_MEASURES:
+            raise ValueError(
+                f"Unknown measure {name!r}. Supported: {sorted(_SCALAR_MEASURES)}"
+            )
+        func, defaults = _SCALAR_MEASURES[name]
+        kwargs = dict(defaults)
+        # Allow overriding moran adjacency for the generic "moran_i" entry
+        if name == "moran_i":
+            kwargs["adjacency"] = moran_adjacency
+
+        result = func(arr, **kwargs)
+        result = np.asarray(result, dtype=float)
+
+        variables[name] = xr.DataArray(
+            result,
+            dims=batch_dims,
+            coords=batch_coords,
+            name=name,
+        )
+
+    return xr.Dataset(variables)

@@ -117,6 +117,33 @@ Time–frequency representation for a 2D grid (orthoslicer-friendly).
 
 ---
 
+## Entity: `GridWindowedSpectrum`
+
+Time–frequency representation for a 2D grid (compute-oriented, uppercase spatial dims).
+
+**Type**
+- `xarray.DataArray`
+
+**Dims (canonical)**
+- `("time_win", "AP", "ML", "freq")`
+
+**Coords**
+- `time_win`: window-center seconds, 1D, strictly increasing
+- `AP`: physical coordinate (e.g., mm), 1D
+- `ML`: physical coordinate (e.g., mm), 1D
+- `freq`: Hz, 1D, strictly increasing
+
+**Relationship to `GridSpectrogram4D`**
+- `GridSpectrogram4D` uses lowercase `("ml", "ap", "time", "freq")` for orthoslicer/GUI use.
+- `GridWindowedSpectrum` uses uppercase `("time_win", "AP", "ML", "freq")` for compute pipelines, matching the spatial measure batch convention `(..., AP, ML)`.
+
+**Runtime helpers**
+- `validate_grid_windowed_spectrum(da)` validates dims, coord monotonicity.
+- `coerce_grid_windowed_spectrum(da)` accepts `spectrogramx()` output `("ML", "AP", "freq", "time")`,
+  lowercase `ml/ap` variants, or any permutation, and transposes/renames to canonical form.
+
+---
+
 ## Entity: `BurstPeaksTable`
 
 Tabular peak/burst annotations aligned to `GridSpectrogram4D` (or similar).

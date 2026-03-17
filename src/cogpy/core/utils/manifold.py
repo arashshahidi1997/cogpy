@@ -1,24 +1,29 @@
+"""Point cloud simplification utilities."""
+
 import numpy as np
 
 
 def simplify_point_cloud(X, eps, random_state=None):
     """
-    point cloud simplification using radial distance (euclidean metric).
-    Start with the first point in in X and mark it as a key point. All consecutive points that have a distance less than a predetermined distance eps to the key point are removed. The first point that have a distance greater than eps to the key point is marked as the new key point. The process repeates itself from this new key point, and continues until it reaches the end of the point cloud.
+    Point cloud simplification using radial distance (euclidean metric).
+
+    Start with a random point in X and mark it as a key point. All consecutive
+    points within distance *eps* are removed. The first point beyond *eps*
+    becomes the new key point. Repeat until exhausted.
 
     Parameters
     ----------
-    X: pandas DataFrame (n_datapoints, n_features):
-
-    eps: max radial distance - cutoff distance
-
-    random_state: seed of random generator used for choosing the inital point
+    X : pandas.DataFrame
+        Shape ``(n_datapoints, n_features)``.
+    eps : float
+        Cutoff radial distance.
+    random_state : int or None
+        Seed for random initial-point selection.
 
     Returns
     -------
-    X_reduced: chosen data points
-
-    indices: indices of the chosen data points
+    X_reduced : pandas.DataFrame
+        Selected data points.
     """
     if random_state is not None:
         np.random.seed(random_state)
@@ -26,7 +31,6 @@ def simplify_point_cloud(X, eps, random_state=None):
     ix0 = np.random.choice(X.shape[0])
     x0 = X.iloc[ix0]
     xt = x0
-    ixt = ix0
     X_temp = X
     ind_reduced = [ix0]
 

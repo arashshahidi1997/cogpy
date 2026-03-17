@@ -23,6 +23,7 @@ __getattr__, __dir__, __all__ = attach(
         "time_plot",
         "xarray_hv",
         "xarr_plot",
+        "decomposition",
     ],
 )
 

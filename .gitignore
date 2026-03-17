@@ -42,3 +42,10 @@ docs/source/api/generated/
 # OS
 # ---------------------------
 .DS_Store
+
+# >>> projio >>>
+.projio.mkdocs.yml
+.projio/servers.json
+.projio/site/
+site/
+# <<< projio <<<
