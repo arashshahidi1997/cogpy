@@ -37,6 +37,7 @@ htmlcov/
 # ---------------------------
 docs/build/
 docs/source/api/generated/
+docs/jupyter_execute/
 
 # ---------------------------
 # Type checking / linting caches
@@ -63,6 +64,7 @@ venv/
 # OS
 # ---------------------------
 .DS_Store
+.nfs*
 
 # >>> projio >>>
 .projio.mkdocs.yml
