@@ -1,5 +1,5 @@
 """
-Event stream data model for TensorScope.
+Event stream data model.
 
 Events represent discrete occurrences in time (bursts, ripples, spikes, annotations).
 """
@@ -109,8 +109,6 @@ class EventStream:
         return len(self.df)
 
     def to_dict(self) -> dict:
-        # Keep session payloads bounded. For typical TensorScope usage, event
-        # tables are small enough to store inline in JSON.
         max_records = 20000
         records = None
         if len(self.df) <= max_records:

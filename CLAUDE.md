@@ -67,13 +67,12 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 | `preprocess/badchannel/` | Canonical bad-channel pipeline (features → spatial norm → DBSCAN) |
 | `preprocess/filtx.py` | Backward-compat shim — re-exports from `filtering/` |
 | `detect/` | Event detection (unified detector interface) |
-| `events/` | EventCatalog data structure |
+| `events/` | EventCatalog, EventStream, EventRegistry |
 | `spectral/` | Spectral analysis (multitaper, whitening, etc.) |
 | `measures/` | Spatial (`moran_i`, `gradient_anisotropy`) and temporal measures |
 | `plot/hv/` | Interactive HoloViews/Panel visualization (`grid_movie`, `multichannel_view`, `add_time_hair`, `TopoMap`, `OrthoSlicerRanger`) |
 | `plot/` | Static matplotlib/plotly helpers (`decomposition`, `specgram_plot`, `time_plot`) |
 | `plot/_legacy/` | Deprecated viz modules (retained for reference) |
-| `tensorscope/` | Legacy TensorScope Panel app (migrated to standalone React+TS) |
 | `io/ecog_io.py` | ECoG-specific file I/O |
 | `io/ieeg_io.py` | iEEG BIDS I/O |
 | `cli/` | Thin CLI wrappers (keep minimal) |
@@ -100,19 +99,9 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 - **`plot/`** root — Static matplotlib/plotly helpers (`decomposition.py`, `specgram_plot.py`, `time_plot.py`)
 - **`plot/_legacy/`** — Deprecated modules retained for reference
 
-### TensorScope Migration
-
-TensorScope was originally a Panel/HoloViews app inside `cogpy.plot.tensorscope`.
-It has been moved to `cogpy.tensorscope` and migrated to a standalone React +
-TypeScript project. The cogpy subpackage and its archived spec docs
-(`docs/source/explanation/plot/_archive/tensorscope-*.md`) are retained as
-historical reference. New visualization work targets the standalone frontend using
-cogpy's public API as backend.
-
 ### CLI Entry Points
 
 - `cogpy-preproc` — Preprocessing pipeline (`cogpy.cli.preprocess:main`)
-- `tensorscope` — Legacy CLI (`cogpy.tensorscope.cli:main`)
 
 ## Conventions
 

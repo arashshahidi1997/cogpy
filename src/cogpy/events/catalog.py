@@ -118,8 +118,8 @@ class EventCatalog:
         return Intervals(starts=times - hw, ends=times + hw, name=str(self.name))
 
     def to_event_stream(self, style: Any | None = None):
-        """Convert to TensorScope `EventStream`."""
-        from cogpy.tensorscope.events.model import EventStyle, EventStream
+        """Convert to `EventStream`."""
+        from cogpy.events.stream import EventStyle, EventStream
 
         style_obj = None
         if style is None:

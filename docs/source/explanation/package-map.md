@@ -109,7 +109,6 @@ cogpy/
 ├── wave/                    Travelling wave analysis
 ├── burst/                   Spectral burst detection (h-maxima morphology)
 ├── depth_probe/             Depth probe / CSD analysis
-├── tensorscope/             Legacy TensorScope Panel app (historical reference)
 ├── cli/                     CLI entry points
 └── workflows/               Snakemake preprocessing pipelines (packaged as data)
 ```

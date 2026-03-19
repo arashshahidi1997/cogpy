@@ -941,7 +941,7 @@ class EventCatalog:
         )
 
     def to_event_stream(self, *, style=None):
-        from cogpy.tensorscope.events import EventStream
+        from cogpy.events import EventStream
 
         return EventStream(
             name=self.family,
