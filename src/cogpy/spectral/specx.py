@@ -15,7 +15,7 @@ Convention
 Status
 ------
 STATUS: ACTIVE
-Reason: xarray interface for spectral analysis to match filtx.py pattern
+Reason: xarray interface for spectral analysis to match filtering.py pattern
 Superseded by: n/a
 Safe to remove: no
 """

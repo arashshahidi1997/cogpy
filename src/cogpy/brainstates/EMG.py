@@ -28,7 +28,7 @@ from scipy.signal import butter, filtfilt
 from scipy.spatial.distance import cdist
 from functools import partial
 from ..utils.sliding import running_measure
-from ..preprocess.filtx import butterworth_bandpass_shoulder
+from ..preprocess.filtering import butterworth_bandpass_shoulder
 from ..utils.time_series import seconds_to_samples
 
 

@@ -233,10 +233,10 @@ class ECoG:
         order: int = 4,
         time_dim: str | None = None,
     ) -> "ECoG":
-        from cogpy.preprocess import filtx
+        from cogpy.preprocess import filtering
 
         td = self.schema.time if time_dim is None else str(time_dim)
-        out = filtx.bandpassx(self.x, wl=float(low_hz), wh=float(high_hz), order=int(order), axis=td)
+        out = filtering.bandpassx(self.x, wl=float(low_hz), wh=float(high_hz), order=int(order), axis=td)
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
 
@@ -247,10 +247,10 @@ class ECoG:
         order: int = 4,
         time_dim: str | None = None,
     ) -> "ECoG":
-        from cogpy.preprocess import filtx
+        from cogpy.preprocess import filtering
 
         td = self.schema.time if time_dim is None else str(time_dim)
-        out = filtx.lowpassx(self.x, wl=float(cutoff_hz), order=int(order), axis=td)
+        out = filtering.lowpassx(self.x, wl=float(cutoff_hz), order=int(order), axis=td)
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
 
@@ -261,10 +261,10 @@ class ECoG:
         order: int = 4,
         time_dim: str | None = None,
     ) -> "ECoG":
-        from cogpy.preprocess import filtx
+        from cogpy.preprocess import filtering
 
         td = self.schema.time if time_dim is None else str(time_dim)
-        out = filtx.highpassx(self.x, wh=float(cutoff_hz), order=int(order), axis=td)
+        out = filtering.highpassx(self.x, wh=float(cutoff_hz), order=int(order), axis=td)
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
 

@@ -14,7 +14,7 @@ import param
 import panel as pn
 import xarray as xr
 
-from cogpy.preprocess.filtx import bandpassx, cmrx, median_spatialx, notchesx, zscorex
+from cogpy.preprocess.filtering import bandpassx, cmrx, median_spatialx, notchesx, zscorex
 
 __all__ = ["ProcessingChain"]
 

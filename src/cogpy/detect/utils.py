@@ -33,8 +33,8 @@ def bandpass_filter(
     order: int = 4,
     time_dim: str = "time",
 ) -> xr.DataArray:
-    """Bandpass filter using `cogpy.preprocess.filtx.bandpassx`."""
-    from cogpy.preprocess.filtx import bandpassx
+    """Bandpass filter using `cogpy.preprocess.filtering.bandpassx`."""
+    from cogpy.preprocess.filtering import bandpassx
 
     return bandpassx(data, float(low), float(high), int(order), axis=str(time_dim))
 

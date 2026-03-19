@@ -179,7 +179,7 @@ def create_psd_explorer_module(
             ft = str(filter_type_w.value)
             if ft == "none":
                 return x
-            from cogpy.preprocess.filtx import bandpassx, highpassx, lowpassx, median_spatialx, notchx, notchesx
+            from cogpy.preprocess.filtering import bandpassx, highpassx, lowpassx, median_spatialx, notchx, notchesx
 
             low = float(filter_low_w.value)
             high = float(filter_high_w.value)

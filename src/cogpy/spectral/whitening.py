@@ -18,7 +18,7 @@ from scipy.signal import lfilter
 from ..utils import xarr as xut
 
 
-class AR_whiten:
+class ARWhiten:
     """Autoregressive whitening filter.
 
     Fits an AR model to multichannel data, selects the median-coefficient
@@ -129,7 +129,7 @@ class AR_whiten:
         return self._filt(x)
 
 
-def AR_whitening(y, ar_params):
+def ar_whitening(y, ar_params):
     """Apply AR whitening to a 1-D signal.
 
     Parameters
@@ -157,7 +157,7 @@ def autocovariance(X, p):
     return autoCov / scale - np.mean(X) ** 2
 
 
-def AR_yule(p, X):
+def ar_yule(p, X):
     """Estimate AR(p) coefficients for data X via the Yule-Walker equation.
 
     Parameters

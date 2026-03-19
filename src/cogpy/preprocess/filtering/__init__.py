@@ -31,9 +31,6 @@ from .spatial import (
 from .reference import cmrx
 from .normalization import zscorex
 
-# Private utilities re-exported for backward compat (used by other cogpy modules)
-from ._utils import _apply_full_array, _fs_scalar
-
 __all__ = [
     # Utility
     "bandpass_filt_params",

@@ -6,13 +6,12 @@ __getattr__, __dir__, __all__ = attach(
     __name__,
     submodules=[
         "bivariate",
-        "bivariate_spectral",
         "features",
         "multitaper",
         "psd",
+        "psd_utils",
         "specx",
         "process_spectrogram",
-        "superlet",
         "whitening",
     ],
 )
@@ -20,12 +19,11 @@ __getattr__, __dir__, __all__ = attach(
 if TYPE_CHECKING:
     from . import (
         bivariate,
-        bivariate_spectral,
         features,
         multitaper,
         psd,
+        psd_utils,
         specx,
         process_spectrogram,
-        superlet,
         whitening,
     )

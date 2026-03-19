@@ -20,7 +20,7 @@ import pandas as pd
 import warnings
 from skimage.feature import blob_log  # , blob_dog, blob_doh
 from skimage.morphology import extrema
-from ..preprocess.filtx import get_coord_fs
+from ..preprocess.filtering import get_coord_fs
 
 
 def detect_hmaxima(

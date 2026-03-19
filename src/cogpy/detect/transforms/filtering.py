@@ -10,7 +10,7 @@ __all__ = ["BandpassTransform", "HighpassTransform", "LowpassTransform"]
 
 
 class BandpassTransform(Transform):
-    """Bandpass filter using `cogpy.preprocess.filtx.bandpassx`."""
+    """Bandpass filter using `cogpy.preprocess.filtering.bandpassx`."""
 
     def __init__(self, *, low: float, high: float, order: int = 4, axis: str = "time") -> None:
         super().__init__("BandpassTransform")
@@ -21,13 +21,13 @@ class BandpassTransform(Transform):
         self.params = {"low": self.low, "high": self.high, "order": self.order, "axis": self.axis}
 
     def compute(self, data: xr.DataArray) -> xr.DataArray:
-        from cogpy.preprocess.filtx import bandpassx
+        from cogpy.preprocess.filtering import bandpassx
 
         return bandpassx(data, self.low, self.high, self.order, axis=self.axis)
 
 
 class HighpassTransform(Transform):
-    """Highpass filter using `cogpy.preprocess.filtx.highpassx`."""
+    """Highpass filter using `cogpy.preprocess.filtering.highpassx`."""
 
     def __init__(self, *, cutoff: float, order: int = 4, axis: str = "time") -> None:
         super().__init__("HighpassTransform")
@@ -37,13 +37,13 @@ class HighpassTransform(Transform):
         self.params = {"cutoff": self.cutoff, "order": self.order, "axis": self.axis}
 
     def compute(self, data: xr.DataArray) -> xr.DataArray:
-        from cogpy.preprocess.filtx import highpassx
+        from cogpy.preprocess.filtering import highpassx
 
         return highpassx(data, self.cutoff, self.order, axis=self.axis)
 
 
 class LowpassTransform(Transform):
-    """Lowpass filter using `cogpy.preprocess.filtx.lowpassx`."""
+    """Lowpass filter using `cogpy.preprocess.filtering.lowpassx`."""
 
     def __init__(self, *, cutoff: float, order: int = 4, axis: str = "time") -> None:
         super().__init__("LowpassTransform")
@@ -53,7 +53,7 @@ class LowpassTransform(Transform):
         self.params = {"cutoff": self.cutoff, "order": self.order, "axis": self.axis}
 
     def compute(self, data: xr.DataArray) -> xr.DataArray:
-        from cogpy.preprocess.filtx import lowpassx
+        from cogpy.preprocess.filtering import lowpassx
 
         return lowpassx(data, self.cutoff, self.order, axis=self.axis)
 
