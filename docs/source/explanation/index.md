@@ -14,6 +14,7 @@ detection-framework
 preprocessing-pipeline
 design-spec
 primitives
+package-map
 ```
 
 ## Topic-specific design docs

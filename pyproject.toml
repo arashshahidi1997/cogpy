@@ -25,10 +25,6 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
-[project.urls]
-Repository = "https://gitlab.lrz.de/sirotalab/cogpy"
-Documentation = "https://cogpy-867a19.pages.gitlab.lrz.de/"
-
 # Keep runtime deps minimal; move heavy/optional items to extras below
 dependencies = [
   "numpy",
@@ -41,6 +37,10 @@ dependencies = [
   "dill",
   "kneed",
 ]
+
+[project.urls]
+Repository = "https://gitlab.lrz.de/sirotalab/cogpy"
+Documentation = "https://cogpy-867a19.pages.gitlab.lrz.de/"
 
 # Optional “feature” installs
 [project.optional-dependencies]

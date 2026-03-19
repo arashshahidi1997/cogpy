@@ -16,6 +16,7 @@ PAGES_REMOTE  ?= gitlab
 .PHONY: help \
         all check format lint typecheck tests \
         docs docs-clean docs-serve clean \
+        build publish \
         save push deploy website
 
 # --- Help ---------------------------------------------------------------------
@@ -34,6 +35,8 @@ help:
 	@echo "  make save        datalad save with SAVE_MSG='$(SAVE_MSG)'"
 	@echo "  make push        datalad push to $(ORIGIN_REMOTE)"
 	@echo "  make deploy      datalad push to $(PAGES_REMOTE)"
+	@echo "  make build       Build sdist + wheel into dist/"
+	@echo "  make publish     Upload dist/ to PyPI via twine"
 
 # --- Core workflows -----------------------------------------------------------
 all: check docs
@@ -70,6 +73,16 @@ serve:
 	@cd "$(DOCS_HTML)" && $(PYTHON) -m http.server $(DOCS_PORT)
 
 clean: docs-clean
+	@rm -rf dist/ build/ src/*.egg-info
+
+# --- Build & publish ----------------------------------------------------------
+build: clean
+	@echo ">> Building sdist + wheel"
+	@$(PYTHON) -m build
+
+publish: build
+	@echo ">> Uploading to PyPI"
+	@$(PYTHON) -m twine upload dist/*
 
 # --- DataLad helpers ----------------------------------------------------------
 update:

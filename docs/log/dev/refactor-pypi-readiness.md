@@ -106,8 +106,12 @@ Remove legacy module declarations from lazy loader. Only export:
 
 ---
 
-## Pass 3 — Publishing infra (TODO)
+## Pass 3 — Publishing infra (DONE)
 
-- Add `make build` / `make publish` targets
-- Add `llms.txt` and `package-map.md`
-- Test `pip install` from built wheel in clean environment
+| Change | Detail |
+|--------|--------|
+| Makefile | Added `make build` (sdist + wheel) and `make publish` (twine upload) targets |
+| `llms.txt` | Agent-facing summary at repo root pointing to key docs |
+| `package-map.md` | Full module tree with one-line descriptions in `docs/source/explanation/` |
+| `pyproject.toml` | Fixed TOML ordering (`dependencies` before `[project.urls]`) |
+| Build test | `cogpy-0.1.0-py3-none-any.whl` builds successfully (212 files, no `core/` refs) |

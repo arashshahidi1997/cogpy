@@ -1,0 +1,52 @@
+# cogpy
+
+> Atomic, composable primitives for ECoG / iEEG signal processing.
+
+cogpy is a Python library of small, pure, domain-agnostic operators for
+electrophysiology signal processing. It is NOT a pipeline framework.
+High-level orchestration belongs in external projects (Snakemake, notebooks).
+
+## Key docs for agents
+
+- Primitive catalog with imports and signatures: docs/source/explanation/primitives.md
+- How to compose primitives: docs/source/howto/compose-artifact-analysis.md
+- Architecture and conventions: CLAUDE.md
+- Spectral design: docs/source/explanation/spectral-conventions.md
+- Package map: docs/source/explanation/package-map.md
+
+## Package structure
+
+All subpackages live directly under `cogpy/` (no `core/` indirection).
+
+- cogpy.detect — event detection (ThresholdDetector, BurstDetector)
+- cogpy.events — EventCatalog, event matching, lag/drift estimation
+- cogpy.triggered — epoch extraction, triggered stats, template subtraction
+- cogpy.regression — lagged design matrices, OLS fit/predict/residual
+- cogpy.spectral — PSD, spectrogram, bandpower, peak detection, coherence
+- cogpy.measures — spatial (moran_i, gradient_anisotropy) and temporal measures
+- cogpy.measures.comparison — before/after validation metrics
+- cogpy.preprocess.filtering — temporal, spatial, reference, normalization filters
+- cogpy.preprocess.badchannel — bad channel detection pipeline
+- cogpy.decomposition — PCA, varimax rotation, spatio-spectral decomposition
+- cogpy.brainstates — perievent_epochs, interval operations
+- cogpy.plot — static (matplotlib) and interactive (HoloViews/Panel) visualization
+- cogpy.io — file I/O for ECoG/iEEG formats
+- cogpy.datasets — sample data loaders
+
+## Quick start
+
+```python
+from cogpy.detect import ThresholdDetector
+from cogpy.brainstates.intervals import perievent_epochs
+from cogpy.triggered import estimate_template, subtract_template
+from cogpy.spectral.psd import psd_multitaper
+from cogpy.measures.comparison import bandpower_change
+```
+
+## Install
+
+```
+pip install cogpy              # core
+pip install cogpy[all]         # all optional deps
+pip install -e .               # editable dev install
+```
