@@ -36,6 +36,7 @@ dependencies = [
   "tqdm",
   "dill",
   "kneed",
+  "statsmodels",
 ]
 
 [project.urls]

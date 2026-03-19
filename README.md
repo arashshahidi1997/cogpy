@@ -1,71 +1,103 @@
-# cogpy — ECoG processing toolkit
+# cogpy
 
-Minimal, modular layout for algorithms, I/O, CLI, and Snakemake workflows.
+Atomic, composable primitives for ECoG / iEEG signal processing.
 
-## Layout
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-```
-src/cogpy/
-├─ __init__.py            # public API + backward-compat shims
-├─ io/                    # data I/O (stable import: cogpy.io)
-├─ core/                  # algorithms & transforms
-├─ cli/                   # thin CLI wrappers
-└─ workflows/             # packaged Snakemake pipelines
-   └─ preprocess/
-      ├─ Snakefile
-      ├─ config.yaml
-      └─ scripts/
-```
+**[Documentation](https://cogpy-867a19.pages.gitlab.lrz.de/)** · **[Repository](https://gitlab.lrz.de/sirotalab/cogpy)**
+
+## What it is
+
+cogpy provides small, pure, domain-agnostic operators for electrophysiology
+signal processing. It is **not** a pipeline framework — high-level
+orchestration belongs in Snakemake pipelines, notebooks, or project repos.
+
+### Capability areas
+
+| Area | Key functions |
+|------|--------------|
+| **Event detection** | `ThresholdDetector`, `BurstDetector`, `score_to_bouts` |
+| **Event matching** | `match_nearest`, `estimate_lag`, `estimate_drift` |
+| **Triggered analysis** | `perievent_epochs`, `triggered_average`, `estimate_template`, `subtract_template` |
+| **Regression** | `lagged_design_matrix`, `ols_fit`, `ols_residual` |
+| **Spectral** | `psd_multitaper`, `spectrogramx`, `band_power`, `ftest_line_scan` |
+| **Spatial measures** | `moran_i`, `gradient_anisotropy`, `csd_power` |
+| **Filtering** | `bandpassx`, `cmrx`, `gaussian_spatialx`, `zscorex` |
+| **Validation** | `snr_improvement`, `bandpower_change`, `residual_energy_ratio` |
 
 ## Install
 
 ```bash
-# dev install
-pip install -e .
-
-# with workflow dependencies (if defined)
-pip install -e .[workflows]
+pip install cogpy               # core dependencies only
+pip install cogpy[viz]          # + matplotlib, holoviews, panel
+pip install cogpy[all]          # all optional dependencies
+pip install -e .                # editable dev install
 ```
 
-## CLI
-
-Root command (Typer/Click):
-
-```bash
-cogpy --help
-```
-
-### Run workflow (Snakemake)
-
-```bash
-# via subcommand
-cogpy wf run lowpass devA/devA-S01/rec1 -c 8 --printshellcmds
-
-# or dedicated entry (if enabled)
-ecogpipe lowpass devA/devA-S01/rec1 -c 8 --printshellcmds
-```
-
-* **Input spec:** `device/device-session/filename` (no extension).
-* **Targets:** `{output_dir}/{step}/{input_spec}{ext}`
-  Steps → ext: `raw_zarr .zarr`, `lowpass .zarr`, `downsample .zarr`, `feature .zarr`, `badlabel .npy`, `interpolate .zarr`.
-
-## Config
-
-Defaults live in `workflows/preprocess/config.yaml` (packaged). Override via file edits or Snakemake flags as usual.
-
-## Library usage
+## Quick start
 
 ```python
-from cogpy.io.ecog_io import from_file, to_zarr
-from cogpy.preprocess.filtering.temporal import lowpass
+from cogpy.detect import ThresholdDetector
+from cogpy.brainstates.intervals import perievent_epochs
+from cogpy.triggered import estimate_template, subtract_template
+from cogpy.spectral.psd import psd_multitaper
+from cogpy.measures.comparison import bandpower_change
 
-sig = from_file("rec.lfp", "rec.xml")
-filt = lowpass(sig, cutoff=300, order=4)
-to_zarr("out.zarr", filt)
+# Detect events
+detector = ThresholdDetector(threshold=3.0, direction="positive")
+catalog = detector.detect(signal)
+
+# Extract epochs and estimate template
+epochs = perievent_epochs(signal, catalog.df["t"].values, fs, pre=0.01, post=0.01)
+template = estimate_template(epochs, method="median")
+
+# Subtract and validate
+cleaned = subtract_template(signal, event_samples, template.values)
+psd_before, freqs = psd_multitaper(signal.values, fs)
+psd_after, _ = psd_multitaper(cleaned.values, fs)
+delta = bandpower_change(psd_before, psd_after, freqs, band=(100, 140))
 ```
 
-## Dev tips
+## Package structure
 
-* Put new algorithms in `core/`, keep `cli/` thin.
-* Workflows + small scripts go under `workflows/` and are included as package data.
-* `__init__.py` re-exports selected symbols and provides shims so legacy imports continue to work.
+All subpackages live directly under `cogpy/` — no indirection layers.
+
+```
+cogpy/
+├── detect/          Event detection (threshold, burst, ripple)
+├── events/          EventCatalog, matching, lag estimation
+├── triggered/       Epoch extraction, triggered stats, template subtraction
+├── regression/      Design matrices, OLS fit/predict/residual
+├── spectral/        PSD, spectrogram, coherence, multitaper, features
+├── measures/        Spatial, temporal, and comparison metrics
+├── preprocess/      Filtering, bad channel detection, interpolation
+├── decomposition/   PCA, varimax rotation
+├── brainstates/     Perievent epochs, interval operations
+├── plot/            Static (matplotlib) and interactive (HoloViews) viz
+├── io/              File I/O for ECoG/iEEG formats
+├── datasets/        Sample data loaders
+├── cli/             CLI entry points
+└── workflows/       Snakemake preprocessing pipelines
+```
+
+## Development
+
+```bash
+make check          # format + lint + typecheck + tests
+make format         # black .
+make lint           # ruff check . --fix
+make tests          # pytest
+make docs           # build Sphinx docs
+make build          # build sdist + wheel
+```
+
+## Documentation
+
+- [Primitive catalog](https://cogpy-867a19.pages.gitlab.lrz.de/explanation/primitives.html) — all operators with imports and signatures
+- [Package map](https://cogpy-867a19.pages.gitlab.lrz.de/explanation/package-map.html) — module tree overview
+- [Composition patterns](https://cogpy-867a19.pages.gitlab.lrz.de/howto/compose-artifact-analysis.html) — how to assemble primitives
+
+## License
+
+MIT — see [LICENSE](LICENSE).
