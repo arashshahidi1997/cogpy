@@ -10,6 +10,8 @@ from __future__ import annotations
 import importlib
 from types import ModuleType
 
+__all__ = ["import_optional"]
+
 # Map package import names to the cogpy extra that provides them.
 _EXTRAS: dict[str, str] = {
     "bokeh": "viz",

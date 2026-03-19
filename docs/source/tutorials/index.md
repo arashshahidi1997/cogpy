@@ -12,6 +12,4 @@ spectral-analysis
 factor-analysis
 bad-channel-detection
 spatial-measures
-bids_reader_tutorial
-bids_reader_tutorial2
 ```

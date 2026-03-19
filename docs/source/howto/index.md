@@ -12,4 +12,7 @@ batch-spatial-analysis
 compose-artifact-analysis
 custom-snakemake-pipeline
 load-ecog-data
+visualization
+triggered-analysis
+brainstates-and-regression
 ```

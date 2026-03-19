@@ -24,6 +24,17 @@ from typing import Any, Literal
 import numpy as np
 import xarray as xr
 
+__all__ = [
+    "ECoGSchema",
+    "ECoGSchemaKind",
+    "SCHEMA",
+    "get_fs",
+    "ensure_fs",
+    "ensure_time_coord",
+    "validate_ecog",
+    "standardize_ecog",
+    "ECoG",
+]
 
 ECoGSchemaKind = Literal["grid", "flat"]
 
@@ -284,4 +295,3 @@ class ECoG:
         out = xr.DataArray(y, coords=self.x.coords, dims=self.x.dims, attrs=dict(self.x.attrs), name=self.x.name)
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
-
