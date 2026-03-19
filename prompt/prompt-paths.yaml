@@ -1,7 +1,0 @@
-# Shared path variables for Codex prompts.
-# Update the values below whenever the environment changes.
-
-python: /storage/share/python/environments/Anaconda3/envs/cogpy/bin/python
-conda: /storage/share/python/environments/Anaconda3/condabin/conda
-conda_env: cogpy
-test_env: cogpy
