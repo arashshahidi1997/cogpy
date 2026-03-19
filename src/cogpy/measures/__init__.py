@@ -1,14 +1,17 @@
-"""Measures for neural signals.
+"""Temporal and spatial signal measures."""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.measures` provides tools for general-purpose measures
-of neural signals.
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "temporal",
+        "spatial",
+        "comparison",
+    ],
+)
 
-    from cogpy.measures.temporal import kurtosis
-
-"""
-# Auto-generated shim: exposes cogpy.core.measures as cogpy.measures
-from cogpy.core import measures as _impl
-from cogpy.core.measures.temporal import *
-from cogpy.core.measures.spatial import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import temporal
+    from . import spatial
+    from . import comparison

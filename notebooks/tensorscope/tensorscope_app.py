@@ -5,7 +5,7 @@ import holoviews as hv
 
 # Added a fallback for the custom theme imports so the script runs standalone
 try:
-    from cogpy.core.plot.theme import (
+    from cogpy.plot.theme import (
         BG, BG_PANEL, BORDER, TEXT, BLUE, TEAL, PALETTE, COLORMAPS
     )
 except ImportError:

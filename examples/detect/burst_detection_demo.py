@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from cogpy.core.detect import BurstDetector
-from cogpy.core.spectral.specx import spectrogramx
+from cogpy.detect import BurstDetector
+from cogpy.spectral.specx import spectrogramx
 from cogpy.datasets.entities import example_ieeg_grid
 
 print("=" * 60)

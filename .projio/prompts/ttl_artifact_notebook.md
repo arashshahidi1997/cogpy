@@ -40,20 +40,20 @@ All operations below are atomic, composable functions. The notebook will compose
 ### 1. Event detection & matching
 
 ```python
-from cogpy.core.detect.threshold import ThresholdDetector
-from cogpy.core.detect.utils import (
+from cogpy.detect.threshold import ThresholdDetector
+from cogpy.detect.utils import (
     score_to_bouts,       # score timeseries → interval events via dual threshold
     find_true_runs,       # boolean mask → contiguous run indices
     merge_intervals,      # merge adjacent intervals within a gap
 )
-from cogpy.core.events.match import (
+from cogpy.events.match import (
     match_nearest,            # match each event in A to nearest in B within max_lag
     match_nearest_symmetric,  # bijective (one-to-one) nearest matching
     event_lag_histogram,      # cross-correlogram between two event trains
     estimate_lag,             # constant lag estimation (median/mean/mode of matched lags)
     estimate_drift,           # polynomial drift estimation (polyfit on matched lags vs time)
 )
-from cogpy.core.events.catalog import EventCatalog  # unified event container
+from cogpy.events.catalog import EventCatalog  # unified event container
 ```
 
 **ThresholdDetector** — generic threshold-crossing detector. Parameters: `threshold`, `direction` ("positive"/"negative"/"both"), optional `bandpass`, `use_envelope`, `min_duration`, `merge_gap`. Returns `EventCatalog`.
@@ -69,13 +69,13 @@ from cogpy.core.events.catalog import EventCatalog  # unified event container
 ### 2. Epoch extraction & triggered statistics
 
 ```python
-from cogpy.core.brainstates.intervals import perievent_epochs
+from cogpy.brainstates.intervals import perievent_epochs
 # perievent_epochs(xsig, events, fs, pre, post) → xr.DataArray (event, ..., lag)
 #   events: array of times in seconds
 #   pre/post: seconds before/after event
 #   fill_value: padding for out-of-bounds (default NaN)
 
-from cogpy.core.triggered import (
+from cogpy.triggered import (
     triggered_average,   # mean across events → template waveform
     triggered_std,       # std across events (ddof=1 default)
     triggered_median,    # robust median across events
@@ -88,7 +88,7 @@ All accept either `np.ndarray (n_events, ..., n_lag)` or `xr.DataArray` with `ev
 ### 3. Template estimation & subtraction
 
 ```python
-from cogpy.core.triggered import (
+from cogpy.triggered import (
     estimate_template,   # mean/median/trimmean of epoch stack
     fit_scaling,         # per-event least-squares scaling: alpha_i = <epoch_i, template> / <template, template>
     subtract_template,   # subtract scaled template at event locations in continuous signal
@@ -104,7 +104,7 @@ from cogpy.core.triggered import (
 ### 4. Regression-based removal
 
 ```python
-from cogpy.core.regression import (
+from cogpy.regression import (
     lagged_design_matrix,  # Toeplitz-like matrix from reference signal + lag set
     event_design_matrix,   # place template at event onsets as separate regressors
     ols_fit,               # np.linalg.lstsq wrapper → beta coefficients
@@ -120,9 +120,9 @@ from cogpy.core.regression import (
 ### 5. Spectral analysis
 
 ```python
-from cogpy.core.spectral.psd import psd_multitaper, psd_welch
-from cogpy.core.spectral.specx import psdx, spectrogramx, normalize_spectrogram
-from cogpy.core.spectral.features import (
+from cogpy.spectral.psd import psd_multitaper, psd_welch
+from cogpy.spectral.specx import psdx, spectrogramx, normalize_spectrogram
+from cogpy.spectral.features import (
     band_power,            # integrate PSD over (fmin, fmax) → scalar power
     relative_band_power,   # band_power / total_power
     spectral_peak_freqs,   # find peaks via scipy.signal.find_peaks
@@ -131,8 +131,8 @@ from cogpy.core.spectral.features import (
     narrowband_ratio,      # per-freq-bin ratio to flanking median
     am_artifact_score,     # sideband / background for AM artifacts
 )
-from cogpy.core.spectral.bivariate import coherence, cross_corr_lag
-from cogpy.core.spectral.multitaper import multitaper_fft
+from cogpy.spectral.bivariate import coherence, cross_corr_lag
+from cogpy.spectral.multitaper import multitaper_fft
 ```
 
 **ftest_line_scan(signal, fs, NW=4.0, p_threshold=0.05)** → `(fstat, freqs, sig_mask)`. Identifies statistically significant narrowband lines. Essential for finding the 120 Hz fundamental and harmonics.
@@ -142,21 +142,21 @@ from cogpy.core.spectral.multitaper import multitaper_fft
 ### 6. Temporal filtering
 
 ```python
-from cogpy.core.preprocess.filtering.temporal import (
+from cogpy.preprocess.filtering.temporal import (
     bandpassx,    # Butterworth bandpass (zero-phase SOS)
     highpassx,    # Butterworth highpass
     lowpassx,     # Butterworth lowpass
     notchx,       # single IIR notch (w0, Q)
     notchesx,     # multiple notches at specified frequencies
 )
-from cogpy.core.preprocess.filtering.reference import cmrx       # common median reference
-from cogpy.core.preprocess.filtering.normalization import zscorex # z-score along dim
+from cogpy.preprocess.filtering.reference import cmrx       # common median reference
+from cogpy.preprocess.filtering.normalization import zscorex # z-score along dim
 ```
 
 ### 7. Spatial analysis
 
 ```python
-from cogpy.core.measures.spatial import (
+from cogpy.measures.spatial import (
     moran_i,                   # spatial autocorrelation (queen/rook/ap_only/ml_only adjacency)
     gradient_anisotropy,       # log2(mean|dV/dAP| / mean|dV/dML|) — stripe direction
     marginal_energy_outlier,   # row/col energy z-scores + outlier flags
@@ -165,18 +165,18 @@ from cogpy.core.measures.spatial import (
     csd_power,                 # current source density via 2D Laplacian
     spatial_summary_xr,        # batch compute multiple spatial measures → xr.Dataset
 )
-from cogpy.core.preprocess.filtering.spatial import (
+from cogpy.preprocess.filtering.spatial import (
     gaussian_spatialx,   # spatial Gaussian smoothing
     median_subtractx,    # subtract spatial median
     median_highpassx,    # spatiotemporal median highpass
 )
-from cogpy.core.decomposition.pca import erpPCA  # varimax-rotated PCA (fit/transform)
+from cogpy.decomposition.pca import erpPCA  # varimax-rotated PCA (fit/transform)
 ```
 
 ### 8. Validation & comparison metrics
 
 ```python
-from cogpy.core.measures.comparison import (
+from cogpy.measures.comparison import (
     snr_improvement,        # SNR_after - SNR_before (dB), needs signal_band + noise_band
     residual_energy_ratio,  # sum((orig-clean)^2) / sum(orig^2) per channel
     bandpower_change,       # (P_after - P_before) / P_before in a frequency band
@@ -186,13 +186,13 @@ from cogpy.core.measures.comparison import (
 
 ### 9. Plotting — HoloViews static primitives
 
-All functions below live in `cogpy.core.plot.hv.signals` and return **static** HoloViews elements (Curve, Image, Overlay, Layout, HoloMap) — never DynamicMap. They render correctly in both live notebooks and static HTML export.
+All functions below live in `cogpy.plot.hv.signals` and return **static** HoloViews elements (Curve, Image, Overlay, Layout, HoloMap) — never DynamicMap. They render correctly in both live notebooks and static HTML export.
 
 ```python
 import holoviews as hv
 hv.extension("bokeh")
 
-from cogpy.core.plot.hv.signals import (
+from cogpy.plot.hv.signals import (
     # --- Spectral ---
     psd_curve,            # single PSD as hv.Curve (logx/logy)
     psd_overlay,          # overlay multiple PSDs: {"before": (psd, f), "after": (psd, f)}
@@ -244,10 +244,10 @@ from cogpy.core.plot.hv.signals import (
 
 #### Interactive plots (live notebook only)
 
-For interactive exploration in a live Jupyter session, `cogpy.core.plot.hv.xarray_hv` provides DynamicMap-based viewers. These will NOT render in static HTML export but are useful during exploration:
+For interactive exploration in a live Jupyter session, `cogpy.plot.hv.xarray_hv` provides DynamicMap-based viewers. These will NOT render in static HTML export but are useful during exploration:
 
 ```python
-from cogpy.core.plot.hv.xarray_hv import (
+from cogpy.plot.hv.xarray_hv import (
     multichannel_view,     # stacked multichannel traces with minimap & RangeTool
     grid_movie,            # AP×ML movie scrubbed over time — DynamicMap
     grid_movie_with_time_curve,  # spatial frame + time curve with linked time hair
@@ -367,8 +367,8 @@ Structure the notebook as a scientific investigation, not a pipeline. Each secti
 ## Implementation notes
 
 - Initialize holoviews once at the top: `import holoviews as hv; hv.extension("bokeh")`
-- **Static-safe plots:** All `cogpy.core.plot.hv.signals.*` functions return static HoloViews elements. They render in both live notebooks and `nbconvert` / static HTML export. Use these for all plots that must appear in exported reports.
-- **Interactive plots:** `cogpy.core.plot.hv.xarray_hv.*` functions (e.g. `multichannel_view`, `grid_movie`) return DynamicMap objects. These work only in live Jupyter sessions. Use them for interactive browsing but do NOT rely on them for exported output.
+- **Static-safe plots:** All `cogpy.plot.hv.signals.*` functions return static HoloViews elements. They render in both live notebooks and `nbconvert` / static HTML export. Use these for all plots that must appear in exported reports.
+- **Interactive plots:** `cogpy.plot.hv.xarray_hv.*` functions (e.g. `multichannel_view`, `grid_movie`) return DynamicMap objects. These work only in live Jupyter sessions. Use them for interactive browsing but do NOT rely on them for exported output.
 - **HoloMap vs DynamicMap:** `triggered_waveform_grid` uses `hv.HoloMap` internally, which is static-safe and exports to HTML. `grid_movie` uses `hv.DynamicMap`, which requires a live kernel.
 - Use `%%time` or `tqdm` for long operations
 - Keep each cell focused on one question + one answer

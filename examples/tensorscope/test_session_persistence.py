@@ -14,7 +14,7 @@ Run with:
 import json
 from pathlib import Path
 
-from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope import TensorScopeState
 from cogpy.datasets.entities import example_ieeg_grid
 
 print("=" * 60)

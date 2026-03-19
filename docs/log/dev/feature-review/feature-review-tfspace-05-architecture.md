@@ -441,10 +441,10 @@ All six phases have been implemented and tested (125 tests passing).
 With all phases implemented, the full TF-space workflow composes in ~20 lines of pipeline script:
 
 ```python
-from cogpy.core.spectral.specx import spectrogramx, normalize_spectrogram
-from cogpy.core.spectral.features import reduce_tf_bands, ftest_line_scan
-from cogpy.core.measures.spatial import spatial_summary_xr
-from cogpy.core.detect.utils import score_to_bouts, bout_occupancy, bout_duration_summary
+from cogpy.spectral.specx import spectrogramx, normalize_spectrogram
+from cogpy.spectral.features import reduce_tf_bands, ftest_line_scan
+from cogpy.measures.spatial import spatial_summary_xr
+from cogpy.detect.utils import score_to_bouts, bout_occupancy, bout_duration_summary
 from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
 
 # 1. Compute and coerce spectrogram

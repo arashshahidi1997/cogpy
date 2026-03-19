@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.detect.utils — detection utilities."""
+"""Tests for cogpy.detect.utils — detection utilities."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.detect.utils import (
+from cogpy.detect.utils import (
     dual_threshold_events_1d,
     merge_intervals,
     score_to_bouts,
@@ -137,24 +137,24 @@ class TestMergeIntervals:
 
 class TestBoutOccupancy:
     def test_basic(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         bouts = [{"duration": 1.0}, {"duration": 2.0}]
         assert bout_occupancy(bouts, 10.0) == pytest.approx(0.3)
 
     def test_empty(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         assert bout_occupancy([], 10.0) == 0.0
 
     def test_full_occupancy_clamped(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         bouts = [{"duration": 15.0}]
         assert bout_occupancy(bouts, 10.0) == pytest.approx(1.0)
 
     def test_zero_total_raises(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         with pytest.raises(ValueError):
             bout_occupancy([], 0.0)
@@ -162,7 +162,7 @@ class TestBoutOccupancy:
 
 class TestBoutDurationSummary:
     def test_basic_stats(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         bouts = [{"duration": 1.0}, {"duration": 2.0}, {"duration": 3.0}]
         s = bout_duration_summary(bouts)
@@ -172,14 +172,14 @@ class TestBoutDurationSummary:
         assert set(s.keys()) == {"count", "mean", "median", "std", "p5", "p95"}
 
     def test_empty(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         s = bout_duration_summary([])
         assert s["count"] == 0
         assert s["mean"] == 0.0
 
     def test_single_bout(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         s = bout_duration_summary([{"duration": 5.0}])
         assert s["count"] == 1

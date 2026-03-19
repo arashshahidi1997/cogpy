@@ -18,32 +18,32 @@ Directly called from Snakefile or scripts:
   - Used by visualization and line-noise QC scripts to load `.lfp` binaries plus sidecars as grid-shaped xarray signals.
 - `cogpy.io.sidecars.read_json_metadata`, `update_sampling_frequency_json`, `propagate_sidecars`
   - Used in the line-noise branch for `.lfp` plus `.json` bundle management.
-- `cogpy.core.preprocess.badchannel.grid.grid_adjacency`, `make_footprint`
+- `cogpy.preprocess.badchannel.grid.grid_adjacency`, `make_footprint`
   - Used by `scripts/feature.py` to build the neighborhood structure for feature normalization.
-- `cogpy.core.preprocess.badchannel.pipeline.FeatureSpec`, `compute_features_sliding`
+- `cogpy.preprocess.badchannel.pipeline.FeatureSpec`, `compute_features_sliding`
   - This is the main feature extraction primitive actually composed in the current workflow.
-- `cogpy.core.preprocess.badchannel.badlabel.DbscanParams`, `grouped_dbscan_outliers`
+- `cogpy.preprocess.badchannel.badlabel.DbscanParams`, `grouped_dbscan_outliers`
   - Used by `scripts/badlabel.py` for grouped DBSCAN-based outlier detection.
 - `cogpy.preprocess.interpolate.interpolate_bads`
   - Used by interpolation scripts to repair bad channels.
-- `cogpy.core.utils.stats.robust_zscore`
+- `cogpy.utils.stats.robust_zscore`
   - Used by `plot_feature_maps.py` for quantile-based deviation scoring.
-- `cogpy.core.spectral.multitaper.mtm_spectrogramx`
+- `cogpy.spectral.multitaper.mtm_spectrogramx`
   - Used in `scripts/linenoise/sample_spectrogram_plot.py` for QC spectrogram generation.
 
 Used in legacy or compatibility paths, but not the current preferred flow:
 
-- `cogpy.core.preprocess.channel_feature.ChannelFeatures`, `save_features`
+- `cogpy.preprocess.channel_feature.ChannelFeatures`, `save_features`
   - Used by `feature_deprecated.py` and by the internal `src/cogpy/workflows/preprocess` workflow, but explicitly marked legacy in the library.
 - `cogpy.preprocess.detect_bads.OutlierDetector`
-  - Used by the internal workflow and older scripts, but the module itself is deprecated in favor of `cogpy.core.preprocess.badchannel.badlabel`.
+  - Used by the internal workflow and older scripts, but the module itself is deprecated in favor of `cogpy.preprocess.badchannel.badlabel`.
 
 Present in `cogpy` but not used by this practical composition:
 
-- `cogpy.core.detect.DetectionPipeline` and prebuilt detector pipelines.
+- `cogpy.detect.DetectionPipeline` and prebuilt detector pipelines.
 - `cogpy.datasets.schemas.EventCatalog`, `Events`, `Intervals`.
-- `cogpy.core.spectral.specx.psdx` and `spectrogramx`.
-- `cogpy.core.preprocess.badchannel.channel_features.extract_channel_features_xr`.
+- `cogpy.spectral.specx.psdx` and `spectrogramx`.
+- `cogpy.preprocess.badchannel.channel_features.extract_channel_features_xr`.
 
 Those APIs may be useful elsewhere, but they are not the source of truth for how this example preprocess pipeline is currently composed.
 
@@ -188,9 +188,9 @@ Several internal abstractions should not be treated as the source of truth for c
 ### Explicitly legacy library modules
 - `src/cogpy/core/preprocess/channel_feature.py`
   - Marked as a legacy compatibility surface.
-  - The module itself warns that canonical implementation lives under `cogpy.core.preprocess.badchannel.*`.
+  - The module itself warns that canonical implementation lives under `cogpy.preprocess.badchannel.*`.
 - `src/cogpy/core/preprocess/detect_bads.py`
-  - Also explicitly marked legacy and deprecated in favor of `cogpy.core.preprocess.badchannel.badlabel`.
+  - Also explicitly marked legacy and deprecated in favor of `cogpy.preprocess.badchannel.badlabel`.
 
 These modules still work, but they describe an older composition style centered on `ChannelFeatures` and `DetectBadsPipe`, not the current external workflow.
 
@@ -211,7 +211,7 @@ The example pipeline itself contains archival or compatibility layers:
 Those paths confirm active migration away from older bad-channel and line-noise composition patterns. They are useful historical context, but they should not drive new abstractions.
 
 ### Important distinction: active but unused abstractions
-`cogpy.core.detect.DetectionPipeline` and the prebuilt detector pipelines are not obviously deprecated, but they are also not exercised by this preprocess example. They should therefore not be treated as evidence of how real external preprocess composition currently works.
+`cogpy.detect.DetectionPipeline` and the prebuilt detector pipelines are not obviously deprecated, but they are also not exercised by this preprocess example. They should therefore not be treated as evidence of how real external preprocess composition currently works.
 
 ## Interface assumptions imposed on CogPy
 The external pipeline makes strong assumptions about `cogpy`, even when those assumptions are not formalized in validators.
@@ -333,7 +333,7 @@ The line-noise scripts compute Welch and spectrogram views ad hoc. A small utili
 would make those scripts more consistent without requiring persisted spectral products.
 
 ### 6. Public shims for current bad-channel primitives
-The external pipeline already imports deep internal paths such as `cogpy.core.preprocess.badchannel.pipeline.compute_features_sliding`. That is a signal that a small public shim layer would help:
+The external pipeline already imports deep internal paths such as `cogpy.preprocess.badchannel.pipeline.compute_features_sliding`. That is a signal that a small public shim layer would help:
 
 - `cogpy.preprocess.badchannel.compute_features_sliding`
 - `cogpy.preprocess.badchannel.grouped_dbscan_outliers`

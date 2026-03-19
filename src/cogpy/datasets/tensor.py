@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 from scipy.ndimage import gaussian_filter1d
-from ..core.burst.blob_detection import detect_hmaxima
+from ..burst.blob_detection import detect_hmaxima
 
 
 def make_dataset(
@@ -277,7 +277,7 @@ def detect_bursts_hmaxima(
     """
     Detect 4D burst peaks on the *raw* tensor using an h-maxima transform.
 
-    This is a thin wrapper around :func:`cogpy.core.burst.blob_detection.detect_hmaxima`
+    This is a thin wrapper around :func:`cogpy.burst.blob_detection.detect_hmaxima`
     that returns a minimal, orthoslicer-friendly table.
 
     Returns
@@ -358,7 +358,7 @@ class AROscillatorGrid:
     5) adding into the background 3D signal.
 
     A 4D time–frequency tensor can then be computed using
-    :func:`cogpy.core.spectral.multitaper.mtm_spectrogramx`.
+    :func:`cogpy.spectral.multitaper.mtm_spectrogramx`.
 
     Attributes
     ----------
@@ -505,7 +505,7 @@ class AROscillatorGrid:
         )
 
         # 4D spectrogram (freq,time added)
-        from ..core.spectral.multitaper import mtm_spectrogramx
+        from ..spectral.multitaper import mtm_spectrogramx
 
         spec_kwargs = dict(fs=float(fs), bandwidth=float(spectrogram_bandwidth))
         if spectrogram_nperseg is not None:

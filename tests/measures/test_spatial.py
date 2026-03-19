@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.measures.spatial — spatial grid measures."""
+"""Tests for cogpy.measures.spatial — spatial grid measures."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.measures.spatial import (
+from cogpy.measures.spatial import (
     moran_i,
     marginal_energy_outlier,
     gradient_anisotropy,
@@ -420,7 +420,7 @@ class TestSpatialSummaryXr:
     def test_basic_output(self):
         """Returns xr.Dataset with one variable per measure."""
         import xarray as xr
-        from cogpy.core.measures.spatial import spatial_summary_xr
+        from cogpy.measures.spatial import spatial_summary_xr
 
         rng = np.random.default_rng(42)
         da = xr.DataArray(
@@ -443,7 +443,7 @@ class TestSpatialSummaryXr:
     def test_4d_tf_space(self):
         """(time_win, freq, AP, ML) → (time_win, freq) output."""
         import xarray as xr
-        from cogpy.core.measures.spatial import spatial_summary_xr
+        from cogpy.measures.spatial import spatial_summary_xr
 
         rng = np.random.default_rng(7)
         da = xr.DataArray(
@@ -466,7 +466,7 @@ class TestSpatialSummaryXr:
     def test_directional_moran(self):
         """moran_ap and moran_ml work as measure names."""
         import xarray as xr
-        from cogpy.core.measures.spatial import spatial_summary_xr
+        from cogpy.measures.spatial import spatial_summary_xr
 
         g = _row_striped_grid()
         da = xr.DataArray(g, dims=("AP", "ML"))
@@ -477,7 +477,7 @@ class TestSpatialSummaryXr:
     def test_unknown_measure_raises(self):
         """Unknown measure name raises ValueError."""
         import xarray as xr
-        from cogpy.core.measures.spatial import spatial_summary_xr
+        from cogpy.measures.spatial import spatial_summary_xr
 
         da = xr.DataArray(np.ones((4, 4)), dims=("AP", "ML"))
         with pytest.raises(ValueError, match="Unknown measure"):
@@ -486,7 +486,7 @@ class TestSpatialSummaryXr:
     def test_matches_numpy(self):
         """xarray wrapper matches direct numpy call."""
         import xarray as xr
-        from cogpy.core.measures.spatial import spatial_summary_xr
+        from cogpy.measures.spatial import spatial_summary_xr
 
         rng = np.random.default_rng(42)
         arr = rng.normal(0, 1, (5, 8, 6))

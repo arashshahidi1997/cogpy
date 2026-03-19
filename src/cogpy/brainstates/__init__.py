@@ -1,13 +1,15 @@
-"""Brain state detection and analysis.
+"""Brain-state detection and classification."""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.brainstates` provides tools for detecting and analyzing neural brain state patterns
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "brainstates",
+        "EMG",
+        "intervals",
+    ],
+)
 
-    from cogpy.brainstates import EMG
-
-"""
-
-# Auto-generated shim: exposes cogpy.core.brainstates as cogpy.brainstates
-from cogpy.core import brainstates as _impl
-from cogpy.core.brainstates import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import brainstates, EMG, intervals

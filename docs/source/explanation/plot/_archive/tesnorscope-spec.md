@@ -1004,7 +1004,7 @@ state.current_time = 5.3
 
 ```python
 # ✅ Centralized theme
-from cogpy.core.plot.theme import BG, BG_PANEL, BLUE, TEAL, PALETTE, COLORMAPS
+from cogpy.plot.theme import BG, BG_PANEL, BLUE, TEAL, PALETTE, COLORMAPS
 
 # All components use theme constants
 card = pn.Card(

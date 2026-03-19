@@ -6,7 +6,7 @@ This demonstrates:
 - TensorScopeApp (signal-centric state + SignalManagerLayer)
 - v2.1 SpatialLFPView (instantaneous voltage maps)
 - Shared spatial selection via state.spatial_space (tap-to-select + linked marker)
-- PSD display computed on windows via cogpy.core.spectral.specx.psdx
+- PSD display computed on windows via cogpy.spectral.specx.psdx
 - Simple view duplication (clone an independent SpatialLFPView panel)
 
 Run with:
@@ -25,8 +25,8 @@ print("Loading example iEEG data...")
 data = example_ieeg_grid(mode="small")
 print(f"Loaded: {data.dims}, {data.sizes}")
 
-from cogpy.core.plot.tensorscope import TensorScopeApp
-from cogpy.core.plot.tensorscope.views.spatial_lfp import SpatialLFPView
+from cogpy.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope.views.spatial_lfp import SpatialLFPView
 
 print("Creating TensorScope app...")
 app = (
@@ -97,7 +97,7 @@ def _psd_view(
 ):
     import holoviews as hv
 
-    from cogpy.core.spectral.specx import psdx
+    from cogpy.spectral.specx import psdx
 
     hv.extension("bokeh")
 

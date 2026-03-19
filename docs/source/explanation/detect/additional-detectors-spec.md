@@ -3,7 +3,7 @@
 ## Version
 - Version: 2.6.4
 - Date: 2026-03-05
-- Depends on: v2.6.1 (`cogpy.core.detect.EventDetector`), v2.6.0 (`cogpy.core.events.EventCatalog`)
+- Depends on: v2.6.1 (`cogpy.detect.EventDetector`), v2.6.0 (`cogpy.events.EventCatalog`)
 
 ## Overview
 
@@ -60,7 +60,7 @@ Implemented as a wrapper over `RippleDetector` with default spindle-band paramet
 
 ## Success Criteria
 
-- Detectors are importable from `cogpy.core.detect`.
+- Detectors are importable from `cogpy.detect`.
 - Each detector returns a valid `EventCatalog` (with intervals for ripple/spindle).
 - Unit tests cover basic detection + serialization.
 - Example script demonstrates running multiple detectors.

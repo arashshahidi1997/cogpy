@@ -16,9 +16,9 @@ import numpy as np
 import panel as pn
 import xarray as xr
 
-from cogpy.core.plot.theme import TEXT
-from cogpy.core.plot.tensorscope import TensorScopeApp
-from cogpy.core.plot.tensorscope.data.modalities import SpectrogramModality
+from cogpy.plot.theme import TEXT
+from cogpy.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope.data.modalities import SpectrogramModality
 from cogpy.datasets.entities import example_ieeg_grid
 
 

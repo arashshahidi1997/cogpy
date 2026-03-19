@@ -13,7 +13,7 @@ Run with:
     conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase1_state.py
 """
 
-from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope import TensorScopeState
 from cogpy.datasets.entities import example_ieeg_grid
 
 print("=" * 60)

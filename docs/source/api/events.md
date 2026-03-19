@@ -1,4 +1,4 @@
-# `cogpy.core.events`
+# `cogpy.events`
 
 Event data structures and catalog management.
 
@@ -8,11 +8,11 @@ Event data structures and catalog management.
 .. autosummary::
    :recursive:
 
-   cogpy.core.events.catalog
+   cogpy.events.catalog
 ```
 
 ```{eval-rst}
-.. automodule:: cogpy.core.events
+.. automodule:: cogpy.events
    :members:
    :undoc-members:
    :show-inheritance:

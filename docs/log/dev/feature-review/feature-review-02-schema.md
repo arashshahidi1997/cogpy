@@ -106,7 +106,7 @@ table schema
 - `validate_burst_peaks()` in `src/cogpy/datasets/schemas.py` defines a minimal burst-peak table with columns `burst_id, x, y, t, z, value`.
 - `detect_bursts_hmaxima()` in `src/cogpy/datasets/tensor.py` emits exactly that orthoslicer-friendly table, mapping `x=ml`, `y=ap`, `t=time`, `z=freq`, `value=amp`.
 - `cogpy.datasets.schemas.EventCatalog` is a strict interval-event contract.
-- `cogpy.core.events.EventCatalog` is a looser detector/UI contract.
+- `cogpy.events.EventCatalog` is a looser detector/UI contract.
 
 fields
 - Strict `datasets.schemas.EventCatalog.table` required columns: `event_id`, `t`, `t0`, `t1`, `duration`, `label`, `score`.

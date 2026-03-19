@@ -1,13 +1,17 @@
-"""Wave detection and analysis.
+"""Waveform detection, extraction, and feature analysis."""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.wave` provides tools for detecting and analyzing neural wave patterns
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "detect",
+        "features",
+        "plot",
+        "process",
+        "utils",
+    ],
+)
 
-    from cogpy.wave.detect import detect_extrema
-
-"""
-
-# Auto-generated shim: exposes cogpy.core.wave as cogpy.wave
-from cogpy.core import wave as _impl
-from cogpy.core.wave import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import detect, features, plot, process, utils

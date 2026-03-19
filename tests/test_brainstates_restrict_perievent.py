@@ -17,7 +17,7 @@ def _make_multichannel_signal(*, fs: float = 1000.0, T: float = 10.0, n_chan: in
 
 
 def test_restrict_intervals_object():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
     from cogpy.datasets.schemas import Intervals
 
     sig, t = _make_multichannel_signal()
@@ -29,7 +29,7 @@ def test_restrict_intervals_object():
 
 
 def test_restrict_state_dict():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
 
     sig, t = _make_multichannel_signal()
     states = {"PerSWS": [[1.0, 3.0], [5.0, 7.0]], "PerREM": [[3.0, 5.0]]}
@@ -40,7 +40,7 @@ def test_restrict_state_dict():
 
 
 def test_restrict_plain_array():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
 
     sig, t = _make_multichannel_signal()
     out = restrict(sig, [[1.0, 3.0], [5.0, 7.0]])
@@ -50,7 +50,7 @@ def test_restrict_plain_array():
 
 
 def test_restrict_preserves_attrs():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
     from cogpy.datasets.schemas import Intervals
 
     sig, _ = _make_multichannel_signal()
@@ -60,7 +60,7 @@ def test_restrict_preserves_attrs():
 
 
 def test_restrict_preserves_dims():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
     from cogpy.datasets.schemas import Intervals
 
     sig, _ = _make_multichannel_signal()
@@ -70,7 +70,7 @@ def test_restrict_preserves_dims():
 
 
 def test_restrict_single_interval():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
 
     sig, t = _make_multichannel_signal()
     out = restrict(sig, [1.0, 3.0])
@@ -79,7 +79,7 @@ def test_restrict_single_interval():
 
 
 def test_restrict_empty_result():
-    from cogpy.core.brainstates.intervals import restrict
+    from cogpy.brainstates.intervals import restrict
 
     sig, _ = _make_multichannel_signal()
     out = restrict(sig, [[100.0, 101.0]])
@@ -87,7 +87,7 @@ def test_restrict_empty_result():
 
 
 def test_perievent_epochs_shape():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=4)
     events = np.array([2.0, 5.5, 8.5])
@@ -101,7 +101,7 @@ def test_perievent_epochs_shape():
 
 
 def test_perievent_epochs_lag_coords():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=2)
     pre, post = 0.5, 1.0
@@ -113,7 +113,7 @@ def test_perievent_epochs_lag_coords():
 
 
 def test_perievent_epochs_event_coords():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=2)
     events = np.array([2.0, 5.5, 8.5])
@@ -122,7 +122,7 @@ def test_perievent_epochs_event_coords():
 
 
 def test_perievent_epochs_preserves_attrs():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=1)
     epochs = perievent_epochs(sig, [2.0], fs=1000.0, pre=0.5, post=1.0)
@@ -133,7 +133,7 @@ def test_perievent_epochs_preserves_attrs():
 
 
 def test_perievent_epochs_near_boundary_padded():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     fs = 10.0
     T = 2.0
@@ -154,7 +154,7 @@ def test_perievent_epochs_near_boundary_padded():
 
 
 def test_perievent_epochs_triggered_average_shape():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=4)
     epochs = perievent_epochs(sig, [2.0, 5.5, 8.5], fs=1000.0, pre=0.5, post=1.0)
@@ -163,7 +163,7 @@ def test_perievent_epochs_triggered_average_shape():
 
 
 def test_perievent_epochs_events_object_input():
-    from cogpy.core.brainstates.intervals import perievent_epochs
+    from cogpy.brainstates.intervals import perievent_epochs
     from cogpy.datasets.schemas import Events
 
     sig, _ = _make_multichannel_signal(fs=1000.0, T=10.0, n_chan=2)

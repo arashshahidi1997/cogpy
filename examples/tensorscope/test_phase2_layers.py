@@ -11,8 +11,8 @@ Run with:
     conda run -n cogpy python code/lib/cogpy/examples/tensorscope/test_phase2_layers.py
 """
 
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.layers import (
+from cogpy.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope.layers import (
     ChannelSelectorLayer,
     ProcessingControlsLayer,
     SpatialMapLayer,

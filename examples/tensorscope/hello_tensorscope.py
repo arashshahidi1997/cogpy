@@ -4,7 +4,7 @@ Hello TensorScope - Phase 6 (signal-centric) demo.
 This demonstrates:
 - Loading data with cogpy.datasets
 - TensorScopeApp (signal-centric state + SignalManagerLayer)
-- Adding a PSD display (analysis on windows via cogpy.core.spectral.specx.psdx)
+- Adding a PSD display (analysis on windows via cogpy.spectral.specx.psdx)
 - Panel server deployment
 
 Run with:
@@ -24,7 +24,7 @@ data = example_ieeg_grid(mode="small")
 print(f"Loaded: {data.dims}, {data.sizes}")
 
 print("Phase 6: Creating TensorScope application...")
-from cogpy.core.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope import TensorScopeApp
 
 app = (
     TensorScopeApp(data, title="TensorScope (Phase 6 Demo)")
@@ -53,7 +53,7 @@ def _psd_view(
 ):
     import holoviews as hv
 
-    from cogpy.core.spectral.specx import psdx
+    from cogpy.spectral.specx import psdx
 
     hv.extension("bokeh")
 

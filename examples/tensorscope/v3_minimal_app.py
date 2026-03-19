@@ -15,7 +15,7 @@ import numpy as np
 import panel as pn
 import xarray as xr
 
-from cogpy.core.plot.tensorscope.app import TensorScopeApp
+from cogpy.plot.tensorscope.app import TensorScopeApp
 
 pn.extension()
 

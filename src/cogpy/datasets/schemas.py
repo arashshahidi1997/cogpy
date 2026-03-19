@@ -684,7 +684,7 @@ class Intervals:
     Notes
     -----
     Intervals are open-ended on the right: [t0, t1).
-    Consistent with cogpy.core.brainstates.intervals convention.
+    Consistent with cogpy.brainstates.intervals convention.
     """
 
     starts: np.ndarray
@@ -941,7 +941,7 @@ class EventCatalog:
         )
 
     def to_event_stream(self, *, style=None):
-        from cogpy.core.tensorscope.events import EventStream
+        from cogpy.tensorscope.events import EventStream
 
         return EventStream(
             name=self.family,

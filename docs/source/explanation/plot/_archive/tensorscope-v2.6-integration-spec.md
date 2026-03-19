@@ -4,7 +4,7 @@
 - Version: 2.6.2
 - Date: 2026-03-05
 - Status: Implementation
-- Depends on: v2.6.0 (`cogpy.core.events.EventCatalog`), v2.6.1 (`cogpy.core.detect.EventDetector`)
+- Depends on: v2.6.0 (`cogpy.events.EventCatalog`), v2.6.1 (`cogpy.detect.EventDetector`)
 
 ## Overview
 
@@ -20,8 +20,8 @@ This is **additive and non-breaking**: existing TensorScope apps that use `Event
 
 TensorScope already includes:
 
-- `EventStream` / `EventStyle`: `cogpy.core.tensorscope.events.model`
-- `EventRegistry`: `cogpy.core.tensorscope.events.registry`
+- `EventStream` / `EventStyle`: `cogpy.tensorscope.events.model`
+- `EventRegistry`: `cogpy.tensorscope.events.registry`
 - State navigation helpers:
   - `TensorScopeState.register_events(name, stream)`
   - `TensorScopeState.jump_to_event(stream_name, event_id)`

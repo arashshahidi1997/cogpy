@@ -4,7 +4,7 @@
 - Version: 2.6.0
 - Date: 2026-03-05
 - Status: Implementation
-- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`), `cogpy.core.tensorscope.events` (`EventStream`)
+- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`), `cogpy.tensorscope.events` (`EventStream`)
 
 ## Overview
 
@@ -74,7 +74,7 @@ Queries:
 
 ## Success Criteria
 
-- `EventCatalog` implemented in `cogpy.core.events`
+- `EventCatalog` implemented in `cogpy.events`
 - Factories cover common existing detector outputs
 - Converters to `Events`, `Intervals`, and TensorScope `EventStream` work
 - Validation and basic filters are tested

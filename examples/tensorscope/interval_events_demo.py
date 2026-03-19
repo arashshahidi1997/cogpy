@@ -16,9 +16,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from cogpy.core.events import EventCatalog
-from cogpy.core.events.overlap import detect_overlaps
-from cogpy.core.plot.tensorscope.app import TensorScopeApp
+from cogpy.events import EventCatalog
+from cogpy.events.overlap import detect_overlaps
+from cogpy.plot.tensorscope.app import TensorScopeApp
 from cogpy.datasets.entities import example_ieeg_grid
 
 

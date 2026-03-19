@@ -122,7 +122,7 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     --------
     >>> import numpy as np
     >>> import dask.array as da
-    >>> from cogpy.core.spectral import mtm_spectrogram
+    >>> from cogpy.spectral import mtm_spectrogram
 
     >>> fs = 1000
     >>> t = np.arange(0, 10, 1/fs)

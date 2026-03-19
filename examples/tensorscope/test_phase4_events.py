@@ -15,9 +15,9 @@ Run with:
 import numpy as np
 import pandas as pd
 
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.events import EventStream, EventStyle
-from cogpy.core.plot.tensorscope.layers.events import EventTableLayer
+from cogpy.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope.events import EventStream, EventStyle
+from cogpy.plot.tensorscope.layers.events import EventTableLayer
 from cogpy.datasets.entities import example_ieeg_grid
 
 print("=" * 60)

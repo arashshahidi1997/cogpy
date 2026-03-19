@@ -17,7 +17,7 @@ All core compute operates on `xarray.DataArray` (or `xarray.Dataset`) objects
 with standardized dimension names and metadata. This section defines the
 canonical schemas.
 
-### 2.1 Signal Schemas (`cogpy.core.base.ECoGSchema`)
+### 2.1 Signal Schemas (`cogpy.base.ECoGSchema`)
 
 | Schema | Dims | Use case |
 |--------|------|----------|
@@ -27,7 +27,7 @@ canonical schemas.
 
 **Required metadata:**
 - `fs` (float) — sampling rate in Hz. Accessible as a 0-D coordinate named
-  `"fs"` or as `attrs["fs"]`. Validated by `cogpy.core.base.ensure_fs()`.
+  `"fs"` or as `attrs["fs"]`. Validated by `cogpy.base.ensure_fs()`.
 - `time` coordinate — seconds, 1-D, strictly increasing.
 
 **Optional metadata:**
@@ -87,7 +87,7 @@ never do heavy compute. Pipelines compose both.
 
 ### 3.2 Preprocessing Stack
 
-**Canonical modules** (under `cogpy.core.preprocess`):
+**Canonical modules** (under `cogpy.preprocess`):
 
 | Module | Responsibility |
 |--------|---------------|
@@ -118,7 +118,7 @@ frequency/time-frequency dimensions.
 
 Detection is built on three abstractions:
 
-**EventDetector** (`cogpy.core.detect.base`):
+**EventDetector** (`cogpy.detect.base`):
 - `detect(data) -> EventCatalog`
 - `can_accept(data) -> bool`
 - `needs_transform(data) -> bool` (smart transform: accept raw or precomputed)
@@ -133,18 +133,18 @@ Detection is built on three abstractions:
 | `RippleDetector` | raw signal | interval events | bandpass → envelope → z-score → dual threshold |
 | `SpindleDetector` | raw signal | interval events | `RippleDetector` with spindle-band defaults |
 
-**Transform** (`cogpy.core.detect.transforms`):
+**Transform** (`cogpy.detect.transforms`):
 - `compute(data) -> xr.DataArray`
 - Concrete: `BandpassTransform`, `HighpassTransform`, `LowpassTransform`,
   `SpectrogramTransform`, `HilbertTransform`, `ZScoreTransform`
 
-**DetectionPipeline** (`cogpy.core.detect.pipeline`):
+**DetectionPipeline** (`cogpy.detect.pipeline`):
 - Chains transforms + detector into a single reproducible unit.
 - `run(data) -> EventCatalog`
 - Adds provenance to output metadata.
 - Serializable via `to_dict()` / `from_dict()`.
 
-**Pre-built pipelines** (`cogpy.core.detect.pipelines`):
+**Pre-built pipelines** (`cogpy.detect.pipelines`):
 `BURST_PIPELINE`, `RIPPLE_PIPELINE`, `FAST_RIPPLE_PIPELINE`, `GAMMA_BURST_PIPELINE`
 
 ## 4. I/O Layer

@@ -30,7 +30,7 @@ Use `self._watch(...)` so watchers are tracked and cleaned up by `dispose()`.
 ```python
 import panel as pn
 
-from cogpy.core.tensorscope.layers.base import TensorLayer
+from cogpy.tensorscope.layers.base import TensorLayer
 
 
 class MyLayer(TensorLayer):
@@ -56,7 +56,7 @@ class MyLayer(TensorLayer):
 ### 2) Register the layer type
 
 ```python
-from cogpy.core.tensorscope.layers.manager import LayerSpec
+from cogpy.tensorscope.layers.manager import LayerSpec
 
 app.layer_manager.register(
     LayerSpec(
@@ -80,7 +80,7 @@ app.add_layer("my_layer")
 Implement `DataModality`:
 
 ```python
-from cogpy.core.tensorscope.data.modality import DataModality
+from cogpy.tensorscope.data.modality import DataModality
 
 
 class MyModality(DataModality):

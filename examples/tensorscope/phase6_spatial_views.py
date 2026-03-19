@@ -16,12 +16,12 @@ from __future__ import annotations
 import panel as pn
 
 from cogpy.datasets.entities import example_ieeg_grid
-from cogpy.core.plot.tensorscope.views.spatial_lfp import SpatialLFPView
+from cogpy.plot.tensorscope.views.spatial_lfp import SpatialLFPView
 
 pn.extension()
 
 data = example_ieeg_grid(mode="small")
-from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope import TensorScopeState
 
 state = TensorScopeState(data)
 

@@ -491,8 +491,8 @@ This is already expressible with `zscorex(psd_da, dim="freq", robust=True)`. No 
 For grid neighborhood normalization of feature maps, `local_robust_zscore_grid` already exists. Verify it works on `(AP, ML)` feature maps derived from PSD:
 
 ```python
-from cogpy.core.preprocess.badchannel.spatial import local_robust_zscore_grid
-from cogpy.core.preprocess.badchannel.grid import make_footprint
+from cogpy.preprocess.badchannel.spatial import local_robust_zscore_grid
+from cogpy.preprocess.badchannel.grid import make_footprint
 footprint = make_footprint(rank=2, connectivity=1, niter=1)
 nb_z = local_robust_zscore_grid(nb_ratio_at_50hz, footprint=footprint)
 ```
@@ -578,7 +578,7 @@ Estimated effort: medium. The core F-test math is already correct; the change is
 The sliding-window application is the orchestrator's job. In the demo script:
 
 ```python
-from cogpy.core.utils.sliding_core import sliding_window_view
+from cogpy.utils.sliding_core import sliding_window_view
 windows = sliding_window_view(signal_np, window_size, window_step)  # (..., n_win, win_size)
 fstat, freqs, sig_mask = ftest_line_scan(windows, fs, NW=4.0, p_threshold=0.05)
 # fstat: (..., n_win, freq)

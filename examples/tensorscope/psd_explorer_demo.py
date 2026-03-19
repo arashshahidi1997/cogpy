@@ -13,8 +13,8 @@ from __future__ import annotations
 import holoviews as hv
 import panel as pn
 
-from cogpy.core.plot.tensorscope.modules import ModuleRegistry
-from cogpy.core.plot.tensorscope.state import TensorScopeState
+from cogpy.plot.tensorscope.modules import ModuleRegistry
+from cogpy.plot.tensorscope.state import TensorScopeState
 from cogpy.datasets.entities import example_ieeg_grid
 
 

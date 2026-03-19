@@ -14,9 +14,9 @@ import numpy as np
 import pandas as pd
 import panel as pn
 
-from cogpy.core.plot.tensorscope import TensorScopeApp
-from cogpy.core.plot.tensorscope.events import EventStream, EventStyle
-from cogpy.core.plot.tensorscope.layers.events import EventTableLayer
+from cogpy.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope.events import EventStream, EventStyle
+from cogpy.plot.tensorscope.layers.events import EventTableLayer
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension("tabulator")

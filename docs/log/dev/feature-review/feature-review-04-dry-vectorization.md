@@ -132,7 +132,7 @@
 - Brainstate-window selection in line-noise QC is another small reusable composition primitive.
   - The logic in `sample_spectrogram_plot.py` is narrow, but the “pick centered window inside a state epoch” behavior is generic and likely to recur.
 - Event conversion glue should be internalized by choosing one canonical catalog path.
-  - Right now there is unnecessary ambiguity between `cogpy.datasets.schemas.EventCatalog` and `cogpy.core.events.catalog.EventCatalog`.
+  - Right now there is unnecessary ambiguity between `cogpy.datasets.schemas.EventCatalog` and `cogpy.events.catalog.EventCatalog`.
 
 ## Key refactor opportunities
 

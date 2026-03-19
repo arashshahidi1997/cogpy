@@ -186,7 +186,7 @@ def zarr_to_dat(zarr_file: str, dat_file: str):
 # neuropixels
 import numpy as np
 from pathlib import Path
-from ..core.utils import xarr as xut
+from ..utils import xarr as xut
 
 
 def load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=True):

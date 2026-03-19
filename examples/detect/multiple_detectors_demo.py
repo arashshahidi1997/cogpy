@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from cogpy.core.detect import RippleDetector, ThresholdDetector
+from cogpy.detect import RippleDetector, ThresholdDetector
 from cogpy.datasets.entities import example_ieeg_grid
 
 
@@ -37,7 +37,7 @@ def main():
 
     print("\nBurstDetector (optional):")
     try:
-        from cogpy.core.detect import BurstDetector
+        from cogpy.detect import BurstDetector
 
         det = BurstDetector(h_quantile=0.9, nperseg=256, noverlap=128)
         cat = det.detect(data)

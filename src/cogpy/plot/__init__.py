@@ -1,5 +1,17 @@
-# Auto-generated shim: exposes cogpy.core.plot as cogpy.plot
-from cogpy.core import plot as _impl
-from cogpy.core.plot import *
+"""Visualization components for neural signal exploration.
 
-__all__ = getattr(_impl, "__all__", [])
+Interactive HoloViews/Panel components live under :mod:`cogpy.plot.hv`.
+Static matplotlib/plotly helpers remain in this top-level package.
+Deprecated modules are in :mod:`cogpy.plot._legacy`.
+"""
+from lazy_loader import attach as _attach
+
+__getattr__, __dir__, __all__ = _attach(
+    __name__,
+    submodules=[
+        "hv",
+        "decomposition",
+        "specgram_plot",
+        "time_plot",
+    ],
+)

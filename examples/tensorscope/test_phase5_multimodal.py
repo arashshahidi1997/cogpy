@@ -18,9 +18,9 @@ import numpy as np
 import xarray as xr
 
 from cogpy.datasets.entities import example_ieeg_grid
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.data.modalities import SpectrogramModality
-from cogpy.core.plot.tensorscope.data.alignment import (
+from cogpy.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope.data.modalities import SpectrogramModality
+from cogpy.plot.tensorscope.data.alignment import (
     align_to_common_timebase,
     find_nearest_time_index,
 )

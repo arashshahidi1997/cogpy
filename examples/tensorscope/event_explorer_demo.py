@@ -19,9 +19,9 @@ import pandas as pd
 import holoviews as hv
 import panel as pn
 
-from cogpy.core.events import EventCatalog
-from cogpy.core.plot.tensorscope.modules import ModuleRegistry
-from cogpy.core.plot.tensorscope.state import TensorScopeState
+from cogpy.events import EventCatalog
+from cogpy.plot.tensorscope.modules import ModuleRegistry
+from cogpy.plot.tensorscope.state import TensorScopeState
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension()
@@ -35,7 +35,7 @@ def main():
     # Try to run a real detector if available (ghostipy-dependent in some envs).
     catalog = None
     try:
-        from cogpy.core.detect import BurstDetector
+        from cogpy.detect import BurstDetector
 
         detector = BurstDetector(h_quantile=0.9, nperseg=128, noverlap=64)
         catalog = state.run_detector(detector, event_type="bursts")

@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.modules import ModuleRegistry
+from cogpy.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope.modules import ModuleRegistry
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension()

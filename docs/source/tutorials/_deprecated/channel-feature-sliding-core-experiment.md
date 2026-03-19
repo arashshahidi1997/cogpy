@@ -2,11 +2,11 @@
 title: Channel Features via sliding_core (experiment)
 ---
 
-# Channel features via `cogpy.core.utils.sliding_core` (experiment)
+# Channel features via `cogpy.utils.sliding_core` (experiment)
 
 This notebook prototypes the **channel feature** computations from
-`cogpy.core.preprocess.channel_feature` using the **NumPy-only** sliding-window
-helpers in `cogpy.core.utils.sliding_core`.
+`cogpy.preprocess.channel_feature` using the **NumPy-only** sliding-window
+helpers in `cogpy.utils.sliding_core`.
 
 The goal is to validate that:
 
@@ -25,7 +25,7 @@ to evaluate whether a reimplementation is worth pursuing.
 - Window alignment differs:
   - `sliding_core.sliding_window` makes **left-aligned windows** at starts
     `[0, step, 2*step, ...]`.
-  - `cogpy.core.utils.sliding.rolling_win` uses **centered windows** and then
+  - `cogpy.utils.sliding.rolling_win` uses **centered windows** and then
     trims to valid center positions.
 
 ## Imports and synthetic data
@@ -36,7 +36,7 @@ per window.
 ```{code-cell} python
 import numpy as np
 
-from cogpy.core.preprocess.channel_feature_functions import (
+from cogpy.preprocess.channel_feature_functions import (
     anticorrelation,
     relative_variance,
     deviation,
@@ -46,8 +46,8 @@ from cogpy.core.preprocess.channel_feature_functions import (
     temporal_mean_laplacian,
     local_robust_zscore,
 )
-from cogpy.core.utils.grid_neighborhood import adjacency_matrix, make_footprint
-from cogpy.core.utils.sliding_core import sliding_window, running_blockwise
+from cogpy.utils.grid_neighborhood import adjacency_matrix, make_footprint
+from cogpy.utils.sliding_core import sliding_window, running_blockwise
 
 rng = np.random.default_rng(0)
 

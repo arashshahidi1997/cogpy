@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from cogpy.core.events import EventCatalog
+from cogpy.events import EventCatalog
 
 print("=" * 60)
 print("EventCatalog Demo")

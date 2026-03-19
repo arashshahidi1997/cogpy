@@ -12,9 +12,9 @@ from __future__ import annotations
 import json
 import tempfile
 
-from cogpy.core.detect import DetectionPipeline, ThresholdDetector
-from cogpy.core.detect.pipelines import GAMMA_BURST_PIPELINE
-from cogpy.core.detect.transforms import BandpassTransform, HilbertTransform, ZScoreTransform
+from cogpy.detect import DetectionPipeline, ThresholdDetector
+from cogpy.detect.pipelines import GAMMA_BURST_PIPELINE
+from cogpy.detect.transforms import BandpassTransform, HilbertTransform, ZScoreTransform
 from cogpy.datasets.entities import example_ieeg_grid
 
 

@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 
 from cogpy.datasets.entities import example_ieeg_grid
-from cogpy.core.plot.tensorscope import TensorScopeApp
-from cogpy.core.plot.tensorscope.events import EventStream
+from cogpy.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope.events import EventStream
 
 
 def _ms(s: float) -> float:

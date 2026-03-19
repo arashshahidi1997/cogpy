@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.regression.design — design matrix construction."""
+"""Tests for cogpy.regression.design — design matrix construction."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.regression.design import lagged_design_matrix, event_design_matrix
+from cogpy.regression.design import lagged_design_matrix, event_design_matrix
 
 
 # ---------------------------------------------------------------------------

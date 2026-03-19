@@ -1,13 +1,41 @@
-"""Utils subpackage
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-Utility functions for various tasks.
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "_email",
+        "_functools",
+        "convert",
+        "curve",
+        "grid_neighborhood",
+        "imports",
+        "_jupyter",
+        "reshape",
+        "sliding",
+        "stats",
+        "subgrid",
+        "time_series",
+        "wrappers",
+        "xarr",
+        "manifold",
+    ],
+)
 
-    from cogpy.utils import some_utility_function
-
-"""
-
-# Auto-generated shim: exposes cogpy.core.utils as cogpy.utils
-from cogpy.core import utils as _impl
-from cogpy.core.utils import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import (
+        _email,
+        _functools,
+        convert,
+        curve,
+        grid_neighborhood,
+        imports,
+        _jupyter,
+        reshape,
+        sliding,
+        stats,
+        subgrid,
+        time_series,
+        wrappers,
+        xarr,
+    )

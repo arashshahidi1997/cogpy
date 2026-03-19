@@ -158,7 +158,7 @@ the requested rule.
 
 ## Legacy modules
 
-The canonical bad-channel pipeline lives in `cogpy.core.preprocess.badchannel`.
+The canonical bad-channel pipeline lives in `cogpy.preprocess.badchannel`.
 Three older modules are retained for backward compatibility but are deprecated:
 
 | Legacy module | Replacement |

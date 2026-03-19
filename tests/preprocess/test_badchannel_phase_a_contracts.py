@@ -1,6 +1,6 @@
 import numpy as np
 
-from cogpy.core.preprocess.channel_feature_functions import (
+from cogpy.preprocess.channel_feature_functions import (
     anticorrelation,
     amplitude,
     deviation,
@@ -8,7 +8,7 @@ from cogpy.core.preprocess.channel_feature_functions import (
     relative_variance,
     time_derivative,
 )
-from cogpy.core.utils.grid_neighborhood import adjacency_matrix, make_footprint
+from cogpy.utils.grid_neighborhood import adjacency_matrix, make_footprint
 
 
 def test_grid_adjacency_matrix_excludes_self():

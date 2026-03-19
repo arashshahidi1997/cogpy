@@ -14,7 +14,7 @@ Run with:
 from __future__ import annotations
 
 from cogpy.datasets.entities import example_ieeg_grid
-from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope import TensorScopeState
 
 print("=" * 60)
 print("TensorScope Signal-Centric Architecture Test")
@@ -92,14 +92,14 @@ print("   ✅ All signals produce windows")
 
 # PSD via external analysis on windows
 print("\n8. Computing PSD from window...")
-from cogpy.core.spectral.specx import psdx
+from cogpy.spectral.specx import psdx
 
 win = base_signal.get_window(5.0, 7.0)
 psd = psdx(win, method="multitaper", bandwidth=4.0, nperseg=512)
 print(f"   - Window shape: {win.shape}")
 print(f"   - PSD shape: {psd.shape}")
 print(f"   - PSD dims: {psd.dims}")
-print("   ✅ Analysis via cogpy.core.spectral.specx")
+print("   ✅ Analysis via cogpy.spectral.specx")
 
 # Test selected_time
 print("\n9. Testing selected_time feature...")

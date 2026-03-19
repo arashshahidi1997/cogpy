@@ -43,16 +43,16 @@ Note: The Makefile uses a shared conda Python at `/storage/share/python/environm
 
 ## Architecture
 
-### Two-Layer Design
+### Compute vs I/O
 
-- **`cogpy.core`** — Pure compute on in-memory structures. File-agnostic and testable.
+- **`cogpy.*`** (top-level subpackages) — Pure compute on in-memory structures. File-agnostic and testable.
 - **`cogpy.io`** — File reading/writing, sidecar management, format translation.
 
-Never mix I/O and compute in the same function. Pipelines compose `cogpy.io` (load/save) with `cogpy.core` (transform).
+Never mix I/O and compute in the same function. Pipelines compose `cogpy.io` (load/save) with compute subpackages (transform).
 
 ### Core Data Model
 
-Primary data structure is `xarray.DataArray` with standardized dimensions defined in `cogpy.core.base.ECoGSchema`:
+Primary data structure is `xarray.DataArray` with standardized dimensions defined in `cogpy.base.ECoGSchema`:
 - Time: `"time"`
 - Grid ECoG spatial: `"AP"` (anterior-posterior), `"ML"` (medial-lateral)
 - Flat ECoG channel: `"ch"`
@@ -62,18 +62,18 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 
 | Path | Purpose |
 |------|---------|
-| `core/base.py` | Signal schemas (`ECoGSchema`) and thin wrapper classes |
-| `core/preprocess/filtering/` | xarray filters: `temporal.py` (IIR), `spatial.py` (grid), `reference.py` (CMR), `normalization.py` (z-score) |
-| `core/preprocess/badchannel/` | Canonical bad-channel pipeline (features → spatial norm → DBSCAN) |
-| `core/preprocess/filtx.py` | Backward-compat shim — re-exports from `filtering/` |
-| `core/detect/` | Event detection (unified detector interface) |
-| `core/events/` | EventCatalog data structure |
-| `core/spectral/` | Spectral analysis (multitaper, whitening, etc.) |
-| `core/measures/` | Spatial (`moran_i`, `gradient_anisotropy`) and temporal measures |
-| `core/plot/hv/` | Interactive HoloViews/Panel visualization (`grid_movie`, `multichannel_view`, `add_time_hair`, `TopoMap`, `OrthoSlicerRanger`) |
-| `core/plot/` | Static matplotlib/plotly helpers (`decomposition`, `specgram_plot`, `time_plot`) |
-| `core/plot/_legacy/` | Deprecated viz modules (retained for reference) |
-| `core/tensorscope/` | Legacy TensorScope Panel app (migrated to standalone React+TS) |
+| `base.py` | Signal schemas (`ECoGSchema`) and thin wrapper classes |
+| `preprocess/filtering/` | xarray filters: `temporal.py` (IIR), `spatial.py` (grid), `reference.py` (CMR), `normalization.py` (z-score) |
+| `preprocess/badchannel/` | Canonical bad-channel pipeline (features → spatial norm → DBSCAN) |
+| `preprocess/filtx.py` | Backward-compat shim — re-exports from `filtering/` |
+| `detect/` | Event detection (unified detector interface) |
+| `events/` | EventCatalog data structure |
+| `spectral/` | Spectral analysis (multitaper, whitening, etc.) |
+| `measures/` | Spatial (`moran_i`, `gradient_anisotropy`) and temporal measures |
+| `plot/hv/` | Interactive HoloViews/Panel visualization (`grid_movie`, `multichannel_view`, `add_time_hair`, `TopoMap`, `OrthoSlicerRanger`) |
+| `plot/` | Static matplotlib/plotly helpers (`decomposition`, `specgram_plot`, `time_plot`) |
+| `plot/_legacy/` | Deprecated viz modules (retained for reference) |
+| `tensorscope/` | Legacy TensorScope Panel app (migrated to standalone React+TS) |
 | `io/ecog_io.py` | ECoG-specific file I/O |
 | `io/ieeg_io.py` | iEEG BIDS I/O |
 | `cli/` | Thin CLI wrappers (keep minimal) |
@@ -82,14 +82,14 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 
 ### Import Strategy
 
-- `cogpy.__init__.py` uses `lazy_loader.attach()` for lazy submodule loading
-- Re-exports `cogpy.core.*` as `cogpy.*` for backward compatibility
+- Subpackages live directly under `cogpy/` (no `core/` indirection)
+- Subpackages use `lazy_loader.attach()` for lazy submodule loading
 - Legacy modules (`channel_feature`, `channel_feature_functions`, `detect_bads`) emit `DeprecationWarning` on import; use `badchannel` instead
 - **Filtering:** prefer `cogpy.preprocess.filtering` (new canonical path); `cogpy.preprocess.filtx` is a backward-compat shim
 
-### Visualization (`core/plot/`)
+### Visualization (`cogpy.plot`)
 
-- **`core/plot/hv/`** — All interactive HoloViews/Panel components. Key files:
+- **`plot/hv/`** — All interactive HoloViews/Panel components. Key files:
   - `xarray_hv.py` — `grid_movie`, `grid_movie_with_time_curve`, `multichannel_view`, `add_time_hair`, `selected_channel_curve`
   - `time_player.py` — `TimeHair`, `AxisHair`, `PlayerWithRealTime`
   - `topomap.py` — AP×ML heatmap viewer
@@ -97,13 +97,13 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
   - `orthoslicer.py` — interactive orthoslicer with linked time-window
   - `processing_chain.py` — filter pipeline UI (CMR, bandpass, notch, z-score)
   - `ecog_viewer.py` — `ChannelGridSelector` + full ECoG viewer app
-- **`core/plot/`** root — Static matplotlib/plotly helpers (`decomposition.py`, `specgram_plot.py`, `time_plot.py`)
-- **`core/plot/_legacy/`** — Deprecated modules retained for reference
+- **`plot/`** root — Static matplotlib/plotly helpers (`decomposition.py`, `specgram_plot.py`, `time_plot.py`)
+- **`plot/_legacy/`** — Deprecated modules retained for reference
 
 ### TensorScope Migration
 
-TensorScope was originally a Panel/HoloViews app inside `cogpy.core.plot.tensorscope`.
-It has been moved to `cogpy.core.tensorscope` and migrated to a standalone React +
+TensorScope was originally a Panel/HoloViews app inside `cogpy.plot.tensorscope`.
+It has been moved to `cogpy.tensorscope` and migrated to a standalone React +
 TypeScript project. The cogpy subpackage and its archived spec docs
 (`docs/source/explanation/plot/_archive/tensorscope-*.md`) are retained as
 historical reference. New visualization work targets the standalone frontend using
@@ -112,14 +112,14 @@ cogpy's public API as backend.
 ### CLI Entry Points
 
 - `cogpy-preproc` — Preprocessing pipeline (`cogpy.cli.preprocess:main`)
-- `tensorscope` — Legacy CLI (`cogpy.core.tensorscope.cli:main`)
+- `tensorscope` — Legacy CLI (`cogpy.tensorscope.cli:main`)
 
 ## Conventions
 
 - **Python ≥ 3.10** required
 - **Docstrings:** NumPy style (parsed by `sphinx.ext.napoleon`)
 - **Tests:** Mirror source structure under `tests/`; use pytest fixtures
-- **Snakemake rules:** Use `cogpy.io` to load/save, `cogpy.core` for transforms; keep rules as thin orchestrators
-- **Bad channel detection:** Use canonical `cogpy.core.preprocess.badchannel` stack, not legacy `channel_feature_functions` / `detect_bads`
+- **Snakemake rules:** Use `cogpy.io` to load/save, compute subpackages for transforms; keep rules as thin orchestrators
+- **Bad channel detection:** Use canonical `cogpy.preprocess.badchannel` stack, not legacy `channel_feature_functions` / `detect_bads`
 - **Filtering:** Use `cogpy.preprocess.filtering` (split into `temporal`, `spatial`, `reference`, `normalization`); `filtx` is a compat shim
 - **Batch dimensions:** Spatial measures accept `(..., AP, ML)`, spectral features accept `(..., freq)`, temporal measures accept `(..., time)`

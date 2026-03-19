@@ -1,10 +1,10 @@
-"""Tests for cogpy.core.triggered.stats — triggered statistics."""
+"""Tests for cogpy.triggered.stats — triggered statistics."""
 
 import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.triggered.stats import (
+from cogpy.triggered.stats import (
     triggered_average,
     triggered_std,
     triggered_median,

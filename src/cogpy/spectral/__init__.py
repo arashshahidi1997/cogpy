@@ -1,12 +1,31 @@
-"""Spectral analysis and processing.
+"""Spectral analysis: PSD, spectrograms, coherence, and multitaper methods."""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.spectral` provides tools for spectral analysis and processing of neural signals
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "bivariate",
+        "bivariate_spectral",
+        "features",
+        "multitaper",
+        "psd",
+        "specx",
+        "process_spectrogram",
+        "superlet",
+        "whitening",
+    ],
+)
 
-    from cogpy.spectral import mtm_spectrogram
-
-"""
-# Auto-generated shim: exposes cogpy.core.spectral as cogpy.spectral
-from cogpy.core import spectral as _impl
-from cogpy.core.spectral import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import (
+        bivariate,
+        bivariate_spectral,
+        features,
+        multitaper,
+        psd,
+        specx,
+        process_spectrogram,
+        superlet,
+        whitening,
+    )

@@ -42,7 +42,7 @@ cogpy separates **compute** from **I/O**:
 ```
 cogpy.io       →  Load files into xarray
                       ↓
-cogpy.core.*   →  Pure compute (filtering, spectral, detection, ...)
+cogpy.*   →  Pure compute (filtering, spectral, detection, ...)
                       ↓
 cogpy.io       →  Save results to files
 ```

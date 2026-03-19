@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.measures.comparison — before/after signal metrics."""
+"""Tests for cogpy.measures.comparison — before/after signal metrics."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.measures.comparison import (
+from cogpy.measures.comparison import (
     snr_improvement,
     residual_energy_ratio,
     bandpower_change,

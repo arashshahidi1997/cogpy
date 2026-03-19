@@ -139,7 +139,7 @@ erpPCA operates on a 2D matrix `(time, variables)`. We:
 
 ```{code-cell} python
 from scipy.stats import zscore
-from cogpy.core.decomposition.spatspec import SpatSpecDecomposition
+from cogpy.decomposition.spatspec import SpatSpecDecomposition
 
 mtx = spec.rename({"AP": "h", "ML": "w"})
 ss = SpatSpecDecomposition(mtx)
@@ -178,7 +178,7 @@ The `erpPCA` estimator follows the scikit-learn API:
 4. Sort factors by explained variance
 
 ```{code-cell} python
-from cogpy.core.decomposition.pca import erpPCA
+from cogpy.decomposition.pca import erpPCA
 
 nfac = 8
 erp = erpPCA(nfac=nfac, verbose=False)
@@ -227,7 +227,7 @@ The `×` marks the peak electrode. These are static `HoloMap`-compatible
 objects that render on Sphinx sites.
 
 ```{code-cell} python
-from cogpy.core.plot.hv.decomposition import loading_spatial_layout
+from cogpy.plot.hv.decomposition import loading_spatial_layout
 
 loading_spatial_layout(ss.ldx_slc_maxfreq, ss.ldx_df)
 ```
@@ -237,7 +237,7 @@ loading_spatial_layout(ss.ldx_slc_maxfreq, ss.ldx_df)
 A `HoloMap` keyed by factor — use the slider or dropdown to browse:
 
 ```{code-cell} python
-from cogpy.core.plot.hv.decomposition import factor_holomap
+from cogpy.plot.hv.decomposition import factor_holomap
 
 factor_holomap(ss.ldx, ss.ldx_df)
 ```
@@ -248,7 +248,7 @@ Frequency loading at the peak electrode for each factor — the red
 dashed line marks the peak frequency:
 
 ```{code-cell} python
-from cogpy.core.plot.hv.decomposition import loading_spectral_profiles
+from cogpy.plot.hv.decomposition import loading_spectral_profiles
 
 loading_spectral_profiles(ss.ldx_slc_maxch, ss.ldx_df)
 ```
@@ -289,7 +289,7 @@ expressed at each time point. The traces are stacked vertically
 small variations without changing the spacing between traces.
 
 ```{code-cell} python
-from cogpy.core.plot.hv.decomposition import score_traces_holomap
+from cogpy.plot.hv.decomposition import score_traces_holomap
 
 score_traces_holomap(scx, ss.ldx_df, gains=(0.3, 0.5, 1.0, 2.0, 4.0))
 ```
@@ -303,7 +303,7 @@ Raw scores are noisy. The `scores` module provides a pipeline:
 3. **Quantile thresholding** — keeps only prominent activations
 
 ```{code-cell} python
-from cogpy.core.decomposition.scores import scx_process
+from cogpy.decomposition.scores import scx_process
 
 scx_dict = scx_process(scx, sigma=0.25, quantile=0.25, return_all=True)
 ```
@@ -387,16 +387,16 @@ print(ss.ldx_df[["freqmax", "is_delta", "is_theta", "is_alpha",
 |------|-----------------|--------|
 | Load data | `load_sample()` | `cogpy.datasets` |
 | Spectrogram | `spectrogramx()` | `cogpy.spectral.specx` |
-| Design matrix | `SpatSpecDecomposition.designmat()` | `cogpy.core.decomposition.spatspec` |
-| Fit PCA | `erpPCA.fit()` | `cogpy.core.decomposition.pca` |
-| Reshape loadings | `SpatSpecDecomposition.ldx_set()` | `cogpy.core.decomposition.spatspec` |
-| Score processing | `scx_process()` | `cogpy.core.decomposition.scores` |
-| Factor matching | `match_factors()` | `cogpy.core.decomposition.match` |
-| HV spatial layout | `loading_spatial_layout()` | `cogpy.core.plot.hv.decomposition` |
-| HV factor browser | `factor_holomap()` | `cogpy.core.plot.hv.decomposition` |
+| Design matrix | `SpatSpecDecomposition.designmat()` | `cogpy.decomposition.spatspec` |
+| Fit PCA | `erpPCA.fit()` | `cogpy.decomposition.pca` |
+| Reshape loadings | `SpatSpecDecomposition.ldx_set()` | `cogpy.decomposition.spatspec` |
+| Score processing | `scx_process()` | `cogpy.decomposition.scores` |
+| Factor matching | `match_factors()` | `cogpy.decomposition.match` |
+| HV spatial layout | `loading_spatial_layout()` | `cogpy.plot.hv.decomposition` |
+| HV factor browser | `factor_holomap()` | `cogpy.plot.hv.decomposition` |
 
 For cross-recording factor matching (e.g. aligning factors across
-sessions or subjects), see `cogpy.core.decomposition.match.match_factors`.
+sessions or subjects), see `cogpy.decomposition.match.match_factors`.
 
 ## Computational considerations
 

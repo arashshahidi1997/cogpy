@@ -19,7 +19,7 @@ interchangeable and pipelines are reproducible.
 
 ## The EventDetector interface
 
-All detectors inherit from `EventDetector` (in `cogpy.core.detect.base`):
+All detectors inherit from `EventDetector` (in `cogpy.detect.base`):
 
 ```python
 class EventDetector(ABC):

@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.theme import BG_PANEL, BLUE, TEXT
-from cogpy.core.plot.tensorscope import TensorScopeState
-from cogpy.core.plot.tensorscope.layers import (
+from cogpy.plot.theme import BG_PANEL, BLUE, TEXT
+from cogpy.plot.tensorscope import TensorScopeState
+from cogpy.plot.tensorscope.layers import (
     ChannelSelectorLayer,
     ProcessingControlsLayer,
     SpatialMapLayer,

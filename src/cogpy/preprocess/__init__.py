@@ -1,12 +1,42 @@
-"""Preprocessing of neural signals.
+"""Signal preprocessing: filtering, bad-channel detection, resampling, and interpolation."""
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.preprocess` provides tools for preprocessing of neural signals
+__getattr__, __dir__, _submod_all = attach(
+    __name__,
+    submodules=[
+        "filtering",
+        "filtx",
+        "interpolate",
+        "linenoise",
+        "resample",
+        "badchannel",
+        # Legacy — importable but not in __all__:
+        "channel_feature_functions",
+        "channel_feature",
+        "detect_bads",
+    ],
+)
 
-    from cogpy.preprocess import interpolate
+# Curated public API
+__all__ = [
+    "filtering",
+    "filtx",
+    "interpolate",
+    "linenoise",
+    "resample",
+    "badchannel",
+]
 
-"""
-# Auto-generated shim: exposes cogpy.core.preprocess as cogpy.preprocess
-from cogpy.core import preprocess as _impl
-from cogpy.core.preprocess import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import (
+        filtering,
+        filtx,
+        interpolate,
+        linenoise,
+        resample,
+        badchannel,
+        channel_feature_functions,
+        channel_feature,
+        detect_bads,
+    )

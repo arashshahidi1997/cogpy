@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.spectral.features — spectral scalar/vector features."""
+"""Tests for cogpy.spectral.features — spectral scalar/vector features."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.spectral.features import (
+from cogpy.spectral.features import (
     narrowband_ratio,
     spectral_peak_freqs,
     ftest_line_scan,
@@ -255,7 +255,7 @@ class TestReduceTfBands:
         )
 
     def test_basic_mean(self):
-        from cogpy.core.spectral.features import reduce_tf_bands
+        from cogpy.spectral.features import reduce_tf_bands
 
         da = self._score_da()
         bands = {"alpha": (8, 13), "beta": (13, 30)}
@@ -266,21 +266,21 @@ class TestReduceTfBands:
         assert ds["alpha"].dims == ("time_win",)
 
     def test_median_method(self):
-        from cogpy.core.spectral.features import reduce_tf_bands
+        from cogpy.spectral.features import reduce_tf_bands
 
         da = self._score_da()
         ds = reduce_tf_bands(da, {"low": (1, 50)}, method="median")
         assert ds["low"].dims == ("time_win",)
 
     def test_no_overlap_raises(self):
-        from cogpy.core.spectral.features import reduce_tf_bands
+        from cogpy.spectral.features import reduce_tf_bands
 
         da = self._score_da()
         with pytest.raises(ValueError, match="no overlap"):
             reduce_tf_bands(da, {"oob": (500, 600)})
 
     def test_unknown_method_raises(self):
-        from cogpy.core.spectral.features import reduce_tf_bands
+        from cogpy.spectral.features import reduce_tf_bands
 
         da = self._score_da()
         with pytest.raises(ValueError, match="Unknown method"):
@@ -289,7 +289,7 @@ class TestReduceTfBands:
     def test_preserves_batch_dims(self):
         """Batch dims beyond (time_win, freq) are preserved."""
         import xarray as xr
-        from cogpy.core.spectral.features import reduce_tf_bands
+        from cogpy.spectral.features import reduce_tf_bands
 
         da = xr.DataArray(
             np.ones((5, 10, 100)),
@@ -321,7 +321,7 @@ class TestNormalizeSpectrogram:
         )
 
     def test_robust_zscore(self):
-        from cogpy.core.spectral.specx import normalize_spectrogram
+        from cogpy.spectral.specx import normalize_spectrogram
 
         spec = self._spec_da()
         out = normalize_spectrogram(spec, method="robust_zscore", dim="freq")
@@ -329,7 +329,7 @@ class TestNormalizeSpectrogram:
         assert out.attrs["normalization"] == "robust_zscore"
 
     def test_db(self):
-        from cogpy.core.spectral.specx import normalize_spectrogram
+        from cogpy.spectral.specx import normalize_spectrogram
 
         spec = self._spec_da()
         out = normalize_spectrogram(spec, method="db")
@@ -340,7 +340,7 @@ class TestNormalizeSpectrogram:
         assert float(out.max()) < 0 or float(out.min()) < 0
 
     def test_unknown_method_raises(self):
-        from cogpy.core.spectral.specx import normalize_spectrogram
+        from cogpy.spectral.specx import normalize_spectrogram
 
         with pytest.raises(ValueError, match="Unknown normalization"):
             normalize_spectrogram(self._spec_da(), method="bad")

@@ -12,7 +12,7 @@ Raw signal → Feature extraction → Spatial normalization → Outlier labeling
               (temporal measures)   (neighborhood stats)    (DBSCAN)
 ```
 
-Each stage is a separate module under `cogpy.core.preprocess.badchannel`.
+Each stage is a separate module under `cogpy.preprocess.badchannel`.
 
 ## Step 1: Extract channel features
 
@@ -30,7 +30,7 @@ features = extract_channel_features_xr(
 ```
 
 Each feature is computed per channel per time window. The underlying
-functions live in `cogpy.core.measures.temporal`:
+functions live in `cogpy.measures.temporal`:
 
 ```python
 from cogpy.measures.temporal import (

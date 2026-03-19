@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.preprocess.badchannel.channel_features import extract_channel_features_xr
+from cogpy.preprocess.badchannel.channel_features import extract_channel_features_xr
 from cogpy.datasets import schemas as sch
 
 

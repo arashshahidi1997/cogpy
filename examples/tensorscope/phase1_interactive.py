@@ -17,8 +17,8 @@ import json
 
 import panel as pn
 
-from cogpy.core.plot.channel_grid_widget import ChannelGridWidget
-from cogpy.core.plot.tensorscope import TensorScopeState
+from cogpy.plot.channel_grid_widget import ChannelGridWidget
+from cogpy.plot.tensorscope import TensorScopeState
 from cogpy.datasets.entities import example_ieeg_grid
 
 pn.extension()

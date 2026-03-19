@@ -88,7 +88,7 @@ all = [
 
 [project.scripts]
 cogpy-preproc = "cogpy.cli.preprocess:main"
-tensorscope = "cogpy.core.tensorscope.cli:main"
+tensorscope = "cogpy.tensorscope.cli:main"
 
 [tool.setuptools.package-data]
 cogpy = ["workflows/**"]  # ship all workflow files

@@ -2,7 +2,7 @@
 
 TensorScope is a neurophysiology visualization application built on Panel +
 HoloViews. It provides a centralized, serializable state (`TensorScopeState`)
-and a set of thin “layers” that wrap existing `cogpy.core.plot` components.
+and a set of thin “layers” that wrap existing `cogpy.plot` components.
 
 ## Getting Started
 
@@ -20,7 +20,7 @@ pip install "cogpy[viz]"
 
 ```python
 from cogpy.datasets.entities import example_ieeg_grid
-from cogpy.core.tensorscope import TensorScopeApp
+from cogpy.tensorscope import TensorScopeApp
 
 data = example_ieeg_grid(mode="small")
 app = (
@@ -117,7 +117,7 @@ are stored in an `EventStream` and managed by the state’s `EventRegistry`.
 
 ```python
 import pandas as pd
-from cogpy.core.tensorscope.events import EventStream
+from cogpy.tensorscope.events import EventStream
 
 df = pd.DataFrame({"event_id": [0, 1], "t": [1.5, 3.2], "label": ["burst", "ripple"]})
 stream = EventStream("bursts", df)
@@ -139,7 +139,7 @@ app.add_layer("event_table")
 TensorScope can manage multiple modalities (grid LFP, spectrograms, spikes…).
 
 ```python
-from cogpy.core.tensorscope.data.modalities import SpectrogramModality
+from cogpy.tensorscope.data.modalities import SpectrogramModality
 
 app = TensorScopeApp(lfp_data)
 app.state.register_modality("spectrogram", SpectrogramModality(spec_data))
@@ -175,7 +175,7 @@ Load:
 
 ```python
 import json
-from cogpy.core.tensorscope import TensorScopeApp
+from cogpy.tensorscope import TensorScopeApp
 
 session = json.load(open("session.json"))
 app2 = TensorScopeApp.from_session(session, data_resolver=lambda: data)

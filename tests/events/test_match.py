@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.events.match — event matching & lag estimation."""
+"""Tests for cogpy.events.match — event matching & lag estimation."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.events.match import (
+from cogpy.events.match import (
     match_nearest,
     match_nearest_symmetric,
     event_lag_histogram,

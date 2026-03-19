@@ -1,7 +1,7 @@
 # Entity Collection: Expected Schemas
 
 This document proposes a small collection of **named entities** with explicit schemas (dims/coords/attrs).
-These entities are *not* file formats; they are in-memory objects used by `cogpy.core.plot.*` and future GUIs.
+These entities are *not* file formats; they are in-memory objects used by `cogpy.plot.*` and future GUIs.
 
 ## Design goals
 

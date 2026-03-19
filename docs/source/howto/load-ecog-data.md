@@ -46,7 +46,7 @@ bundle = ieeg_grid_bundle(mode="small", seed=42)
 After loading, verify the signal has the expected schema:
 
 ```python
-from cogpy.core.base import ensure_fs, SCHEMA
+from cogpy.base import ensure_fs, SCHEMA
 
 # Ensure fs is set (raises if missing)
 sig = ensure_fs(sig, fs=1000.0)

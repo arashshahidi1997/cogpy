@@ -8,7 +8,7 @@ Interactive exploration of iEEG recorded from a **2D electrode grid**, using:
 
 - Panel for app composition
 - Bokeh/HoloViews for plotting
-- `cogpy.core.plot.*` as the implementation home
+- `cogpy.plot.*` as the implementation home
 
 The core UX is: *select electrodes on a grid, inspect time series, and link into richer views (spectrogram/topomap) without losing interactivity on large recordings*.
 

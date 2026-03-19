@@ -18,7 +18,7 @@ cogpy chose xarray over custom classes because:
 
 ## Signal schemas
 
-All schemas are defined in `cogpy.core.base.ECoGSchema`:
+All schemas are defined in `cogpy.base.ECoGSchema`:
 
 ### Grid ECoG: `(time, AP, ML)`
 
@@ -53,7 +53,7 @@ flat ECoG — this matches common neuroscience conventions (channels as rows).
 - **Scalar coordinate:** `sig.coords["fs"]` — preferred
 - **Attribute:** `sig.attrs["fs"]` — fallback
 
-Use `cogpy.core.base.get_fs(sig)` to retrieve it regardless of storage
+Use `cogpy.base.get_fs(sig)` to retrieve it regardless of storage
 method, and `ensure_fs(sig, fs=1000.0)` to guarantee it is set.
 
 ## Spectrogram schemas

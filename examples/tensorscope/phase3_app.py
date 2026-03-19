@@ -11,7 +11,7 @@ Run with:
     conda run -n cogpy panel serve code/lib/cogpy/examples/tensorscope/phase3_app.py --show
 """
 
-from cogpy.core.plot.tensorscope import TensorScopeApp
+from cogpy.plot.tensorscope import TensorScopeApp
 from cogpy.datasets.entities import example_ieeg_grid
 
 print("Loading data...")
