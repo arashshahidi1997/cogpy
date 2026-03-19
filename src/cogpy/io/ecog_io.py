@@ -218,15 +218,3 @@ def separate_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, DATA_DIR):
     ecog_flat_dat.to_zarr(ecog_file)
     npix_dat.to_zarr(npix_file)
     print(f"Data saved to {ecog_file} and {npix_file}")
-
-
-def test_ecog_npix():
-    # home_dir = '/home/arash/Documents/Science/Research/Projects/SWD/PyRatECoG/data'
-    SRC_DATA_DIR = Path("/storage2/ramon/data/NYU/TDM/B17593O19-DH1/B17593O19-DH1-Rec4")
-    XML_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpixHighFs.xml"
-    DATA_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpix.lfp"
-    DATA_DIR = Path(
-        "/storage2/arash/codes/LargeScale-Ephys/PyRatECoG/data/ecog_db/arash_db/ECoG_Npix"
-    )
-    FS = 639.5833
-    xml_ecog_file = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.xml"

@@ -8,6 +8,12 @@
 from typing import TYPE_CHECKING
 import sys
 import importlib
+from importlib.metadata import version as _version, PackageNotFoundError
+
+try:
+    __version__ = _version("cogpy")
+except PackageNotFoundError:
+    __version__ = "0.0.0.dev0"
 
 _SUBPKGS = (
     "brainstates",

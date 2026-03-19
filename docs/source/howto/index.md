@@ -9,6 +9,7 @@ data model and basic API (see {doc}`/tutorials/quickstart` if you are new).
 filtering
 event-detection
 batch-spatial-analysis
+compose-artifact-analysis
 custom-snakemake-pipeline
 load-ecog-data
 ```

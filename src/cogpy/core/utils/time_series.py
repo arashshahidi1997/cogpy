@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import quantities as pq
 from scipy.signal import hilbert
 from .xarr import xarr_wrap
 
@@ -71,10 +70,10 @@ def threshold(x, quantile=0.25, axis=-1):
 
 
 def seconds_to_samples(x, fs):
-    if isinstance(x, pq.quantity.Quantity):
-        xi = int(x.rescale("s").magnitude * fs)
-    elif isinstance(x, int):
+    if isinstance(x, int):
         xi = x
-    elif isinstance(x, float):
+    elif isinstance(x, (float, np.floating)):
         xi = int(x * fs)
+    else:
+        raise TypeError(f"Expected int or float, got {type(x).__name__}")
     return xi

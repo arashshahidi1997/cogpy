@@ -12,7 +12,6 @@ __getattr__, __dir__, __all__ = attach(
         "psd",
         "specx",
         "process_spectrogram",
-        "ssa",
         "superlet",
         "whitening",
     ],
@@ -27,7 +26,6 @@ if TYPE_CHECKING:
         psd,
         specx,
         process_spectrogram,
-        ssa,
         superlet,
         whitening,
     )

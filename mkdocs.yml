@@ -1,4 +1,0 @@
-site_name: cogpy
-docs_dir: docs
-theme:
-  name: material

@@ -5,13 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cogpy"
 version = "0.1.0"
-description = ""
+description = "Atomic, composable primitives for ECoG / iEEG signal processing"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
   {name = "Arash Shahidi", email = "A.Shahidi@campus.lmu.de"}
 ]
+keywords = ["ecog", "ieeg", "electrophysiology", "signal-processing", "neuroscience"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+[project.urls]
+Repository = "https://gitlab.lrz.de/sirotalab/cogpy"
+Documentation = "https://cogpy-867a19.pages.gitlab.lrz.de/"
 
 # Keep runtime deps minimal; move heavy/optional items to extras below
 dependencies = [
@@ -22,12 +38,8 @@ dependencies = [
   "lazy_loader",
   "xarray",
   "tqdm",
-  "numba",
   "dill",
   "kneed",
-  "jinja2",
-  "pyts",
-  "quantities",
 ]
 
 # Optional “feature” installs
