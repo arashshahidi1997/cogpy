@@ -3,7 +3,7 @@
 This module provides a small "viewer-like" plot for (time, channel) signals.
 
 Primary output (when available)
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - HoloViews Overlay of stacked traces using ``subcoordinate_y=True``
 - Linked minimap (z-scored image) via ``RangeToolLink``
 

@@ -41,7 +41,7 @@ orchestration outside the package whenever possible.
 
 The intended split is:
 
-- `cogpy.core` = reusable in-memory compute primitives
+- `cogpy.*` (top-level subpackages) = reusable in-memory compute primitives
 - `cogpy.io` = load/save, sidecars, and file-format translation
 - external projects such as PixECoG = orchestration, dataset-specific configs,
   large-scale execution, and derivative layout
@@ -66,8 +66,8 @@ The intended layering is:
 
 - `cogpy.io`: read files, translate to internal representations, validate or
   coerce schemas, save results, update sidecars
-- `cogpy.core`: transform in-memory arrays, compute measures, detect events,
-  build reusable compute abstractions
+- `cogpy.*` (compute subpackages): transform in-memory arrays, compute measures,
+  detect events, build reusable compute abstractions
 - external pipelines: choose inputs, parameter sets, derivative paths,
   scheduling, caching, and execution order
 - external frontends: own UI state, interaction design, visualization layout,
@@ -77,7 +77,7 @@ This means external project pipelines should usually be **thin orchestrators**
 around stable `cogpy` APIs. A Snakemake rule or project script should mostly:
 
 1. load via `cogpy.io`
-2. call one or more `cogpy.core` functions or lightweight composition helpers
+2. call one or more `cogpy` compute functions or lightweight composition helpers
 3. validate/coerce outputs where needed
 4. save via `cogpy.io`
 
@@ -125,7 +125,7 @@ the full schema story is still evolving. In particular, dim naming and case are
 not yet perfectly uniform across all modules, so new code should favor existing
 canonical validators rather than inventing new one-off conventions.
 
-## Conceptual Layers Inside `cogpy.core`
+## Conceptual Layers Inside `cogpy`
 
 The package should remain conceptually clear even when the exact package layout
 evolves. The main roles are:
@@ -178,7 +178,7 @@ different output types, and different downstream uses.
 
 This is also the right place for thin convenience wrappers that combine compute
 with required file bookkeeping. For example, updating sidecars after resampling
-belongs in IO, not in `cogpy.core`.
+belongs in IO, not in compute subpackages.
 
 ## Structured Outputs
 

@@ -8,6 +8,7 @@ Spatial and temporal measures for ECoG grid analysis.
 .. autosummary::
    :recursive:
 
+   cogpy.measures.comparison
    cogpy.measures.spatial
    cogpy.measures.temporal
 ```

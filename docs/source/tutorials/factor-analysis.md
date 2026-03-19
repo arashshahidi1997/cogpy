@@ -400,6 +400,7 @@ print(ss.ldx_df[["freqmax", "is_delta", "is_theta", "is_alpha",
 For cross-recording factor matching (e.g. aligning factors across
 sessions or subjects), see `cogpy.decomposition.match.match_factors`.
 
+(computational-considerations)=
 ## Computational considerations
 
 ### What this tutorial subsampled

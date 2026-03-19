@@ -8,7 +8,7 @@ __all__ = ["ModuleSelectorLayer"]
 
 
 class ModuleSelectorLayer:
-    """UI for selecting and loading registered `ViewPresetModule`s."""
+    """UI for selecting and loading registered ``ViewPresetModule`` instances."""
 
     def __init__(self, state, registry):
         self.state = state

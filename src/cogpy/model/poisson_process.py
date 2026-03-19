@@ -34,8 +34,8 @@ example usage:
         mp = ModeProcess(mode_function=mode, process=pp)
         mode_processes.append(mp)
     mixer = ModeMixer(mode_processes)
-    mixed_signal = mixer.mix(duration=1000)  # Mix signals over 1000
-    unmixed_signals = mixer.get_unmixed_modes()  # Access individual mode signals
+    mixed_signal = mixer.mix(duration=1000)
+    unmixed_signals = mixer.get_unmixed_modes()
 """
 
 import numpy as np

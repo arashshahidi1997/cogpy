@@ -9,6 +9,8 @@ Event data structures and catalog management.
    :recursive:
 
    cogpy.events.catalog
+   cogpy.events.match
+   cogpy.events.overlap
 ```
 
 ```{eval-rst}

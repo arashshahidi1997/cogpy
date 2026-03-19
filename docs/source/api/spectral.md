@@ -8,11 +8,13 @@ Spectral analysis routines, including multitaper methods and spectral estimation
 .. autosummary::
    :recursive:
 
-   cogpy.spectral.bivariate_spectral
+   cogpy.spectral.bivariate
+   cogpy.spectral.features
    cogpy.spectral.multitaper
    cogpy.spectral.process_spectrogram
-   cogpy.spectral.ssa
-   cogpy.spectral.superlet
+   cogpy.spectral.psd
+   cogpy.spectral.psd_utils
+   cogpy.spectral.specx
    cogpy.spectral.whitening
 ```
 

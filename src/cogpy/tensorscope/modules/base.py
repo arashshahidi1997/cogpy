@@ -1,7 +1,7 @@
 """
 Module system for declarative view composition (v2.2).
 
-Modules are named collections of `ViewSpec`s with a layout policy.
+Modules are named collections of ``ViewSpec`` instances with a layout policy.
 """
 
 from __future__ import annotations

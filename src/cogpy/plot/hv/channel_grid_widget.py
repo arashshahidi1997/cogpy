@@ -4,7 +4,7 @@ channel_grid_widget.py
 Panel widget wrapping ChannelGrid with an interactive Bokeh grid display.
 
 Fixes vs previous version
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 * Manual selection now sticks: uses source.patch() instead of replacing
   source.data wholesale (which was resetting Bokeh's selection state and
   causing the toggle to fight itself).

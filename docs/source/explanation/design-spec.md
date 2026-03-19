@@ -75,14 +75,14 @@ boundaries (I/O, CLI, GUI entry points).
 ```
 cogpy.io          Load / save / sidecar management
     ↓ xarray
-cogpy.core        Pure compute (filtering, spectral, detection, …)
+cogpy.*           Pure compute (filtering, spectral, detection, …)
     ↓ xarray + EventCatalog
 cogpy.cli / wf    Thin orchestration (Snakemake, argparse)
     ↓ API
 Frontend          TensorScope (React + TS), notebooks
 ```
 
-Functions in `cogpy.core` never touch the filesystem. Functions in `cogpy.io`
+Compute functions never touch the filesystem. Functions in `cogpy.io`
 never do heavy compute. Pipelines compose both.
 
 ### 3.2 Preprocessing Stack
@@ -107,9 +107,9 @@ remain for backward compatibility but are not the target for new code.
 
 | Function | Module | Description |
 |----------|--------|-------------|
-| `psdx()` | `core.spectral.specx` | Power spectral density (Welch / multitaper) |
-| `spectrogramx()` | `core.spectral.specx` | Time–frequency spectrogram |
-| `coherencex()` | `core.spectral.specx` | Coherence between channels |
+| `psdx()` | `spectral.specx` | Power spectral density (Welch / multitaper) |
+| `spectrogramx()` | `spectral.specx` | Time–frequency spectrogram |
+| `coherencex()` | `spectral.specx` | Coherence between channels |
 
 All accept `xarray.DataArray` and return `xarray.DataArray` with appropriate
 frequency/time-frequency dimensions.

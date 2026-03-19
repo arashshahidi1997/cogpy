@@ -4,7 +4,7 @@ This module introduces a minimal, project-local schema for common neural signals
 For now the focus is **ECoG/iEEG grids** represented as ``xarray.DataArray``.
 
 Why a schema?
-------------
+~~~~~~~~~~~~~
 Many CogPy utilities assume a few conventions:
 - a time dimension named ``"time"``
 - for grid ECoG: spatial dimensions named ``"AP"`` and ``"ML"``

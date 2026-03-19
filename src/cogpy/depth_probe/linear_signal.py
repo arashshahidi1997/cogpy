@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from copy import deepcopy
-from ...io import ecog_io, xml_io, xml_anat_map, save_utils
+from cogpy.io import ecog_io, xml_io, xml_anat_map, save_utils
 
 # ----imports completed----
 

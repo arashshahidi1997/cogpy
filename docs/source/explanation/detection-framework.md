@@ -77,7 +77,7 @@ Built-in transforms:
 - `ZScoreTransform` — per-channel z-score normalization
 - `SpectrogramTransform` — multitaper spectrogram
 
-Transforms are deliberately simple — each wraps a single `cogpy.core` function.
+Transforms are deliberately simple — each wraps a single `cogpy` compute function.
 This keeps them testable independently and avoids coupling detection logic to
 specific filtering implementations.
 
