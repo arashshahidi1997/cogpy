@@ -7,6 +7,7 @@ Each tutorial builds on the previous one.
 :maxdepth: 1
 
 quickstart
+detection-and-events
 spectral-analysis
 factor-analysis
 bad-channel-detection

@@ -5,6 +5,8 @@ kernelspec:
   name: cogpy
   display_name: cogpy
   language: python
+mystnb:
+  execution_mode: "off"
 ---
 
 # Tutorial: `utils.bids_reader` path building across analysis scenarios
