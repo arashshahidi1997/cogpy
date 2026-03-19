@@ -1,6 +1,7 @@
 from pathlib import Path
-import xmltodict
 import numpy as np
+from cogpy.utils.imports import import_optional
+xmltodict = import_optional("xmltodict")
 import pandas as pd
 from typing import Dict, Any
 from .save_utils import save_options

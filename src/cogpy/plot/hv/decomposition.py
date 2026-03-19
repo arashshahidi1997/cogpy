@@ -9,13 +9,8 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 
-try:
-    import holoviews as hv
-except ImportError as e:
-    raise ImportError(
-        "holoviews is required for cogpy.plot.hv.decomposition. "
-        "Install with: pip install holoviews"
-    ) from e
+from cogpy.utils.imports import import_optional
+hv = import_optional("holoviews")
 
 
 def loading_spatial_layout(

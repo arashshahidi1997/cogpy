@@ -43,8 +43,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import numpy as np
-import panel as pn
-import param
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
+param = import_optional("param")
 from bokeh.models import ColumnDataSource, HoverTool, TapTool
 from bokeh.plotting import figure
 

@@ -1,5 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from cogpy.utils.imports import import_optional
+plt = import_optional("matplotlib.pyplot")
 from matplotlib.colors import Normalize
 
 

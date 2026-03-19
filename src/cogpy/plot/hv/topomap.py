@@ -13,8 +13,10 @@ from __future__ import annotations
 from typing import Callable
 
 import numpy as np
-import panel as pn
 import xarray as xr
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
+bokeh_models = import_optional("bokeh.models")
 from bokeh.models import BasicTicker, ColorBar, ColumnDataSource, HoverTool, LinearColorMapper
 from bokeh.models import FixedTicker
 from bokeh.plotting import figure

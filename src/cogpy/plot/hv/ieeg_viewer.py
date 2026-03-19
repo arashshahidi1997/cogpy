@@ -27,8 +27,9 @@ from __future__ import annotations
 
 import warnings
 import numpy as np
-import panel as pn
 import xarray as xr
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
 
 from .multichannel_viewer import MultichannelViewer
 from .grid_indexing import apml_from_flat_index_order, flat_indices_from_selected

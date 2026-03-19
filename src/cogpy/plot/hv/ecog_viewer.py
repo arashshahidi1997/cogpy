@@ -9,10 +9,11 @@ from typing import Any
 
 import numpy as np
 import xarray as xr
-import holoviews as hv
-import panel as pn
+from cogpy.utils.imports import import_optional
+hv = import_optional("holoviews")
+pn = import_optional("panel")
+param = import_optional("param")
 from holoviews import opts, streams
-import param
 
 from .multichannel_timeseries import (
     subgrid_indices,

@@ -18,9 +18,10 @@ Example:
 """
 
 from typing import Union
-import xarray as xr
-import dask.array as da
 import numpy as np
+import xarray as xr
+from cogpy.utils.imports import import_optional
+da = import_optional("dask.array")
 from pathlib import Path
 from .ieeg_sidecars import load_ieeg_metadata
 

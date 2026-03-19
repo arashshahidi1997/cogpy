@@ -51,10 +51,11 @@ Example
 
 import numpy as np
 import xarray as xr
-import holoviews as hv
-import panel as pn
-import param
-import datashader as ds
+from cogpy.utils.imports import import_optional
+hv = import_optional("holoviews")
+pn = import_optional("panel")
+param = import_optional("param")
+ds = import_optional("datashader")
 from holoviews.operation.datashader import rasterize
 from holoviews import streams
 from holoviews.plotting.links import RangeToolLink

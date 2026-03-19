@@ -1,11 +1,13 @@
-import matplotlib.pyplot as plt
-import xarray as xr
 import numpy as np
-from ..utils.wrappers import ax_plot
-from IPython.display import display, clear_output
-import ipywidgets as widgets
+import xarray as xr
+from cogpy.utils.imports import import_optional
+plt = import_optional("matplotlib.pyplot")
+widgets = import_optional("ipywidgets")
+import_optional("plotly")
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from IPython.display import display, clear_output
+from ..utils.wrappers import ax_plot
 
 
 def plot4d_mtx(mtx: xr.DataArray, imshowkw=True):

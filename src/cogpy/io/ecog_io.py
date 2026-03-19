@@ -28,11 +28,12 @@ Example:
 from pathlib import Path
 import numpy as np
 import xarray as xr
-import dask.array as da
 from typing import Dict, Any, Union
+from cogpy.utils.imports import import_optional
+da = import_optional("dask.array")
+from dask.diagnostics import ProgressBar
 from . import xml_io
 from .save_utils import save_options
-from dask.diagnostics import ProgressBar
 from xarray import open_zarr as from_zarr
 
 

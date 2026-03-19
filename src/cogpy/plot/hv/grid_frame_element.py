@@ -23,8 +23,9 @@ Typical usage
 from __future__ import annotations
 
 import numpy as np
-import panel as pn
 import xarray as xr
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
 
 from .topomap import TopoMap
 

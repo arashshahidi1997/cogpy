@@ -2,10 +2,11 @@ import numpy as np
 from copy import deepcopy, copy
 import time
 from contextlib import contextmanager
-import matplotlib.pyplot as plt
 import logging
 import os
 from typing import Any, Optional, Protocol, cast
+from cogpy.utils.imports import import_optional
+plt = import_optional("matplotlib.pyplot")
 from matplotlib.axes import Axes
 from functools import partial
 

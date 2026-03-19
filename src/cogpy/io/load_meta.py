@@ -1,6 +1,7 @@
 """Parse and write XML metadata for OpenEphys-style recordings."""
 from pathlib import Path
-import xmltodict
+from cogpy.utils.imports import import_optional
+xmltodict = import_optional("xmltodict")
 from ..io.save_utils import save_options
 from .xml_anat_map import read_anat_map
 

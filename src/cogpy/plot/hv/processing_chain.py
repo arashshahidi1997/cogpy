@@ -10,9 +10,10 @@ pattern: processing is applied imperatively at render time (not reactively).
 from __future__ import annotations
 
 import numpy as np
-import param
-import panel as pn
 import xarray as xr
+from cogpy.utils.imports import import_optional
+param = import_optional("param")
+pn = import_optional("panel")
 
 from cogpy.preprocess.filtering import bandpassx, cmrx, median_spatialx, notchesx, zscorex
 

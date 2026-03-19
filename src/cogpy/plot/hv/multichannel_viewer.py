@@ -23,10 +23,11 @@ Usage
 from __future__ import annotations
 
 import numpy as np
-import holoviews as hv
+from cogpy.utils.imports import import_optional
+hv = import_optional("holoviews")
+pn = import_optional("panel")
 from holoviews import streams
 from holoviews.plotting.links import RangeToolLink
-import panel as pn
 from tsdownsample import MinMaxLTTBDownsampler
 
 from .theme import BG, BG_PANEL, BLUE, PALETTE, TEAL, TEXT, TEXT_SMALL

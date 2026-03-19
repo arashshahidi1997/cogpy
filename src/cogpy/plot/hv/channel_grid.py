@@ -43,7 +43,8 @@ from __future__ import annotations
 from typing import FrozenSet, Tuple
 
 import numpy as np
-import param
+from cogpy.utils.imports import import_optional
+param = import_optional("param")
 
 __all__ = ["ChannelGrid"]
 

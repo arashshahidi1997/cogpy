@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
+from cogpy.utils.imports import import_optional
+import_optional("bokeh")
 from bokeh.models import Toolbar
 from bokeh.palettes import Plasma256, RdBu11, Viridis256
 from bokeh.plotting import figure

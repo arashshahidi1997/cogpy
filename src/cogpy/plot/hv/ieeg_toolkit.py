@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-import panel as pn
-import param
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
+param = import_optional("param")
 
 from cogpy.datasets.gui_bundles import ieeg_grid_bundle
 

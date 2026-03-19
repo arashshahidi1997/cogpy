@@ -1,5 +1,6 @@
-import panel as pn
-import param
+from cogpy.utils.imports import import_optional
+pn = import_optional("panel")
+param = import_optional("param")
 
 
 class TimeHair(param.Parameterized):

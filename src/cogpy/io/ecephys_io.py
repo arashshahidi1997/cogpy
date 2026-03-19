@@ -25,7 +25,8 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import xarray as xr
-import dask.array as da
+from cogpy.utils.imports import import_optional
+da = import_optional("dask.array")
 from typing import Union
 
 

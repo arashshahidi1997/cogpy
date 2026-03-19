@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from cogpy.utils.imports import import_optional
+plt = import_optional("matplotlib.pyplot")
 import numpy as np
 from scipy.interpolate import interp1d
 from sklearn.decomposition import PCA
