@@ -24,3 +24,6 @@ sources:
   - id: "docs"
     corpus: "docs"
     glob: "docs/**/*.md"
+  - id: "codelib"
+    corpus: "codelib"
+    glob: "/storage/share/codelib/**/*.py"

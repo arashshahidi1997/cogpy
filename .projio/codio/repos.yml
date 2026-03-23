@@ -1,0 +1,190 @@
+repositories:
+  holoviz--holoviews:
+    url: https://github.com/holoviz/holoviews
+    hosting: github
+    storage: external
+    default_branch: main
+  holoviz--panel:
+    url: https://github.com/holoviz/panel
+    hosting: github
+    storage: external
+    default_branch: main
+  holoviz--param:
+    url: https://github.com/holoviz/param
+    hosting: github
+    storage: external
+    default_branch: main
+  mne-tools--mne-python:
+    url: https://github.com/mne-tools/mne-python
+    hosting: github
+    storage: external
+    default_branch: main
+  neurodsp-tools--neurodsp:
+    url: https://github.com/neurodsp-tools/neurodsp
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/neurodsp-tools--neurodsp
+    default_branch: main
+  fooof-tools--fooof:
+    url: https://github.com/fooof-tools/fooof
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/fooof-tools--fooof
+    default_branch: main
+  holoviz--datashader:
+    url: https://github.com/holoviz/datashader
+    hosting: github
+    storage: external
+    default_branch: main
+  neuralensemble--elephant:
+    url: https://github.com/NeuralEnsemble/elephant
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/neuralensemble--elephant
+    default_branch: master
+  emd-dev--emd:
+    url: https://gitlab.com/emd-dev/emd
+    hosting: gitlab
+    storage: managed
+    local_path: /storage/share/codelib/emd-dev--emd
+    default_branch: master
+  raphaelvallat--yasa:
+    url: https://github.com/raphaelvallat/yasa
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/raphaelvallat--yasa
+    default_branch: master
+  raphaelvallat--antropy:
+    url: https://github.com/raphaelvallat/antropy
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/raphaelvallat--antropy
+    default_branch: master
+  cschoel--nolds:
+    url: https://github.com/CSchoel/nolds
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/cschoel--nolds
+    default_branch: main
+  mne-tools--mne-connectivity:
+    url: https://github.com/mne-tools/mne-connectivity
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/mne-tools--mne-connectivity
+    default_branch: main
+  mne-tools--mne-features:
+    url: https://github.com/mne-tools/mne-features
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/mne-tools--mne-features
+    default_branch: master
+  preraulab--multitaper_toolbox:
+    url: https://github.com/preraulab/multitaper_toolbox
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/preraulab--multitaper_toolbox
+    default_branch: master
+  pactools--pactools:
+    url: https://github.com/pactools/pactools
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/pactools--pactools
+    default_branch: master
+  etiennecmb--tensorpac:
+    url: https://github.com/EtienneCmb/tensorpac
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/etiennecmb--tensorpac
+    default_branch: master
+  kemerelab--ghostipy:
+    url: https://github.com/kemerelab/ghostipy
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/kemerelab--ghostipy
+    default_branch: master
+  nipy--nitime:
+    url: https://github.com/nipy/nitime
+    hosting: github
+    storage: external
+    default_branch: main
+  neurodatawithoutborders--nwb-jupyter-widgets:
+    url: https://github.com/NeurodataWithoutBorders/nwb-jupyter-widgets
+    hosting: github
+    storage: external
+    default_branch: main
+  buzsakilab--buzcode:
+    url: https://github.com/buzsakilab/buzcode
+    hosting: github
+    storage: external
+    default_branch: main
+  petersenpeter--cellexplorer:
+    url: https://github.com/petersenpeter/CellExplorer
+    hosting: github
+    storage: external
+    default_branch: main
+  fieldtrip--fieldtrip:
+    url: https://github.com/fieldtrip/fieldtrip
+    hosting: github
+    storage: external
+    default_branch: main
+  ayalab--hippocookbook:
+    url: https://github.com/ayalab/HippoCookBook
+    hosting: github
+    storage: external
+    default_branch: main
+  holoviz-topics--examples:
+    url: https://github.com/holoviz-topics/examples
+    hosting: github
+    storage: external
+    default_branch: main
+  holoviz-topics--neuro:
+    url: https://github.com/holoviz-topics/neuro
+    hosting: github
+    storage: external
+    default_branch: main
+  bokeh--bokeh:
+    url: https://github.com/bokeh/bokeh
+    hosting: github
+    storage: external
+    default_branch: main
+  napari--napari:
+    url: https://github.com/napari/napari
+    hosting: github
+    storage: external
+    default_branch: main
+  networkx--networkx:
+    url: https://github.com/networkx/networkx
+    hosting: github
+    storage: external
+    default_branch: main
+  scikit-image--scikit-image:
+    url: https://github.com/scikit-image/scikit-image
+    hosting: github
+    storage: external
+    default_branch: main
+  holgern--pyedflib:
+    url: https://github.com/holgern/pyedflib
+    hosting: github
+    storage: external
+    default_branch: main
+  spikeinterface--spikeinterface:
+    url: https://github.com/SpikeInterface/spikeinterface
+    hosting: github
+    storage: external
+    default_branch: main
+  braindecode--braindecode:
+    url: https://github.com/braindecode/braindecode
+    hosting: github
+    storage: external
+    default_branch: main
+  alleninstitute--allensdk:
+    url: https://github.com/AllenInstitute/AllenSDK
+    hosting: github
+    storage: external
+    default_branch: main
+  nbara--python-meegkit:
+    url: https://github.com/nbara/python-meegkit
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/nbara--python-meegkit
+    default_branch: master

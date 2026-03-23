@@ -1,0 +1,347 @@
+libraries:
+  holoviews:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/holoviz/holoviews
+    pip_name: holoviews
+    license: BSD-3-Clause
+    summary: With Holoviews, your data visualizes itself.
+    repo_id: holoviz--holoviews
+    added_by: import
+    added_date: '2026-03-19'
+  panel:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/holoviz/panel
+    pip_name: panel
+    license: BSD-3-Clause
+    summary: 'Panel: The powerful data exploration & web app framework for Python'
+    repo_id: holoviz--panel
+    added_by: import
+    added_date: '2026-03-19'
+  param:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/holoviz/param
+    pip_name: param
+    license: BSD-3-Clause
+    summary: Declarative parameters for robust Python classes and a rich API for reactive
+      programming
+    repo_id: holoviz--param
+    added_by: import
+    added_date: '2026-03-19'
+  mne_python:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/mne-tools/mne-python
+    pip_name: mne-python
+    license: BSD-3-Clause
+    summary: 'MNE: Magnetoencephalography (MEG) and Electroencephalography (EEG) in
+      Python'
+    repo_id: mne-tools--mne-python
+    added_by: import
+    added_date: '2026-03-19'
+  neurodsp:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/neurodsp-tools/neurodsp
+    pip_name: neurodsp
+    license: Apache-2.0
+    summary: Digital signal processing for neural time series.
+    repo_id: neurodsp-tools--neurodsp
+    added_by: import
+    added_date: '2026-03-19'
+  fooof:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/fooof-tools/fooof
+    pip_name: fooof
+    license: Apache-2.0
+    summary: 'Parameterizing neural power spectra into periodic & aperiodic components. '
+    repo_id: fooof-tools--fooof
+    added_by: import
+    added_date: '2026-03-19'
+  datashader:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/holoviz/datashader
+    pip_name: datashader
+    license: BSD-3-Clause
+    summary: Quickly and accurately render even the largest data.
+    repo_id: holoviz--datashader
+    added_by: import
+    added_date: '2026-03-19'
+  elephant:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/NeuralEnsemble/elephant
+    pip_name: elephant
+    license: BSD-3-Clause
+    summary: Elephant is the Electrophysiology Analysis Toolkit
+    repo_id: neuralensemble--elephant
+    added_by: import
+    added_date: '2026-03-19'
+  emd:
+    kind: external_mirror
+    repo_url: https://gitlab.com/emd-dev/emd
+    repo_id: emd-dev--emd
+    added_by: import
+    added_date: '2026-03-19'
+  yasa:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/raphaelvallat/yasa
+    pip_name: yasa
+    license: BSD-3-Clause
+    summary: 'YASA (Yet Another Spindle Algorithm): a Python package to analyze polysomnographic
+      sleep recordings.'
+    repo_id: raphaelvallat--yasa
+    added_by: import
+    added_date: '2026-03-19'
+  antropy:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/raphaelvallat/antropy
+    pip_name: antropy
+    license: BSD-3-Clause
+    summary: 'AntroPy: entropy and complexity of (EEG) time-series in Python'
+    repo_id: raphaelvallat--antropy
+    added_by: import
+    added_date: '2026-03-19'
+  nolds:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/CSchoel/nolds
+    pip_name: nolds
+    license: MIT
+    summary: Nonlinear measures for dynamical systems (based on one-dimensional time
+      series)
+    repo_id: cschoel--nolds
+    added_by: import
+    added_date: '2026-03-19'
+  mne_connectivity:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/mne-tools/mne-connectivity
+    pip_name: mne-connectivity
+    license: BSD-3-Clause
+    summary: Connectivity algorithms that leverage the MNE-Python API.
+    repo_id: mne-tools--mne-connectivity
+    added_by: import
+    added_date: '2026-03-19'
+  mne_features:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/mne-tools/mne-features
+    pip_name: mne-features
+    license: BSD-3-Clause
+    summary: MNE-Features software for extracting features from multivariate time
+      series
+    repo_id: mne-tools--mne-features
+    added_by: import
+    added_date: '2026-03-19'
+  multitaper_toolbox:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/preraulab/multitaper_toolbox
+    pip_name: multitaper_toolbox
+    license: BSD-3-Clause
+    summary: A multitaper spectral estimation toolbox implemented in Matlab, Python,
+      and R
+    repo_id: preraulab--multitaper_toolbox
+    added_by: import
+    added_date: '2026-03-19'
+  pactools:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/pactools/pactools
+    pip_name: pactools
+    license: BSD-3-Clause
+    summary: Phase-amplitude coupling (PAC) toolbox
+    repo_id: pactools--pactools
+    added_by: import
+    added_date: '2026-03-19'
+  tensorpac:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/EtienneCmb/tensorpac
+    pip_name: tensorpac
+    license: BSD-3-Clause
+    summary: Phase-Amplitude Coupling under Python
+    repo_id: etiennecmb--tensorpac
+    added_by: import
+    added_date: '2026-03-19'
+  ghostipy:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/kemerelab/ghostipy
+    pip_name: ghostipy
+    license: Apache-2.0
+    repo_id: kemerelab--ghostipy
+    added_by: import
+    added_date: '2026-03-19'
+  nitime:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/nipy/nitime
+    pip_name: nitime
+    license: BSD-3-Clause
+    summary: Timeseries analysis for neuroscience data
+    repo_id: nipy--nitime
+    added_by: import
+    added_date: '2026-03-19'
+  nwb_jupyter_widgets:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/NeurodataWithoutBorders/nwb-jupyter-widgets
+    pip_name: nwb-jupyter-widgets
+    license: NOASSERTION
+    summary: Explore the hierarchical structure of NWB 2.0 files and visualize data
+      with Jupyter widgets.
+    repo_id: neurodatawithoutborders--nwb-jupyter-widgets
+    added_by: import
+    added_date: '2026-03-19'
+  buzcode:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/buzsakilab/buzcode
+    license: GPL-3.0
+    summary: Code for internal lab sharing - polishing has started but is by no means
+      complete
+    repo_id: buzsakilab--buzcode
+    added_by: import
+    added_date: '2026-03-19'
+  cellexplorer:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/petersenpeter/CellExplorer
+    license: BSD-3-Clause
+    summary: CellExplorer is a graphical user interface, a standardized processing
+      module and data structure for exploring and classifying single cells acquired
+      using extracellular electrodes.
+    repo_id: petersenpeter--cellexplorer
+    added_by: import
+    added_date: '2026-03-19'
+  fieldtrip:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/fieldtrip/fieldtrip
+    license: GPL-3.0
+    summary: The MATLAB toolbox for MEG, EEG and iEEG analysis
+    repo_id: fieldtrip--fieldtrip
+    added_by: import
+    added_date: '2026-03-19'
+  hippocookbook:
+    kind: external_mirror
+    repo_url: https://github.com/ayalab/HippoCookBook
+    repo_id: ayalab--hippocookbook
+    added_by: import
+    added_date: '2026-03-19'
+  examples:
+    kind: external_mirror
+    language: jupyter notebook
+    repo_url: https://github.com/holoviz-topics/examples
+    license: CC-BY-4.0
+    summary: Visualization-focused examples using HoloViz for specific topics
+    repo_id: holoviz-topics--examples
+    added_by: import
+    added_date: '2026-03-19'
+  neuro:
+    kind: external_mirror
+    language: jupyter notebook
+    repo_url: https://github.com/holoviz-topics/neuro
+    license: BSD-3-Clause
+    summary: HoloViz+Bokeh for Neuroscience
+    repo_id: holoviz-topics--neuro
+    added_by: import
+    added_date: '2026-03-19'
+  bokeh:
+    kind: external_mirror
+    language: typescript
+    repo_url: https://github.com/bokeh/bokeh
+    license: BSD-3-Clause
+    summary: Interactive Data Visualization in the browser, from  Python
+    repo_id: bokeh--bokeh
+    added_by: import
+    added_date: '2026-03-19'
+  napari:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/napari/napari
+    pip_name: napari
+    license: BSD-3-Clause
+    summary: 'napari: a fast, interactive, multi-dimensional image viewer for python'
+    repo_id: napari--napari
+    added_by: import
+    added_date: '2026-03-19'
+  networkx:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/networkx/networkx
+    pip_name: networkx
+    license: NOASSERTION
+    summary: Network Analysis in Python
+    repo_id: networkx--networkx
+    added_by: import
+    added_date: '2026-03-19'
+  scikit_image:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/scikit-image/scikit-image
+    pip_name: scikit-image
+    license: NOASSERTION
+    summary: Image processing in Python
+    repo_id: scikit-image--scikit-image
+    added_by: import
+    added_date: '2026-03-19'
+  pyedflib:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/holgern/pyedflib
+    pip_name: pyedflib
+    license: BSD-3-Clause
+    summary: 'pyedflib is a python library to read/write EDF+/BDF+ files based on
+      EDFlib. '
+    repo_id: holgern--pyedflib
+    added_by: import
+    added_date: '2026-03-19'
+  spikeinterface:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/SpikeInterface/spikeinterface
+    pip_name: spikeinterface
+    license: MIT
+    summary: A Python-based module for creating flexible and robust spike sorting
+      pipelines.
+    repo_id: spikeinterface--spikeinterface
+    added_by: import
+    added_date: '2026-03-19'
+  braindecode:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/braindecode/braindecode
+    pip_name: braindecode
+    license: BSD-3-Clause
+    summary: Deep learning software to decode EEG, ECG or MEG signals
+    repo_id: braindecode--braindecode
+    added_by: import
+    added_date: '2026-03-19'
+  allensdk:
+    kind: external_mirror
+    language: jupyter notebook
+    repo_url: https://github.com/AllenInstitute/AllenSDK
+    license: NOASSERTION
+    summary: code for reading and processing Allen Institute for Brain Science data
+    repo_id: alleninstitute--allensdk
+    added_by: import
+    added_date: '2026-03-19'
+  python_meegkit:
+    kind: external_mirror
+    language: python
+    repo_url: https://github.com/nbara/python-meegkit
+    pip_name: python-meegkit
+    license: BSD-3-Clause
+    summary: "\U0001F527\U0001F9E0 MEEGkit: MEG & EEG processing toolkit in Python "
+    repo_id: nbara--python-meegkit
+    added_by: import
+    added_date: '2026-03-23'

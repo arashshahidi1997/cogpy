@@ -21,6 +21,7 @@ codio:
   catalog_path: .projio/codio/catalog.yml
   profiles_path: .projio/codio/profiles.yml
   notes_dir: docs/reference/codelib/libraries/
+  mirrors_dir: /storage/share/codelib
 
 site:
   framework: mkdocs
