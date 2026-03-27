@@ -39,7 +39,8 @@
       "Bash(env)",
       "Bash(which:*)",
       "Bash(echo:*)",
-      "mcp__projio__*"
+      "mcp__projio__*",
+      "mcp__worklog__*"
     ],
     "deny": [
       "Bash(rm -rf *)",
@@ -47,5 +48,9 @@
       "Bash(wget *)",
       "Bash(sudo *)"
     ]
-  }
+  },
+  "allowedTools": [
+    "mcp__worklog__*",
+    "mcp__projio__*"
+  ]
 }

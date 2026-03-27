@@ -1,6 +1,8 @@
 # projio workspace config
 project_name: cogpy
 project_kind: generic
+push_sibling: gitlab
+pages_url: https://cogpy-867a19.pages.gitlab.lrz.de/
 description: ""
 
 indexio:
@@ -24,8 +26,8 @@ codio:
   mirrors_dir: /storage/share/codelib
 
 site:
-  framework: mkdocs
-  output_dir: site
+  framework: sphinx
+  output_dir: docs/_build/html
   base_port: 8000
   host: "127.0.0.1"
   mkdocs:
