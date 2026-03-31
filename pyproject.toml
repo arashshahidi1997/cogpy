@@ -40,8 +40,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://gitlab.lrz.de/sirotalab/cogpy"
-Documentation = "https://cogpy-867a19.pages.gitlab.lrz.de/"
+Repository = "https://github.com/arashshahidi1997/cogpy"
+Documentation = "https://arashshahidi1997.github.io/cogpy/"
 
 # Optional “feature” installs
 [project.optional-dependencies]

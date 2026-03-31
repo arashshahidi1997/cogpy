@@ -5,7 +5,7 @@ Atomic, composable primitives for ECoG / iEEG signal processing.
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**[Documentation](https://cogpy-867a19.pages.gitlab.lrz.de/)** · **[Repository](https://gitlab.lrz.de/sirotalab/cogpy)**
+**[Documentation](https://arashshahidi1997.github.io/cogpy/)** · **[Repository](https://github.com/arashshahidi1997/cogpy)**
 
 ## What it is
 
@@ -29,9 +29,9 @@ orchestration belongs in Snakemake pipelines, notebooks, or project repos.
 ## Install
 
 ```bash
-pip install cogpy               # core dependencies only
-pip install cogpy[viz]          # + matplotlib, holoviews, panel
-pip install cogpy[all]          # all optional dependencies
+pip install ecogpy               # core dependencies only
+pip install ecogpy[viz]          # + matplotlib, holoviews, panel
+pip install ecogpy[all]          # all optional dependencies
 pip install -e .                # editable dev install
 ```
 
@@ -94,9 +94,9 @@ make build          # build sdist + wheel
 
 ## Documentation
 
-- [Primitive catalog](https://cogpy-867a19.pages.gitlab.lrz.de/explanation/primitives.html) — all operators with imports and signatures
-- [Package map](https://cogpy-867a19.pages.gitlab.lrz.de/explanation/package-map.html) — module tree overview
-- [Composition patterns](https://cogpy-867a19.pages.gitlab.lrz.de/howto/compose-artifact-analysis.html) — how to assemble primitives
+- [Primitive catalog](https://arashshahidi1997.github.io/cogpy/explanation/primitives/) — all operators with imports and signatures
+- [Package map](https://arashshahidi1997.github.io/cogpy/explanation/package-map/) — module tree overview
+- [Composition patterns](https://arashshahidi1997.github.io/cogpy/howto/compose-artifact-analysis/) — how to assemble primitives
 
 ## License
 
