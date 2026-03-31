@@ -94,9 +94,9 @@ make build          # build sdist + wheel
 
 ## Documentation
 
-- [Primitive catalog](https://arashshahidi1997.github.io/cogpy/explanation/primitives/) — all operators with imports and signatures
-- [Package map](https://arashshahidi1997.github.io/cogpy/explanation/package-map/) — module tree overview
-- [Composition patterns](https://arashshahidi1997.github.io/cogpy/howto/compose-artifact-analysis/) — how to assemble primitives
+- [Primitive catalog](https://arashshahidi1997.github.io/cogpy/explanation/primitives.html) — all operators with imports and signatures
+- [Package map](https://arashshahidi1997.github.io/cogpy/explanation/package-map.html) — module tree overview
+- [Composition patterns](https://arashshahidi1997.github.io/cogpy/howto/compose-artifact-analysis.html) — how to assemble primitives
 
 ## License
 
