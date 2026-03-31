@@ -1,0 +1,11 @@
+{
+  "citekey": "hanssen_1997_MultidimensionalMultitaper",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for hanssen_1997_MultidimensionalMultitaper: /storage2/arash/projects/cogpy/bib/articles/hanssen_1997_MultidimensionalMultitaper/hanssen_1997_MultidimensionalMultitaper.pdf\n",
+  "finished": "2026-03-28T08:47:20.295996+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084720Z_38493473",
+  "pid": 24253,
+  "result": null,
+  "started": "2026-03-28T08:47:20.053217+00:00",
+  "status": "failed"
+}

@@ -1,0 +1,11 @@
+{
+  "citekey": "davis_2020_SpontaneousTravelling",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for davis_2020_SpontaneousTravelling: /storage2/arash/projects/cogpy/bib/articles/davis_2020_SpontaneousTravelling/davis_2020_SpontaneousTravelling.pdf\n",
+  "finished": "2026-03-28T08:47:23.794596+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084723Z_6bacd821",
+  "pid": 24349,
+  "result": null,
+  "started": "2026-03-28T08:47:23.627202+00:00",
+  "status": "failed"
+}

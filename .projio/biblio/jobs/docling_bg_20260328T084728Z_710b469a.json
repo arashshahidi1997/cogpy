@@ -1,0 +1,11 @@
+{
+  "citekey": "thomson_1982_SpectrumEstimation",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for thomson_1982_SpectrumEstimation: /storage2/arash/projects/cogpy/bib/articles/thomson_1982_SpectrumEstimation/thomson_1982_SpectrumEstimation.pdf\n",
+  "finished": "2026-03-28T08:47:29.130821+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084728Z_710b469a",
+  "pid": 24469,
+  "result": null,
+  "started": "2026-03-28T08:47:28.968786+00:00",
+  "status": "failed"
+}

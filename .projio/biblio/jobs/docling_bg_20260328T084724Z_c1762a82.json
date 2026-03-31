@@ -1,0 +1,11 @@
+{
+  "citekey": "townsend_2018_DetectionAnalysis",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for townsend_2018_DetectionAnalysis: /storage2/arash/projects/cogpy/bib/articles/townsend_2018_DetectionAnalysis/townsend_2018_DetectionAnalysis.pdf\n",
+  "finished": "2026-03-28T08:47:25.137982+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084724Z_c1762a82",
+  "pid": 24381,
+  "result": null,
+  "started": "2026-03-28T08:47:24.981321+00:00",
+  "status": "failed"
+}

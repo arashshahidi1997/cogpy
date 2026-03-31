@@ -1,0 +1,11 @@
+{
+  "citekey": "zhang_2018_ThetaAlpha",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for zhang_2018_ThetaAlpha: /storage2/arash/projects/cogpy/bib/articles/zhang_2018_ThetaAlpha/zhang_2018_ThetaAlpha.pdf\n",
+  "finished": "2026-03-28T08:47:21.546040+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084721Z_ce0cc253",
+  "pid": 24301,
+  "result": null,
+  "started": "2026-03-28T08:47:21.390132+00:00",
+  "status": "failed"
+}

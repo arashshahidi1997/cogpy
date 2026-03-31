@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cogpy"
-version = "0.1.0"
+name = "ecogpy"
+version = "0.1.1"
 description = "Atomic, composable primitives for ECoG / iEEG signal processing"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -80,11 +80,11 @@ signal = [
 ]
 # The "all" extra includes all the others
 all = [
-  "cogpy[viz]",
-  "cogpy[notebook]",
-  "cogpy[io]",
-  "cogpy[perf]",
-  "cogpy[signal]",
+  "ecogpy[viz]",
+  "ecogpy[notebook]",
+  "ecogpy[io]",
+  "ecogpy[perf]",
+  "ecogpy[signal]",
 ]
 
 [project.scripts]

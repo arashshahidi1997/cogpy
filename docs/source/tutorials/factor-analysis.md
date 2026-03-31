@@ -6,25 +6,31 @@ kernelspec:
   display_name: cogpy
   language: python
 mystnb:
-  execution_mode: "off"
+  execution_mode: "auto"
 ---
 
 # Factor Analysis of Spectrograms with erpPCA
 
-This tutorial shows how to decompose a grid ECoG spectrogram into
+This tutorial demonstrates how to decompose a grid ECoG spectrogram into
 spatio-spectral factors using **varimax-rotated PCA** (erpPCA).
+
+:::{note}
+This is a **method demo** using a short bundled sample recording.
+The sample data is not chosen to highlight any particular oscillatory
+phenomenon. For real analyses (e.g. spindle detection in NREM sleep),
+use a domain-appropriate recording.
+:::
 
 The pipeline is:
 
 1. Load a grid ECoG signal
 2. Compute a multitaper spectrogram
-3. Build a design matrix (log-power, z-scored)
+3. Build a design matrix (log-power, mean-centred)
 4. Fit erpPCA → extract loadings and scores
 5. Inspect loadings (which spatial pattern at which frequency)
 6. Process factor scores (smooth, threshold, detect events)
 
-Each factor captures a recurring spatio-spectral pattern —
-e.g. "spindle-band activity over posterior cortex".
+Each factor captures a recurring spatio-spectral pattern.
 
 ```{code-cell} python
 import numpy as np
@@ -137,21 +143,24 @@ erpPCA operates on a 2D matrix `(time, variables)`. We:
 1. **Rename** dims to `SpatSpecDecomposition` convention (`AP→h`, `ML→w`)
 2. **Flatten** spatial + frequency dims into one axis
 3. **Log-transform** power (stabilises variance)
-4. **Z-score** each variable across time
+4. **Mean-centre** each variable across time
+
+We deliberately avoid z-scoring (dividing by std) here: that would
+equalise the variance of every channel×frequency variable, giving
+noise-dominated variables the same weight as signal-rich ones in
+the covariance matrix.
 
 ```{code-cell} python
-from scipy.stats import zscore
 from cogpy.decomposition.spatspec import SpatSpecDecomposition
 
 mtx = spec.rename({"AP": "h", "ML": "w"})
 ss = SpatSpecDecomposition(mtx)
 
 X = ss.designmat(mtx, log=True)
-Xz = X.copy()
-Xz.data = zscore(X.data, axis=0, nan_policy="omit")
-Xz.data[np.isnan(Xz.data)] = 0.0
+Xc = X - X.mean("time")
+Xc.data = np.nan_to_num(Xc.data)
 
-print(f"Design matrix: {Xz.shape[0]} time points × {Xz.shape[1]} variables")
+print(f"Design matrix: {Xc.shape[0]} time points × {Xc.shape[1]} variables")
 ```
 
 Visualise the design matrix as a heatmap — each row is a time window,
@@ -159,12 +168,12 @@ each column a (channel, frequency) variable:
 
 ```{code-cell} python
 hv.Image(
-    Xz.data,
+    Xc.data,
     kdims=["Variable", "Time"],
-    bounds=(0, 0, Xz.shape[1], Xz.shape[0]),
+    bounds=(0, 0, Xc.shape[1], Xc.shape[0]),
 ).opts(
     cmap="RdBu_r", colorbar=True, width=600, height=250,
-    title="Design matrix (z-scored log-power)",
+    title="Design matrix (mean-centred log-power)",
     xlabel="Variable index (h × w × freq)", ylabel="Time window",
     invert_yaxis=True,
 )
@@ -184,12 +193,30 @@ from cogpy.decomposition.pca import erpPCA
 
 nfac = 8
 erp = erpPCA(nfac=nfac, verbose=False)
-erp.fit(Xz.data)
+erp.fit(Xc.data)
 
 print(f"Loadings:   {erp.LR.shape}  (vars × factors)")
 print(f"Scores:     {erp.FSr.shape}  (time × factors)")
 print(f"Var explained (rotated): {erp.VT[3][:nfac].sum():.1f}%")
 ```
+
+:::{tip}
+**Short recordings and rank-deficient covariance.**
+When the number of time windows is smaller than the number of variables
+(as in this demo), the empirical covariance matrix is rank-deficient
+and the top eigenvalues are over-estimated. A **shrinkage covariance
+estimator** (e.g. Ledoit-Wolf) regularises the estimate by pulling
+eigenvalues toward their grand mean:
+
+```python
+from sklearn.covariance import LedoitWolf
+
+erp = erpPCA(nfac=nfac, cov_estimator=LedoitWolf(), verbose=False)
+erp.fit(Xc.data)
+```
+
+This is recommended whenever `n_time_windows < n_variables`.
+:::
 
 Variance explained per factor:
 
@@ -212,7 +239,7 @@ wrap scores as `(time, factor)` DataArrays.
 ```{code-cell} python
 ss.ldx_set(erp.LR)
 ss.ldx_process()
-scx = ss.scx_from_FSr(erp.FSr, Xz.time.values)
+scx = ss.scx_from_FSr(erp.FSr, Xc.time.values)
 
 print(f"Loadings: {ss.ldx.shape}")
 print(f"Scores:   {scx.shape}")
@@ -344,7 +371,7 @@ original at one electrode.
 
 ```{code-cell} python
 mtx_hat = ss.reconstruct(scx)
-mtx_z = ss.mtx_from_designmat(Xz, mtx)
+mtx_z = ss.mtx_from_designmat(Xc, mtx)
 
 h_sel = ss.ldx.h.values[len(ss.ldx.h) // 2]
 w_sel = ss.ldx.w.values[len(ss.ldx.w) // 2]

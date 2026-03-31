@@ -1,0 +1,80 @@
+papers:
+  afrashteh_2017_OpticalFlow:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  alamia_2025_DisentanglingNeural:
+    status: unread
+    tags:
+    - travelling-waves
+  alexander_2019_LargeScale:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  bhattacharya_2022_TravelingWaves:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  capon_1969_HighResolution:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  davis_2020_SpontaneousTravelling:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  hanssen_1997_MultidimensionalMultitaper:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  lilienkamp_2021_DetectingSpiral:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  lubenov_2009_HippocampalTheta:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  patten_2012_HumanCortical:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  rubino_2006_PropagatingWaves:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  thomson_1982_SpectrumEstimation:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  townsend_2018_DetectionAnalysis:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  xu_2023_InteractingSpiral:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  xu_2025_SpatiotemporalDynamics:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey
+  zhang_2018_ThetaAlpha:
+    status: unread
+    tags:
+    - travelling-waves
+    - cogpy-survey

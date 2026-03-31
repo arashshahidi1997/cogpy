@@ -188,3 +188,33 @@ repositories:
     storage: managed
     local_path: /storage/share/codelib/nbara--python-meegkit
     default_branch: master
+  navvab-afrashteh--ofamm:
+    url: https://github.com/navvab-afrashteh/OFAMM
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/navvab-afrashteh--ofamm
+    default_branch: OFAMM-v1.0
+  mullerlab--generalized-phase:
+    url: https://github.com/mullerlab/generalized-phase
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/mullerlab--generalized-phase
+    default_branch: main
+  braindynamicsusyd--neuropatttoolbox:
+    url: https://github.com/BrainDynamicsUSYD/NeuroPattToolbox
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/braindynamicsusyd--neuropatttoolbox
+    default_branch: master
+  sayak66--wm_travelingwaves_code:
+    url: https://github.com/sayak66/wM_travelingwaves_code
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/sayak66--wm_travelingwaves_code
+    default_branch: main
+  evolutionaryneuralcodinglab--travelling-waves-or-sequentially-activated-discrete-modules:
+    url: https://github.com/EvolutionaryNeuralCodingLab/Travelling-waves-or-sequentially-activated-discrete-modules
+    hosting: github
+    storage: managed
+    local_path: /storage/share/codelib/evolutionaryneuralcodinglab--travelling-waves-or-sequentially-activated-discrete-modules
+    default_branch: main

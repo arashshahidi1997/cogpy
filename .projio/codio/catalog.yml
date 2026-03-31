@@ -345,3 +345,49 @@ libraries:
     repo_id: nbara--python-meegkit
     added_by: import
     added_date: '2026-03-23'
+  ofamm:
+    kind: external_mirror
+    language: c++
+    repo_url: https://github.com/navvab-afrashteh/OFAMM
+    license: GPL-3.0
+    summary: Optical-flow based toolbox to analyse mesoscale wide-field imaging data.
+      It characterizes cortical travelling waves to detect waves, estimate speed and
+      direction, and track waves' trajectory path.
+    repo_id: navvab-afrashteh--ofamm
+    added_by: import
+    added_date: '2026-03-28'
+  generalized_phase:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/mullerlab/generalized-phase
+    license: GPL-3.0
+    repo_id: mullerlab--generalized-phase
+    added_by: import
+    added_date: '2026-03-28'
+  neuropatttoolbox:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/BrainDynamicsUSYD/NeuroPattToolbox
+    license: GPL-3.0
+    summary: MATLAB toolbox to automatically detect, analyze and visualize spatiotemporal
+      patterns in neural population activity, developed by Dr. Pulin Gong's group
+      at  University of Sydney
+    repo_id: braindynamicsusyd--neuropatttoolbox
+    added_by: import
+    added_date: '2026-03-28'
+  wm_travelingwaves_code:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/sayak66/wM_travelingwaves_code
+    summary: Code information for "Traveling waves in the prefrontal cortex during
+      working memory"
+    repo_id: sayak66--wm_travelingwaves_code
+    added_by: import
+    added_date: '2026-03-28'
+  travelling_waves_or_sequentially_activated_discrete_modules:
+    kind: external_mirror
+    language: matlab
+    repo_url: https://github.com/EvolutionaryNeuralCodingLab/Travelling-waves-or-sequentially-activated-discrete-modules
+    repo_id: evolutionaryneuralcodinglab--travelling-waves-or-sequentially-activated-discrete-modules
+    added_by: import
+    added_date: '2026-03-28'

@@ -80,9 +80,11 @@ build: clean
 	@echo ">> Building sdist + wheel"
 	@$(PYTHON) -m build
 
-publish: build
-	@echo ">> Uploading to PyPI"
-	@$(PYTHON) -m twine upload dist/*
+publish:
+	$(PUBLISH) .
+
+publish-test:
+	$(PUBLISH) --test .
 
 # --- DataLad helpers ----------------------------------------------------------
 update:

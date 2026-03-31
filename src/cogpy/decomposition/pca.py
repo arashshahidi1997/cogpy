@@ -32,13 +32,19 @@ class erpPCA(BaseEstimator, TransformerMixin):
         Convergence tolerance for varimax.
     verbose : bool
         Print progress.
+    cov_estimator : sklearn-compatible covariance estimator or None
+        If provided, ``cov_estimator.fit(X)`` is called and
+        ``cov_estimator.covariance_`` is used instead of ``np.cov``.
+        Useful for short recordings where the empirical covariance is
+        rank-deficient — e.g. ``sklearn.covariance.LedoitWolf()``.
     """
 
-    def __init__(self, nfac=None, max_it=100, tol=1e-3, verbose=True):
+    def __init__(self, nfac=None, max_it=100, tol=1e-3, verbose=True, cov_estimator=None):
         self.nfac = nfac
         self.max_it = max_it
         self.tol = tol
         self.verbose = verbose
+        self.cov_estimator = cov_estimator
 
     def fit(self, X, y=None):
         erppca_dict = erppca(
@@ -48,6 +54,7 @@ class erpPCA(BaseEstimator, TransformerMixin):
             Tol=self.tol,
             IfVerbose=self.verbose,
             return_attrs=True,
+            cov_estimator=self.cov_estimator,
         )
         self.__dict__ |= erppca_dict
         return self
@@ -226,7 +233,8 @@ def sort_by_eigv(L, ev):
     return L[:, ux], ev[ux]
 
 
-def erppca(X, nFac=None, maxIt=100, Tol=1e-3, IfVerbose=1, return_attrs=False):
+def erppca(X, nFac=None, maxIt=100, Tol=1e-3, IfVerbose=1, return_attrs=False,
+           cov_estimator=None):
     """Run ERP-PCA: covariance → eigen → varimax → sort.
 
     Parameters
@@ -235,6 +243,9 @@ def erppca(X, nFac=None, maxIt=100, Tol=1e-3, IfVerbose=1, return_attrs=False):
         Data matrix ``(cases, vars)``.
     nFac : int or None
         Number of factors to retain.
+    cov_estimator : sklearn-compatible covariance estimator or None
+        If provided, used instead of ``np.cov`` to estimate the
+        covariance matrix (e.g. ``LedoitWolf()`` for shrinkage).
 
     Returns
     -------
@@ -243,7 +254,11 @@ def erppca(X, nFac=None, maxIt=100, Tol=1e-3, IfVerbose=1, return_attrs=False):
     """
     cases, nvars = X.shape
     print("computing covariance matrix ...")
-    D = np.cov(X, rowvar=False)
+    if cov_estimator is not None:
+        cov_estimator.fit(X)
+        D = cov_estimator.covariance_
+    else:
+        D = np.cov(X, rowvar=False)
     print("eigendecomposition ...")
     EV, EM = np.linalg.eigh(D)
     EV = EV[::-1]

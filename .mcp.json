@@ -10,6 +10,16 @@
         "PROJIO_ROOT": "/storage2/arash/projects/cogpy"
       }
     },
+    "sirocampus": {
+      "command": "/storage/share/python/environments/Anaconda3/envs/rag/bin/python",
+      "args": [
+        "-m",
+        "projio.mcp.server"
+      ],
+      "env": {
+        "PROJIO_ROOT": "/storage/share/sirocampus"
+      }
+    },
     "worklog": {
       "command": "/storage/share/python/environments/Anaconda3/envs/rag/bin/python3.11",
       "args": [

@@ -356,3 +356,32 @@ profiles:
     - brain-atlas
     - electrophysiology
     status: candidate
+  ofamm:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  generalized_phase:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  neuropatttoolbox:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - neuroimaging-analysis
+    - neuroscience-methods
+    - optical-flow
+    status: candidate
+  wm_travelingwaves_code:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  travelling_waves_or_sequentially_activated_discrete_modules:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate

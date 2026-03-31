@@ -1,7 +1,7 @@
 # projio workspace config
 project_name: cogpy
 project_kind: generic
-push_sibling: gitlab
+push_sibling: github
 pages_url: https://cogpy-867a19.pages.gitlab.lrz.de/
 description: ""
 

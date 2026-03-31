@@ -137,9 +137,19 @@ class RippleDetector(EventDetector):
 
 class SpindleDetector(RippleDetector):
     """
-    Spindle detector (optional) implemented as RippleDetector with different defaults.
+    Spindle detector with optional yasa-style enrichment features.
 
-    Typical spindle band: 11–16 Hz with longer duration constraints.
+    Extends RippleDetector (bandpass → envelope → z-score → dual threshold)
+    with per-event metrics:
+
+    - **frequency**: peak oscillation frequency via zero-crossing count
+    - **rel_power**: sigma-band power / broadband power within each event
+    - **symmetry**: position of peak amplitude (0–1; 0.5 = symmetric)
+    - **isolation**: reject events closer than *min_isolation* seconds
+
+    All enrichment features are off by default to keep the detector lightweight.
+
+    Typical spindle band: 11–16 Hz with duration 0.5–3.0 s.
     """
 
     def __init__(
@@ -152,6 +162,13 @@ class SpindleDetector(RippleDetector):
         max_duration: float = 3.0,
         filter_order: int = 4,
         direction: str = "positive",
+        # enrichment options (off by default)
+        compute_frequency: bool = False,
+        compute_rel_power: bool = False,
+        rel_power_broadband: tuple[float, float] = (1.0, 40.0),
+        rel_power_min: float | None = None,
+        compute_symmetry: bool = False,
+        min_isolation: float | None = None,
     ) -> None:
         super().__init__(
             freq_range=freq_range,
@@ -163,8 +180,22 @@ class SpindleDetector(RippleDetector):
             direction=direction,
         )
         self.name = "SpindleDetector"
+        self.compute_frequency = bool(compute_frequency)
+        self.compute_rel_power = bool(compute_rel_power)
+        self.rel_power_broadband = (float(rel_power_broadband[0]), float(rel_power_broadband[1]))
+        self.rel_power_min = float(rel_power_min) if rel_power_min is not None else None
+        self.compute_symmetry = bool(compute_symmetry)
+        self.min_isolation = float(min_isolation) if min_isolation is not None else None
         # ensure serialization includes the right detector name
-        self.params = dict(self.params)
+        self.params = {
+            **self.params,
+            "compute_frequency": self.compute_frequency,
+            "compute_rel_power": self.compute_rel_power,
+            "rel_power_broadband": self.rel_power_broadband,
+            "rel_power_min": self.rel_power_min,
+            "compute_symmetry": self.compute_symmetry,
+            "min_isolation": self.min_isolation,
+        }
 
     def detect(self, data: xr.DataArray, **kwargs: Any):
         from cogpy.events import EventCatalog
@@ -173,4 +204,121 @@ class SpindleDetector(RippleDetector):
         df = cat.df.copy()
         if "label" in df.columns and len(df):
             df["label"] = "spindle"
+
+        if not df.empty:
+            df = self._enrich(df, data)
+
         return EventCatalog(df=df, name="spindle_events", metadata={"detector": self.name, **self.params})
+
+    def _enrich(self, df: pd.DataFrame, data: xr.DataArray) -> pd.DataFrame:
+        """Apply optional enrichment columns to the detected events."""
+        if not (self.compute_frequency or self.compute_rel_power or self.compute_symmetry or self.min_isolation is not None):
+            return df
+
+        t_arr = np.asarray(data["time"].values, dtype=float)
+
+        # Precompute filtered signal for frequency estimation
+        if self.compute_frequency:
+            x_f = bandpass_filter(data, self.freq_range[0], self.freq_range[1], order=self.filter_order)
+
+        # Precompute broadband power for rel_power
+        if self.compute_rel_power:
+            x_broad = bandpass_filter(data, self.rel_power_broadband[0], self.rel_power_broadband[1], order=self.filter_order)
+            x_sigma = bandpass_filter(data, self.freq_range[0], self.freq_range[1], order=self.filter_order)
+
+        freq_vals: list[float] = []
+        rel_power_vals: list[float] = []
+        symmetry_vals: list[float] = []
+
+        for _, row in df.iterrows():
+            t0, t1 = float(row["t0"]), float(row["t1"])
+            mask = (t_arr >= t0) & (t_arr <= t1)
+
+            # --- Per-event signal extraction (1D or spatial) ---
+            loc_kw: dict[str, Any] = {}
+            if "AP" in df.columns and "AP" in data.dims:
+                loc_kw["AP"] = int(row["AP"])
+            if "ML" in df.columns and "ML" in data.dims:
+                loc_kw["ML"] = int(row["ML"])
+            if "channel" in df.columns and "channel" in data.dims:
+                loc_kw["channel"] = int(row["channel"])
+
+            def _sel(arr: xr.DataArray) -> np.ndarray:
+                s = arr.isel(**loc_kw) if loc_kw else arr
+                v = np.asarray(s.values, dtype=float)
+                if v.ndim > 1:
+                    v = v.reshape(-1)
+                return v[mask]
+
+            # --- Frequency (zero-crossing count) ---
+            if self.compute_frequency:
+                seg = _sel(x_f)
+                if seg.size > 2:
+                    crossings = np.sum(np.diff(np.sign(seg)) != 0)
+                    dur = t1 - t0
+                    freq_vals.append(float(crossings / (2.0 * dur)) if dur > 0 else np.nan)
+                else:
+                    freq_vals.append(np.nan)
+
+            # --- Relative sigma power ---
+            if self.compute_rel_power:
+                seg_sigma = _sel(x_sigma)
+                seg_broad = _sel(x_broad)
+                sigma_pow = float(np.mean(seg_sigma**2)) if seg_sigma.size > 0 else 0.0
+                broad_pow = float(np.mean(seg_broad**2)) if seg_broad.size > 0 else 0.0
+                rel_power_vals.append(sigma_pow / broad_pow if broad_pow > 0 else np.nan)
+
+            # --- Symmetry index ---
+            if self.compute_symmetry:
+                seg_raw = _sel(data)
+                env_seg = np.abs(seg_raw)
+                if env_seg.size > 1:
+                    peak_pos = int(np.argmax(env_seg))
+                    symmetry_vals.append(float(peak_pos) / float(env_seg.size - 1))
+                else:
+                    symmetry_vals.append(np.nan)
+
+        if self.compute_frequency:
+            df["frequency"] = freq_vals
+        if self.compute_rel_power:
+            df["rel_power"] = rel_power_vals
+        if self.compute_symmetry:
+            df["symmetry"] = symmetry_vals
+
+        # --- Isolation criterion: reject events that are too close ---
+        if self.min_isolation is not None and len(df) > 1:
+            df = self._apply_isolation(df)
+
+        # --- Relative power threshold ---
+        if self.compute_rel_power and self.rel_power_min is not None:
+            df = df[df["rel_power"] >= self.rel_power_min].reset_index(drop=True)
+
+        return df
+
+    def _apply_isolation(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Remove events that are too close, keeping the stronger one."""
+        min_iso = self.min_isolation
+        if min_iso is None or len(df) < 2:
+            return df
+
+        df = df.sort_values("t").reset_index(drop=True)
+        keep = np.ones(len(df), dtype=bool)
+        t_vals = df["t"].values
+        v_vals = df["value"].values if "value" in df.columns else np.zeros(len(df))
+
+        for i in range(len(df) - 1):
+            if not keep[i]:
+                continue
+            for j in range(i + 1, len(df)):
+                if not keep[j]:
+                    continue
+                if t_vals[j] - t_vals[i] >= min_iso:
+                    break
+                # Too close — drop the weaker one
+                if v_vals[j] > v_vals[i]:
+                    keep[i] = False
+                    break
+                else:
+                    keep[j] = False
+
+        return df[keep].reset_index(drop=True)

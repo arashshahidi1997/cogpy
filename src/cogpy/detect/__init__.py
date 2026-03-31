@@ -10,6 +10,7 @@ from .burst import BurstDetector
 from .pipeline import DetectionPipeline
 from .pipelines import BURST_PIPELINE, FAST_RIPPLE_PIPELINE, GAMMA_BURST_PIPELINE, RIPPLE_PIPELINE
 from .ripple import RippleDetector, SpindleDetector
+from .slowwave import SlowWaveDetector, gamma_envelope_validator
 from .threshold import ThresholdDetector
 from . import transforms
 
@@ -22,8 +23,10 @@ __all__ = [
     "GAMMA_BURST_PIPELINE",
     "RIPPLE_PIPELINE",
     "RippleDetector",
+    "SlowWaveDetector",
     "SpindleDetector",
     "ThresholdDetector",
+    "gamma_envelope_validator",
     "transforms",
     "get_detector_class",
 ]
@@ -35,6 +38,7 @@ def get_detector_class(name: str):
         "BurstDetector": BurstDetector,
         "ThresholdDetector": ThresholdDetector,
         "RippleDetector": RippleDetector,
+        "SlowWaveDetector": SlowWaveDetector,
         "SpindleDetector": SpindleDetector,
     }
     key = str(name)
