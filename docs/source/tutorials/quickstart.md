@@ -104,6 +104,14 @@ columns.
 
 ## Next steps
 
+**Tutorials** — pick a topic:
+
 - {doc}`spectral-analysis` — deeper dive into PSD, spectrograms, and spectral features
+- {doc}`detection-and-events` — event detection, catalogs, and pipelines
 - {doc}`bad-channel-detection` — identify and interpolate bad electrodes
 - {doc}`spatial-measures` — spatial grid characterization (Moran's I, gradient anisotropy)
+
+**How-to guides** — practical recipes for specific tasks:
+
+- {doc}`/howto/filtering` — bandpass, notch, spatial, CMR, z-score
+- {doc}`/howto/load-ecog-data` — loading data from binary LFP, Zarr, BIDS

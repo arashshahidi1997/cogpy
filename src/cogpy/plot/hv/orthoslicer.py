@@ -52,6 +52,7 @@ Example
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 hv = import_optional("holoviews")
 pn = import_optional("panel")
 param = import_optional("param")
@@ -413,6 +414,7 @@ class OrthoSlicerRanger(param.Parameterized):
                 axes=["x"],
                 boundsx=self.t_window,
             )
+
             # Keep the selector bounds synced to the current t_window param even
             # though the layout is stable and view_tz() is non-reactive.
             def _sync_bounds(_event=None):
@@ -457,7 +459,7 @@ class OrthoSlicerRanger(param.Parameterized):
 
         # Stable XY composite: histogram + crosshair overlay.
         # NOTE: keep Tap bound to _xy_img_dm, not the composed layout.
-        self._xy_layout = (self._xy_img_dm.hist() * self._xy_xhair_dm)
+        self._xy_layout = self._xy_img_dm.hist() * self._xy_xhair_dm
 
     def _build_tz_layout(self):
         """
@@ -473,7 +475,9 @@ class OrthoSlicerRanger(param.Parameterized):
 
         layout = hv.Layout(panels).cols(1)
 
-        if getattr(self, "_rtl", None) is not None and bool(getattr(self, "use_range_tool", False)):
+        if getattr(self, "_rtl", None) is not None and bool(
+            getattr(self, "use_range_tool", False)
+        ):
             # RangeTool mode: selector box on the curve controls TZ x-range.
             # Merge toolbars so RangeTool stays attached to the curve only.
             return layout.opts(merge_tools=True)
@@ -515,7 +519,9 @@ class OrthoSlicerRanger(param.Parameterized):
         clim = self.clim
         if bool(getattr(self, "tz_autoscale", False)):
             qlo, qhi = self.tz_clim_quantiles
-            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
+            clim = _safe_quantile_clim(
+                img.values, float(qlo), float(qhi), fallback=clim
+            )
 
         if self.use_datashader:
             base = rasterize(
@@ -559,7 +565,9 @@ class OrthoSlicerRanger(param.Parameterized):
         clim = self.clim
         if bool(getattr(self, "xy_autoscale", False)):
             qlo, qhi = self.xy_clim_quantiles
-            clim = _safe_quantile_clim(img.values, float(qlo), float(qhi), fallback=clim)
+            clim = _safe_quantile_clim(
+                img.values, float(qlo), float(qhi), fallback=clim
+            )
 
         if self.use_datashader:
             base = rasterize(
@@ -681,7 +689,9 @@ class OrthoSlicerRanger(param.Parameterized):
         t0, t1 = self._t_bounds()
         width = float(self.default_window_fraction) * float(t1 - t0)
         width = max(width, (t1 - t0) * 1e-9)
-        return _clip_pair(float(t_center) - 0.5 * width, float(t_center) + 0.5 * width, (t0, t1))
+        return _clip_pair(
+            float(t_center) - 0.5 * width, float(t_center) + 0.5 * width, (t0, t1)
+        )
 
     def _push_window_history(self, t_window: tuple[float, float]) -> None:
         tw = (float(t_window[0]), float(t_window[1]))
@@ -690,7 +700,9 @@ class OrthoSlicerRanger(param.Parameterized):
             if abs(cur[0] - tw[0]) < 1e-12 and abs(cur[1] - tw[1]) < 1e-12:
                 return
         if self._t_window_history_idx < len(self._t_window_history) - 1:
-            self._t_window_history = self._t_window_history[: self._t_window_history_idx + 1]
+            self._t_window_history = self._t_window_history[
+                : self._t_window_history_idx + 1
+            ]
         self._t_window_history.append(tw)
         self._t_window_history_idx = len(self._t_window_history) - 1
 
@@ -740,7 +752,9 @@ class OrthoSlicerRanger(param.Parameterized):
         fwd_btn = pn.widgets.Button(name="▶", width=40)
         prev_btn = pn.widgets.Button(name="Prev", width=60)
         next_btn = pn.widgets.Button(name="Next", width=60)
-        reset_btn = pn.widgets.Button(name="Reset view", button_type="primary", width=110)
+        reset_btn = pn.widgets.Button(
+            name="Reset view", button_type="primary", width=110
+        )
 
         back_btn.on_click(lambda _e: self.history_back())
         fwd_btn.on_click(lambda _e: self.history_forward())
@@ -753,7 +767,12 @@ class OrthoSlicerRanger(param.Parameterized):
             fwd_btn,
             prev_btn,
             next_btn,
-            pn.Param(self, parameters=["nav_step_s", "reset_zoom_on_navigation"], show_name=False, width=260),
+            pn.Param(
+                self,
+                parameters=["nav_step_s", "reset_zoom_on_navigation"],
+                show_name=False,
+                width=260,
+            ),
             reset_btn,
         )
 
@@ -811,7 +830,9 @@ class OrthoSlicerRanger(param.Parameterized):
         Right: XY orthoslice
         """
         self._maybe_register_shortcuts()
-        tz_pane = pn.pane.HoloViews(self._tz_layout, width=400, height=420, sizing_mode="fixed")
+        tz_pane = pn.pane.HoloViews(
+            self._tz_layout, width=400, height=420, sizing_mode="fixed"
+        )
         xy_pane = pn.pane.HoloViews(
             self.view_xy, width=400, height=300, sizing_mode="fixed"
         )

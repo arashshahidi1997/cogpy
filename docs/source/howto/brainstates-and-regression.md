@@ -234,3 +234,8 @@ Y = sig.values
 beta = ols_fit(X, Y)
 cleaned = ols_residual(X, Y, beta)
 ```
+
+## See also
+
+- {doc}`triggered-analysis` — triggered analysis workflows
+- {doc}`/api/brainstates` — full API reference

@@ -7,6 +7,7 @@ Quick-start imports::
 
     from cogpy.plot.hv import grid_movie, multichannel_view, add_time_hair
 """
+
 from lazy_loader import attach as _attach
 
 __getattr__, __dir__, __all__ = _attach(

@@ -45,14 +45,18 @@ def test_normalize_robust_zero_mean(windowed_ds):
     out = normalize_windowed_features(windowed_ds, robust=True)
     for name, da in out.data_vars.items():
         med = da.median(dim="time_win")
-        assert float(np.abs(med).max()) < 0.1, f"{name}: median after robust normalization should be near 0"
+        assert (
+            float(np.abs(med).max()) < 0.1
+        ), f"{name}: median after robust normalization should be near 0"
 
 
 def test_normalize_standard(windowed_ds):
     out = normalize_windowed_features(windowed_ds, robust=False)
     for name, da in out.data_vars.items():
         std = da.std(dim="time_win")
-        assert float(np.abs(std - 1.0).max()) < 0.1, f"{name}: std after normalization should be near 1"
+        assert (
+            float(np.abs(std - 1.0).max()) < 0.1
+        ), f"{name}: std after normalization should be near 1"
 
 
 def test_normalize_attrs_preserved(windowed_ds):
@@ -111,4 +115,3 @@ def test_summarize_mad_nonnegative(windowed_ds):
     out = summarize_windowed_features(windowed_ds, stats=("mad",))
     for name, da in out.data_vars.items():
         assert float(da.min()) >= 0.0, f"{name} MAD should be non-negative"
-

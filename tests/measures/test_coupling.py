@@ -60,19 +60,27 @@ class TestCrossCorrelogram:
 
     def test_normalize_units(self, events_a, events_b):
         """Normalized output should be in Hz (> 0 for Poisson events)."""
-        res = cross_correlogram(events_a, events_b, bin_size=0.01, window=0.5, normalize=True)
+        res = cross_correlogram(
+            events_a, events_b, bin_size=0.01, window=0.5, normalize=True
+        )
         assert res["ccg"].sum() > 0
 
     def test_raw_counts_are_integers(self, events_a, events_b):
-        res = cross_correlogram(events_a, events_b, bin_size=0.01, window=0.5, normalize=False)
+        res = cross_correlogram(
+            events_a, events_b, bin_size=0.01, window=0.5, normalize=False
+        )
         np.testing.assert_array_equal(res["ccg"] % 1, 0)
 
     def test_surrogates_shape(self, events_a, events_b):
-        res = cross_correlogram(events_a, events_b, bin_size=0.01, window=0.5, n_surrogates=5, seed=0)
+        res = cross_correlogram(
+            events_a, events_b, bin_size=0.01, window=0.5, n_surrogates=5, seed=0
+        )
         assert res["surrogates"].shape == (5, len(res["lags"]))
 
     def test_no_surrogates_key_absent(self, events_a, events_b):
-        res = cross_correlogram(events_a, events_b, bin_size=0.01, window=0.5, n_surrogates=0)
+        res = cross_correlogram(
+            events_a, events_b, bin_size=0.01, window=0.5, n_surrogates=0
+        )
         assert "surrogates" not in res
 
     def test_accepts_event_catalog(self, events_a, events_b):
@@ -88,7 +96,9 @@ class TestCrossCorrelogram:
 
     def test_self_correlogram_zero_lag_peak(self, events_a):
         """Self-CCG should have its peak at lag 0."""
-        res = cross_correlogram(events_a, events_a, bin_size=0.005, window=0.1, normalize=False)
+        res = cross_correlogram(
+            events_a, events_a, bin_size=0.005, window=0.1, normalize=False
+        )
         zero_idx = np.argmin(np.abs(res["lags"]))
         assert res["ccg"][zero_idx] == res["ccg"].max()
 
@@ -118,8 +128,10 @@ class TestPeriEventHistogram:
     def test_baseline_normalization(self, poisson_spikes, events_a):
         """After baseline norm, the mean rate in baseline window should be ~1."""
         res = peri_event_histogram(
-            poisson_spikes, events_a,
-            bin_size=0.01, window=0.5,
+            poisson_spikes,
+            events_a,
+            bin_size=0.01,
+            window=0.5,
             baseline=(-0.5, -0.1),
         )
         lags = res["lags"]

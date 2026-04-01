@@ -3,6 +3,7 @@
 Extracted from ``multichannel_timeseries.py`` to separate the interactive
 ECoG grid-selector application from the core timeseries rendering utilities.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -10,6 +11,7 @@ from typing import Any
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 hv = import_optional("holoviews")
 pn = import_optional("panel")
 param = import_optional("param")
@@ -26,6 +28,7 @@ from .xarray_hv import to_time_channel, normalize_coords_to_index
 
 hv.extension("bokeh")
 pn.extension()
+
 
 class ChannelGridSelectorState(param.Parameterized):
     n_rows = param.Integer(default=1, bounds=(1, None), label="Grid rows")
@@ -150,7 +153,9 @@ class ChannelGridSelector:
 
     # ------------------------ public helpers ------------------------
     def selected_rc(self) -> list[tuple[int, int]]:
-        return [flat_to_rc(i, int(self.state.n_cols)) for i in list(self.state.selected)]
+        return [
+            flat_to_rc(i, int(self.state.n_cols)) for i in list(self.state.selected)
+        ]
 
     def set_selected_from_subgrid(self) -> None:
         yx = subgrid_indices(
@@ -163,7 +168,9 @@ class ChannelGridSelector:
             stride_row=int(self.state.stride_row),
             stride_col=int(self.state.stride_col),
         )
-        self.state.selected = [rc_to_flat(r, c, int(self.state.n_cols)) for (r, c) in yx]
+        self.state.selected = [
+            rc_to_flat(r, c, int(self.state.n_cols)) for (r, c) in yx
+        ]
 
     def panel_controls(self):
         import panel as pn
@@ -203,7 +210,9 @@ class ChannelGridSelector:
         else:
             z = np.asarray(metric, dtype=float)
             if z.shape != (n_rows, n_cols):
-                raise ValueError(f"metric must have shape {(n_rows, n_cols)}, got {z.shape}")
+                raise ValueError(
+                    f"metric must have shape {(n_rows, n_cols)}, got {z.shape}"
+                )
 
         img = hv.Image((xs, ys, z), kdims=["col", "row"], vdims=["metric"]).opts(
             cmap=self._cmap,
@@ -257,7 +266,9 @@ class ChannelGridSelector:
         r0, r1 = min(rows), max(rows)
         c0, c1 = min(cols), max(cols)
         # rectangle in data coords: left,bottom,right,top
-        rect = hv.Rectangles([(c0 - 0.5, r0 - 0.5, c1 + 0.5, r1 + 0.5)], kdims=["x0", "y0", "x1", "y1"])
+        rect = hv.Rectangles(
+            [(c0 - 0.5, r0 - 0.5, c1 + 0.5, r1 + 0.5)], kdims=["x0", "y0", "x1", "y1"]
+        )
         return rect.opts(
             fill_alpha=0.0,
             line_color="#ffb000",
@@ -390,7 +401,9 @@ def sparkline_grid_view(
     if x.ndim != 3:
         raise ValueError(f"Expected x_tyx as (time, rows, cols), got shape {x.shape}.")
     if x.shape[0] != t.size:
-        raise ValueError(f"t_s length {t.size} does not match x_tyx time dim {x.shape[0]}.")
+        raise ValueError(
+            f"t_s length {t.size} does not match x_tyx time dim {x.shape[0]}."
+        )
 
     n_rows, n_cols = int(x.shape[1]), int(x.shape[2])
 
@@ -452,7 +465,9 @@ def sparkline_grid_view(
 
     from holoviews.operation.datashader import rasterize as _rasterize
 
-    return _rasterize(el, width=int(width), height=int(height), line_width=float(line_width)).opts(
+    return _rasterize(
+        el, width=int(width), height=int(height), line_width=float(line_width)
+    ).opts(
         cmap=["#000000"],
         colorbar=False,
         toolbar="above",
@@ -480,9 +495,9 @@ def channel_grid_selector_demo(
 
     def _render_selected(_event=None):
         rc = sel.selected_rc()
-        selected_md.object = (
-            f"**Selected:** {len(rc)} channels\n\n"
-            + (", ".join([f"(r={r}, c={c})" for (r, c) in rc[:24]]) + (" …" if len(rc) > 24 else ""))
+        selected_md.object = f"**Selected:** {len(rc)} channels\n\n" + (
+            ", ".join([f"(r={r}, c={c})" for (r, c) in rc[:24]])
+            + (" …" if len(rc) > 24 else "")
         )
 
     sel.state.param.watch(_render_selected, "selected")
@@ -513,6 +528,7 @@ def channel_grid_selector_demo(
 # Notes:
 # - No template, no pn.config global sizing defaults, minimal styling.
 # - Responsive by default, safe in notebooks.
+
 
 def ecog_viewer(
     sig_tyx: xr.DataArray,
@@ -560,18 +576,20 @@ def ecog_viewer(
     if time_dim not in sig_tyx.dims:
         raise ValueError(f"sig_tyx missing time_dim='{time_dim}'. dims={sig_tyx.dims}")
     if ap_dim not in sig_tyx.dims or ml_dim not in sig_tyx.dims:
-        raise ValueError(f"sig_tyx missing ap_dim/ml_dim '{ap_dim}','{ml_dim}'. dims={sig_tyx.dims}")
+        raise ValueError(
+            f"sig_tyx missing ap_dim/ml_dim '{ap_dim}','{ml_dim}'. dims={sig_tyx.dims}"
+        )
 
     sub_sig = sig_tyx.isel({time_dim: slice(0, nsamples)})
     sub_sig = normalize_coords_to_index(sub_sig).compute()
 
     # time×ch representation with AP/ML coords per channel
-    sub_sig_tc = to_time_channel(sub_sig)      # dims: (time, ch) with ch MultiIndex
+    sub_sig_tc = to_time_channel(sub_sig)  # dims: (time, ch) with ch MultiIndex
     sub_sig_tc = sub_sig_tc.reset_index("ch")  # adds coords AP(ch), ML(ch)
     sub_sig_tc = sub_sig_tc.assign_coords(ch=np.arange(sub_sig_tc.sizes["ch"]))
 
     times = np.asarray(sub_sig_tc[time_dim].values, dtype=float)
-    chs   = np.asarray(sub_sig_tc["ch"].values, dtype=int)
+    chs = np.asarray(sub_sig_tc["ch"].values, dtype=int)
 
     ap_ch = np.asarray(sub_sig_tc[ap_dim].values, dtype=float)
     ml_ch = np.asarray(sub_sig_tc[ml_dim].values, dtype=float)
@@ -585,7 +603,8 @@ def ecog_viewer(
         return int(chs[np.argmin(np.abs(chs - c))])
 
     def snap_ch_from_apml(ap, ml):
-        ap = float(ap); ml = float(ml)
+        ap = float(ap)
+        ml = float(ml)
         d2 = (ap_ch - ap) ** 2 + (ml_ch - ml) ** 2
         return int(np.argmin(d2))
 
@@ -599,7 +618,7 @@ def ecog_viewer(
     Time = streams.Stream.define("Time", time=float(times[0]))
     Chan = streams.Stream.define("Chan", ch=int(chs[0]))
     time_ctrl = Time()
-    ch_ctrl   = Chan()
+    ch_ctrl = Chan()
 
     # --------------------------
     # Overlays: crosshairs
@@ -625,7 +644,9 @@ def ecog_viewer(
     # --------------------------
     # Left: time×ch heatmap + trace
     # --------------------------
-    ds = hv.Dataset(sub_sig_tc, kdims=[time_dim, "ch"], vdims=[sub_sig_tc.name or "val"])
+    ds = hv.Dataset(
+        sub_sig_tc, kdims=[time_dim, "ch"], vdims=[sub_sig_tc.name or "val"]
+    )
     img = ds.to(hv.Image, kdims=[time_dim, "ch"]).opts(
         cmap=cmap_tc,
         colorbar=bool(colorbar_tc),
@@ -643,7 +664,11 @@ def ecog_viewer(
         da = sub_sig_tc.sel(ch=ch)
         ap = float(da[ap_dim].values) if ap_dim in da.coords else np.nan
         ml = float(da[ml_dim].values) if ml_dim in da.coords else np.nan
-        title = f"ch={ch} ({ap_dim}={ap:.2f}, {ml_dim}={ml:.2f})" if np.isfinite(ap) and np.isfinite(ml) else f"ch={ch}"
+        title = (
+            f"ch={ch} ({ap_dim}={ap:.2f}, {ml_dim}={ml:.2f})"
+            if np.isfinite(ap) and np.isfinite(ml)
+            else f"ch={ch}"
+        )
         return hv.Curve(da, kdims=[time_dim]).opts(title=title)
 
     curve = hv.DynamicMap(curve_for_ch, streams=[ch_ctrl]).opts(
@@ -656,7 +681,7 @@ def ecog_viewer(
     )
 
     # Tap handling
-    tap_img   = streams.Tap(source=img)
+    tap_img = streams.Tap(source=img)
     tap_curve = streams.Tap(source=curve)
 
     def set_from_img_tap(x=None, y=None, **_):
@@ -727,8 +752,12 @@ def ecog_viewer(
             f"- {ml_dim}: `{ml:.2f}`"
         )
 
-    time_ctrl.add_subscriber(lambda time, **k: update_readout(time, ch_ctrl.contents["ch"]))
-    ch_ctrl.add_subscriber(lambda ch, **k: update_readout(time_ctrl.contents["time"], ch))
+    time_ctrl.add_subscriber(
+        lambda time, **k: update_readout(time, ch_ctrl.contents["ch"])
+    )
+    ch_ctrl.add_subscriber(
+        lambda ch, **k: update_readout(time_ctrl.contents["time"], ch)
+    )
     update_readout(time_ctrl.contents["time"], ch_ctrl.contents["ch"])
 
     left_card = pn.Card(
@@ -766,7 +795,9 @@ def lfp_overlay_curves(
     t_s = np.asarray(t_s, dtype=float).reshape(-1)
     d = np.asarray(depth_mm_grid, dtype=float).reshape(-1)
     if lfp_tdepth.shape != (t_s.size, d.size):
-        raise ValueError(f"Expected lfp_tdepth {(t_s.size, d.size)}, got {lfp_tdepth.shape}")
+        raise ValueError(
+            f"Expected lfp_tdepth {(t_s.size, d.size)}, got {lfp_tdepth.shape}"
+        )
 
     dz = float(np.nanmedian(np.diff(d))) if d.size > 2 else 0.02
     amp = float(np.nanpercentile(np.abs(lfp_tdepth), 95))
@@ -777,7 +808,11 @@ def lfp_overlay_curves(
     curves = []
     for i in range(0, lfp_tdepth.shape[1], int(stride)):
         y = d[i] + (lfp_tdepth[:, i] / scale)
-        curves.append(hv.Curve((t_s, y), kdims=[time_dim], vdims=[dv_dim]).opts(color="black", line_width=0.6, alpha=0.8))
+        curves.append(
+            hv.Curve((t_s, y), kdims=[time_dim], vdims=[dv_dim]).opts(
+                color="black", line_width=0.6, alpha=0.8
+            )
+        )
     return hv.Overlay(curves).opts(show_legend=False)
 
 
@@ -787,6 +822,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 def ecog_viewer_hv(
     sig,
@@ -862,9 +898,13 @@ def ecog_viewer_hv(
         ml_vals = None
 
     if x_arr.ndim not in (2, 3):
-        raise ValueError(f"Expected x as (time,ch) or (time,rows,cols), got shape {x_arr.shape}.")
+        raise ValueError(
+            f"Expected x as (time,ch) or (time,rows,cols), got shape {x_arr.shape}."
+        )
     if x_arr.shape[0] != t.size:
-        raise ValueError(f"t_s length {t.size} does not match x time dim {x_arr.shape[0]}.")
+        raise ValueError(
+            f"t_s length {t.size} does not match x time dim {x_arr.shape[0]}."
+        )
 
     if x_arr.ndim == 3:
         rows, cols = int(x_arr.shape[1]), int(x_arr.shape[2])
@@ -873,10 +913,14 @@ def ecog_viewer_hv(
             metric = np.sqrt(np.nanmean(x_arr**2, axis=0))
     else:
         if n_rows is None or n_cols is None:
-            raise ValueError("n_rows and n_cols are required when x is provided as (time, ch).")
+            raise ValueError(
+                "n_rows and n_cols are required when x is provided as (time, ch)."
+            )
         rows, cols = int(n_rows), int(n_cols)
         if x_arr.shape[1] != rows * cols:
-            raise ValueError(f"x has {x_arr.shape[1]} channels but grid is {rows}×{cols}={rows*cols}.")
+            raise ValueError(
+                f"x has {x_arr.shape[1]} channels but grid is {rows}×{cols}={rows*cols}."
+            )
         x_tch = x_arr
 
     selector_kwargs = {} if selector_kwargs is None else dict(selector_kwargs)
@@ -947,11 +991,13 @@ def ecog_viewer_hv(
         for i in range(nch):
             y = x_sel[:, i] / scale + i
             curves.append(
-                hv.Curve((t_s, y), kdims=["Time (s)"], vdims=["Value"]).opts(
+                hv.Curve((t_s, y), kdims=["Time (s)"], vdims=["Value"])
+                .opts(
                     color="black",
                     line_width=1,
                     alpha=0.85,
-                ).relabel(labels[i])
+                )
+                .relabel(labels[i])
             )
 
         overlay = hv.Overlay(curves).opts(
@@ -969,7 +1015,9 @@ def ecog_viewer_hv(
         sd = np.where(sd == 0, 1.0, sd)
         z = ((x_sel - mu) / sd).T  # (ch, time)
 
-        minimap = hv.Image((t_s, np.arange(nch), z), kdims=["Time (s)", "ch"], vdims=["z"]).opts(
+        minimap = hv.Image(
+            (t_s, np.arange(nch), z), kdims=["Time (s)", "ch"], vdims=["z"]
+        ).opts(
             width=int(width),
             height=int(minimap_height),
             cmap="RdBu_r",
@@ -986,7 +1034,9 @@ def ecog_viewer_hv(
 
             t0 = float(t_s[0])
             t1 = float(min(t_s[-1], t0 + float(boundsx_s)))
-            _rtlink_holder["rtlink"] = RangeToolLink(minimap, overlay, axes=["x"], boundsx=(t0, t1))
+            _rtlink_holder["rtlink"] = RangeToolLink(
+                minimap, overlay, axes=["x"], boundsx=(t0, t1)
+            )
         except Exception:
             _rtlink_holder["rtlink"] = None
 
@@ -1000,16 +1050,21 @@ def ecog_viewer_hv(
 
         # No selection: explicit placeholder (no blank axes)
         if len(sel) == 0:
-            return _placeholder("Tap cells in the grid to select channels.\n(Box-select sets subgrid.)")
+            return _placeholder(
+                "Tap cells in the grid to select channels.\n(Box-select sets subgrid.)"
+            )
 
         # Too many: protect performance
         if len(sel) > int(max_channels_plot):
-            return _placeholder(f"Too many channels selected ({len(sel)}). Reduce selection ≤ {max_channels_plot}.")
+            return _placeholder(
+                f"Too many channels selected ({len(sel)}). Reduce selection ≤ {max_channels_plot}."
+            )
 
         # Slice selected channels
         x_sel = select_channels(x_tch, sel)
         yx = [flat_to_rc(i, cols) for i in sel]
         if bool(label_apml) and ap_vals is not None and ml_vals is not None:
+
             def _fmt(v):
                 try:
                     fv = float(v)
@@ -1019,7 +1074,10 @@ def ecog_viewer_hv(
                 except Exception:
                     return str(v)
 
-            labels = [f"{ap_dim}={_fmt(ap_vals[int(r)])}, {ml_dim}={_fmt(ml_vals[int(c)])}" for (r, c) in yx]
+            labels = [
+                f"{ap_dim}={_fmt(ap_vals[int(r)])}, {ml_dim}={_fmt(ml_vals[int(c)])}"
+                for (r, c) in yx
+            ]
             ap_for_sel = np.asarray([ap_vals[int(r)] for (r, _c) in yx], dtype=float)
         else:
             labels = [f"r{int(r):02d}c{int(c):02d}" for (r, c) in yx]
@@ -1036,7 +1094,9 @@ def ecog_viewer_hv(
                 if np.isfinite(vmin) and np.isfinite(vmax) and vmin != vmax:
                     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
                     cmap = cm.get_cmap(str(ap_cmap))
-                    channel_colors = [mcolors.to_hex(cmap(norm(float(v)))) for v in ap_for_sel]
+                    channel_colors = [
+                        mcolors.to_hex(cmap(norm(float(v)))) for v in ap_for_sel
+                    ]
             except Exception:
                 channel_colors = None
 
@@ -1060,14 +1120,18 @@ def ecog_viewer_hv(
 
             # If it didn't return dict, don't accept matplotlib fallback
             return _hv_timeseries_fallback(
-                t, x_sel, labels,
+                t,
+                x_sel,
+                labels,
                 title=f"Selected traces ({len(labels)} ch) (HV fallback: unexpected return)",
             )
 
         except Exception as exc:
             # HV-native fallback keeps the UI coherent
             return _hv_timeseries_fallback(
-                t, x_sel, labels,
+                t,
+                x_sel,
+                labels,
                 title=f"Selected traces ({len(labels)} ch) (HV fallback: {type(exc).__name__})",
             )
 
@@ -1082,8 +1146,14 @@ def ecog_viewer_hv(
 
     def _spark(_selected=None, **_):
         if x_arr.ndim != 3:
-            return _placeholder("Sparkline grid requires grid signals (time, rows, cols).", width=520, height=520)
-        return sparkline_grid_view(t, x_arr, width=520, height=520, rasterize=True, **sparkline_kwargs)
+            return _placeholder(
+                "Sparkline grid requires grid signals (time, rows, cols).",
+                width=520,
+                height=520,
+            )
+        return sparkline_grid_view(
+            t, x_arr, width=520, height=520, rasterize=True, **sparkline_kwargs
+        )
 
     spark_dm = hv.DynamicMap(_spark, streams=[selected_stream])
 

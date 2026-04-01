@@ -1,4 +1,5 @@
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 param = import_optional("param")
 
@@ -70,7 +71,11 @@ class TimeHair(param.Parameterized):
                     return vals_sorted[0]
                 if idx >= key.size:
                     return vals_sorted[-1]
-                return vals_sorted[idx - 1] if (x64 - key[idx - 1]) <= (key[idx] - x64) else vals_sorted[idx]
+                return (
+                    vals_sorted[idx - 1]
+                    if (x64 - key[idx - 1]) <= (key[idx] - x64)
+                    else vals_sorted[idx]
+                )
 
             return snap
 
@@ -86,7 +91,11 @@ class TimeHair(param.Parameterized):
                 return float(vals_sorted[0])
             if idx >= key.size:
                 return float(vals_sorted[-1])
-            return float(vals_sorted[idx - 1]) if (xf - key[idx - 1]) <= (key[idx] - xf) else float(vals_sorted[idx])
+            return (
+                float(vals_sorted[idx - 1])
+                if (xf - key[idx - 1]) <= (key[idx] - xf)
+                else float(vals_sorted[idx])
+            )
 
         return snap
 
@@ -149,11 +158,25 @@ class TimeHair(param.Parameterized):
                 _DEFAULT_HAIR_COLOR = "#4fc3f7"
             line_color = _DEFAULT_HAIR_COLOR
 
-        snap_values = self._infer_snap_values(obj, time_kdim) if bool(self.snap) else None
-        snapper = self._build_snapper(snap_values) if snap_values is not None and bool(self.snap) else None
+        snap_values = (
+            self._infer_snap_values(obj, time_kdim) if bool(self.snap) else None
+        )
+        snapper = (
+            self._build_snapper(snap_values)
+            if snap_values is not None and bool(self.snap)
+            else None
+        )
 
-        if self.t is None and snap_values is not None and getattr(snap_values, "size", 0):
-            self.t = snap_values[0].item() if hasattr(snap_values[0], "item") else snap_values[0]
+        if (
+            self.t is None
+            and snap_values is not None
+            and getattr(snap_values, "size", 0)
+        ):
+            self.t = (
+                snap_values[0].item()
+                if hasattr(snap_values[0], "item")
+                else snap_values[0]
+            )
 
         params_stream = streams.Params(self, ["t"])
 
@@ -189,7 +212,9 @@ class TimeHair(param.Parameterized):
             if bool(ensure_tap_tools):
                 # Ensure a toolbar exists; otherwise Bokeh may omit the TapTool
                 # entirely and clicks won't fire.
-                el2 = el2.opts(toolbar="above", tools=list(tools), active_tools=list(active_tools))
+                el2 = el2.opts(
+                    toolbar="above", tools=list(tools), active_tools=list(active_tools)
+                )
 
             tap = streams.Tap(source=el2, x=None, y=None)
             tap.add_subscriber(_on_tap)
@@ -241,7 +266,9 @@ class AxisHair(param.Parameterized):
         doc="Hair orientation: 'v' uses tap.x and draws VLine; 'h' uses tap.y and draws HLine.",
     )
 
-    def __init__(self, *, value=None, snap=True, orientation="v", snap_values=None, **params):
+    def __init__(
+        self, *, value=None, snap=True, orientation="v", snap_values=None, **params
+    ):
         super().__init__(**params)
         self.value = value
         self.snap = bool(snap)
@@ -295,8 +322,16 @@ class AxisHair(param.Parameterized):
             else None
         )
 
-        if self.value is None and snap_values is not None and getattr(snap_values, "size", 0):
-            self.value = snap_values[0].item() if hasattr(snap_values[0], "item") else snap_values[0]
+        if (
+            self.value is None
+            and snap_values is not None
+            and getattr(snap_values, "size", 0)
+        ):
+            self.value = (
+                snap_values[0].item()
+                if hasattr(snap_values[0], "item")
+                else snap_values[0]
+            )
 
         params_stream = streams.Params(self, ["value"])
 
@@ -308,7 +343,11 @@ class AxisHair(param.Parameterized):
                 el = hv.VLine(value)
             else:
                 el = hv.HLine(value)
-            return el.opts(color=str(line_color), line_width=int(line_width), alpha=float(line_alpha))
+            return el.opts(
+                color=str(line_color),
+                line_width=int(line_width),
+                alpha=float(line_alpha),
+            )
 
         hair_dm = hv.DynamicMap(_hair, streams=[params_stream])
 

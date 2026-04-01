@@ -23,7 +23,9 @@ def signal_data():
 def test_pipeline_roundtrip_serialization():
     pipe = DetectionPipeline(
         transforms=[BandpassTransform(low=1.0, high=100.0, order=3), ZScoreTransform()],
-        detector=ThresholdDetector(threshold=2.0, direction="positive", min_duration=0.005),
+        detector=ThresholdDetector(
+            threshold=2.0, direction="positive", min_duration=0.005
+        ),
         name="x",
     )
     cfg = pipe.to_dict()
@@ -36,11 +38,12 @@ def test_pipeline_roundtrip_serialization():
 def test_pipeline_run_returns_catalog(signal_data):
     pipe = DetectionPipeline(
         transforms=[ZScoreTransform()],
-        detector=ThresholdDetector(threshold=2.0, direction="positive", min_duration=0.005),
+        detector=ThresholdDetector(
+            threshold=2.0, direction="positive", min_duration=0.005
+        ),
         name="thr",
     )
     cat = pipe.run(signal_data)
     assert isinstance(cat, EventCatalog)
     assert "pipeline" in cat.metadata
     assert cat.metadata["pipeline"] == "thr"
-

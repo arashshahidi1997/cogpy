@@ -43,7 +43,9 @@ class BurstDetector(EventDetector):
         self.h_quantile = float(h_quantile)
         self.h = float(h) if h is not None else None
         self.nperseg = int(nperseg)
-        self.noverlap = int(noverlap) if noverlap is not None else int(self.nperseg) // 2
+        self.noverlap = (
+            int(noverlap) if noverlap is not None else int(self.nperseg) // 2
+        )
         self.bandwidth = float(bandwidth)
         self.footprint = footprint
 
@@ -71,9 +73,13 @@ class BurstDetector(EventDetector):
         from cogpy.burst.blob_detection import detect_hmaxima
 
         if not isinstance(data, xr.DataArray):
-            raise TypeError(f"BurstDetector.detect expects xr.DataArray, got {type(data).__name__}")
+            raise TypeError(
+                f"BurstDetector.detect expects xr.DataArray, got {type(data).__name__}"
+            )
         if not self.can_accept(data):
-            raise ValueError(f"BurstDetector cannot accept data with dims={tuple(getattr(data, 'dims', ()))!r}")
+            raise ValueError(
+                f"BurstDetector cannot accept data with dims={tuple(getattr(data, 'dims', ()))!r}"
+            )
 
         computed_spec = False
         spec = data

@@ -144,7 +144,12 @@ def psd_multitaper(
     if K is None:
         K = int(2 * float(NW) - 1)
     mtfft = multitaper_fft(
-        arr, axis=axis, NW=float(NW), nfft=int(nfft), K_max=int(K), detrend=bool(detrend)
+        arr,
+        axis=axis,
+        NW=float(NW),
+        nfft=int(nfft),
+        K_max=int(K),
+        detrend=bool(detrend),
     )
     freqs = np.fft.rfftfreq(int(nfft), d=1.0 / float(fs)).astype(np.float64, copy=False)
     psd = (np.abs(mtfft) ** 2).mean(axis=-2) / (float(fs) * float(N))
@@ -182,4 +187,3 @@ def psd_from_mtfft(mtfft, freqs, fs, N, *, fmin=0.0, fmax=None):
     psd = (np.abs(mtfft) ** 2).mean(axis=-2) / (float(fs) * float(N))
     psd = np.asarray(psd, dtype=np.float64)
     return _clip_freq(psd, freqs, fmin, fmax)
-

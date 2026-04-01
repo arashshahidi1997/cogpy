@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from cogpy.utils.imports import import_optional
+
 import_optional("bokeh")
 from bokeh.models import Toolbar
 from bokeh.palettes import Plasma256, RdBu11, Viridis256
@@ -138,7 +139,9 @@ COLORMAPS: dict[str, list[str]] = {
 # ---------------------------------------------------------------------
 
 
-def style_figure(fig: figure, *, xlabel: str = "", ylabel: str = "", toolbar: bool = False) -> figure:
+def style_figure(
+    fig: figure, *, xlabel: str = "", ylabel: str = "", toolbar: bool = False
+) -> figure:
     """
     Apply the cogpy dark theme to a Bokeh figure in-place. Returns fig.
 

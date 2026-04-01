@@ -1,6 +1,11 @@
 # `cogpy.spectral`
 
-Spectral analysis routines, including multitaper methods and spectral estimation helpers.
+Spectral analysis: multitaper PSD, spectrograms, band power, spectral
+features, coherence, and whitening. All functions follow the PSD-first
+convention — compute the PSD once, then derive features from it.
+
+**Tutorial:** {doc}`/tutorials/spectral-analysis` |
+**Design:** {doc}`/explanation/spectral-conventions`
 
 ## Submodules
 

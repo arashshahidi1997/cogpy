@@ -1,7 +1,6 @@
 """Tests for cogpy.regression.design — design matrix construction."""
 
 import numpy as np
-import pytest
 
 from cogpy.regression.design import lagged_design_matrix, event_design_matrix
 
@@ -9,6 +8,7 @@ from cogpy.regression.design import lagged_design_matrix, event_design_matrix
 # ---------------------------------------------------------------------------
 # lagged_design_matrix
 # ---------------------------------------------------------------------------
+
 
 class TestLaggedDesignMatrix:
     def test_shape_with_intercept(self):
@@ -71,6 +71,7 @@ class TestLaggedDesignMatrix:
 # ---------------------------------------------------------------------------
 # event_design_matrix
 # ---------------------------------------------------------------------------
+
 
 class TestEventDesignMatrix:
     def test_shape(self):

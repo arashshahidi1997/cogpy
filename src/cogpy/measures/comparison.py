@@ -147,5 +147,7 @@ def waveform_residual_rms(
     float
         RMS of the difference.
     """
-    diff = np.asarray(template_before, dtype=float) - np.asarray(template_after, dtype=float)
+    diff = np.asarray(template_before, dtype=float) - np.asarray(
+        template_after, dtype=float
+    )
     return float(np.sqrt(np.mean(diff**2)))

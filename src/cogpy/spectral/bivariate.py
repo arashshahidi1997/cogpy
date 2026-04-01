@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from .multitaper import multitaper_fft
 
 EPS = 1e-12
 
@@ -265,7 +264,9 @@ def cross_corr_peak(
     return np.apply_along_axis(_peak, -1, xy)
 
 
-def cross_corr_lag(x: np.ndarray, y: np.ndarray, *, axis: int = -1, fs: float = 1.0) -> np.ndarray:
+def cross_corr_lag(
+    x: np.ndarray, y: np.ndarray, *, axis: int = -1, fs: float = 1.0
+) -> np.ndarray:
     """
     Lag at peak cross-correlation between signals x and y.
 
@@ -300,7 +301,9 @@ def cross_corr_lag(x: np.ndarray, y: np.ndarray, *, axis: int = -1, fs: float = 
     return np.apply_along_axis(_lag, -1, xy)
 
 
-def pac_modulation_index(pha: np.ndarray, amp: np.ndarray, *, n_bins: int = 18) -> np.ndarray:
+def pac_modulation_index(
+    pha: np.ndarray, amp: np.ndarray, *, n_bins: int = 18
+) -> np.ndarray:
     """
     Phase-Amplitude Coupling (PAC) via Modulation Index (Tort et al. 2010).
 
@@ -344,7 +347,9 @@ def pac_modulation_index(pha: np.ndarray, amp: np.ndarray, *, n_bins: int = 18) 
     pha = np.asarray(pha)
     amp = np.asarray(amp)
     if pha.shape != amp.shape:
-        raise ValueError(f"pha and amp must have identical shapes, got {pha.shape} and {amp.shape}.")
+        raise ValueError(
+            f"pha and amp must have identical shapes, got {pha.shape} and {amp.shape}."
+        )
 
     # tensorpac expects:
     #   pha: (n_pha, ..., n_times)
@@ -411,7 +416,9 @@ def spectral_granger(
             f"Got x.shape={x.shape}, y.shape={y.shape}."
         )
     if x.shape != y.shape:
-        raise ValueError(f"x and y must have the same shape, got {x.shape} and {y.shape}.")
+        raise ValueError(
+            f"x and y must have the same shape, got {x.shape} and {y.shape}."
+        )
 
     freqs, causality = pairwise_spectral_granger(x, y, fs=float(fs))
     freqs = np.asarray(freqs, dtype=float)

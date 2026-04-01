@@ -1,8 +1,8 @@
 """Top-level API for cogpy.
 
-    cogpy is a Python package for ecog data analysis. Submodules such as
-    :mod:`cogpy.brainstates`, :mod:`cogpy.preprocess`, and :mod:`cogpy.spectral`
-    expose the primary functionality and are documented in the API reference.
+cogpy is a Python package for ecog data analysis. Submodules such as
+:mod:`cogpy.brainstates`, :mod:`cogpy.preprocess`, and :mod:`cogpy.spectral`
+expose the primary functionality and are documented in the API reference.
 """
 
 from importlib.metadata import version as _version, PackageNotFoundError

@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import numpy as np
 import xarray as xr
 from scipy.ndimage import gaussian_filter1d
 from ..burst.blob_detection import detect_hmaxima
@@ -339,7 +338,9 @@ class TensorExample:
         Build a toy dataset via :func:`make_dataset` and detect bursts via h-maxima.
         """
         data = make_dataset(duration=duration, nt=nt, **dataset_kwargs)
-        bursts = detect_bursts_hmaxima(data, h_quantile=h_quantile, h=h, footprint=footprint)
+        bursts = detect_bursts_hmaxima(
+            data, h_quantile=h_quantile, h=h, footprint=footprint
+        )
         return cls(data=data, bursts=bursts)
 
 
@@ -372,16 +373,27 @@ class AROscillatorGrid:
         ground-truth burst peaks used to generate the signal.
     """
 
-    def __init__(self, *, raw: xr.DataArray, spectrogram: xr.DataArray, bursts: pd.DataFrame, fs: float):
+    def __init__(
+        self,
+        *,
+        raw: xr.DataArray,
+        spectrogram: xr.DataArray,
+        bursts: pd.DataFrame,
+        fs: float,
+    ):
         self.raw = raw
         self.spectrogram = spectrogram
         self.bursts = bursts
         self.fs = float(fs)
 
     @staticmethod
-    def _gaussian_bump_2d(ny: int, nx: int, cy: float, cx: float, sy: float, sx: float) -> np.ndarray:
+    def _gaussian_bump_2d(
+        ny: int, nx: int, cy: float, cx: float, sy: float, sx: float
+    ) -> np.ndarray:
         yy, xx = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
-        return np.exp(-(((yy - cy) ** 2) / (2 * sy**2) + ((xx - cx) ** 2) / (2 * sx**2)))
+        return np.exp(
+            -(((yy - cy) ** 2) / (2 * sy**2) + ((xx - cx) ** 2) / (2 * sx**2))
+        )
 
     @classmethod
     def make(
@@ -460,7 +472,7 @@ class AROscillatorGrid:
 
         n_burst = int(round(float(burst_seconds) * float(fs)))
         n_burst = max(8, n_burst)
-        tb = (np.arange(n_burst, dtype=float) / float(fs))
+        tb = np.arange(n_burst, dtype=float) / float(fs)
         env = np.exp(-0.5 * ((tb - tb.mean()) / float(burst_time_sigma_s)) ** 2)
         env = env / (env.max() if env.max() != 0 else 1.0)
 
@@ -473,14 +485,24 @@ class AROscillatorGrid:
             f0 = float(p["z"])
 
             # temporal waveform (localized AR oscillation)
-            w = np.asarray(ar_oscillator(f0, float(fs), tb[-1] + (1.0 / fs), r=float(ar_r), random_seed=int(rng.integers(0, 2**31 - 1)))).reshape(-1)
+            w = np.asarray(
+                ar_oscillator(
+                    f0,
+                    float(fs),
+                    tb[-1] + (1.0 / fs),
+                    r=float(ar_r),
+                    random_seed=int(rng.integers(0, 2**31 - 1)),
+                )
+            ).reshape(-1)
             w = w[:n_burst] * env
             # normalize then scale
             sd = float(np.std(w)) if np.std(w) != 0 else 1.0
             w = (w / sd) * float(burst_amp)
 
             # spatial bump (compact)
-            bump = cls._gaussian_bump_2d(nap, nml, float(i_ap), float(i_ml), float(sy), float(sx))
+            bump = cls._gaussian_bump_2d(
+                nap, nml, float(i_ap), float(i_ml), float(sy), float(sx)
+            )
 
             # insert into raw around i_t
             j0 = int(i_t - n_burst // 2)
@@ -513,7 +535,9 @@ class AROscillatorGrid:
         if spectrogram_noverlap is not None:
             spec_kwargs["noverlap"] = int(spectrogram_noverlap)
 
-        spec = mtm_spectrogramx(raw_da, dim="time", **spec_kwargs)  # dims: (ap, ml, freq, time)
+        spec = mtm_spectrogramx(
+            raw_da, dim="time", **spec_kwargs
+        )  # dims: (ap, ml, freq, time)
         # Reorder for consistency with other toy tensors: (ml, ap, time, freq)
         spec = spec.transpose("ml", "ap", "time", "freq")
         spec.name = "val"
@@ -522,7 +546,9 @@ class AROscillatorGrid:
         if hasattr(spec.data, "compute"):
             spec = spec.compute()
 
-        bursts_df = pd.DataFrame(peaks)[["burst_id", "x", "y", "t", "z", "value"]].copy()
+        bursts_df = pd.DataFrame(peaks)[
+            ["burst_id", "x", "y", "t", "z", "value"]
+        ].copy()
 
         return cls(raw=raw_da, spectrogram=spec, bursts=bursts_df, fs=float(fs))
 
@@ -530,6 +556,7 @@ class AROscillatorGrid:
 # ---------------------------------------------------------------------------
 # TensorScope demo bundle helper
 # ---------------------------------------------------------------------------
+
 
 def make_tensorscope_demo_bundle(
     *,
@@ -604,10 +631,8 @@ def make_tensorscope_demo_bundle(
     # ------------------------------------------------------------------
     # spectrogram: (ml, ap, time, freq) → rename → (time, freq, AP, ML)
     # ------------------------------------------------------------------
-    spectrogram = (
-        grid.spectrogram
-        .rename({"ap": "AP", "ml": "ML"})
-        .transpose("time", "freq", "AP", "ML")
+    spectrogram = grid.spectrogram.rename({"ap": "AP", "ml": "ML"}).transpose(
+        "time", "freq", "AP", "ML"
     )
     spectrogram.name = "spectrogram"
     spectrogram.attrs.update(
@@ -625,17 +650,21 @@ def make_tensorscope_demo_bundle(
     #   x=ml → ML, y=ap → AP, z=freq → freq, t=t, value=amplitude
     # ------------------------------------------------------------------
     bursts = grid.bursts.copy()
-    events = pd.DataFrame(
-        {
-            "event_id": bursts["burst_id"].astype(int).values,
-            "t": bursts["t"].astype(float).values,
-            "AP": bursts["y"].astype(float).values,
-            "ML": bursts["x"].astype(float).values,
-            "freq": bursts["z"].astype(float).values,
-            "amplitude": bursts["value"].astype(float).values,
-            "label": "burst",
-        }
-    ).sort_values("t").reset_index(drop=True)
+    events = (
+        pd.DataFrame(
+            {
+                "event_id": bursts["burst_id"].astype(int).values,
+                "t": bursts["t"].astype(float).values,
+                "AP": bursts["y"].astype(float).values,
+                "ML": bursts["x"].astype(float).values,
+                "freq": bursts["z"].astype(float).values,
+                "amplitude": bursts["value"].astype(float).values,
+                "label": "burst",
+            }
+        )
+        .sort_values("t")
+        .reset_index(drop=True)
+    )
 
     # ------------------------------------------------------------------
     # brainstates: dominant spectral band per spectrogram time step
@@ -745,10 +774,13 @@ def example_smooth_multichannel_sigx(nchannel=16, ntime=1000_000, fs=1000):
     )
     return sig_smooth
 
+
 def example_ieeg(nrows=16, ncols=16, ntime=1000_000):
     nchannels = nrows * ncols
-    sig = example_smooth_multichannel_sigx(nchannel=nchannels, ntime=ntime).transpose("time", "channel")
-    # reshape into 16, 16 and add AP, ML 
+    sig = example_smooth_multichannel_sigx(nchannel=nchannels, ntime=ntime).transpose(
+        "time", "channel"
+    )
+    # reshape into 16, 16 and add AP, ML
     ap_vals = np.linspace(-4, 1, nrows)
     ml_vals = np.linspace(-4, 4, ncols)
     sig_reshaped = xr.DataArray(

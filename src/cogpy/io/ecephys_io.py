@@ -14,9 +14,8 @@ Functions:
 
 Example:
     from cogpy.io import ecephys_io
-    da = ecephys_io.from_file('sub-01_ses-01_task-free_ecephys.lfp')        
+    da = ecephys_io.from_file('sub-01_ses-01_task-free_ecephys.lfp')
 """
-
 
 # ✅ **1. Load BIDS Metadata**
 import json
@@ -26,6 +25,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 da = import_optional("dask.array")
 from typing import Union
 
@@ -39,7 +39,9 @@ def resolve_ecephys_sidecars(lfp_path: Union[str, Path]) -> dict[str, Path]:
         "json": base.with_name(stem + "_ecephys.json"),
         "channels": base.with_name(stem + "_channels.tsv"),
         # electrodes sidecar in this repo drops the recording entity.
-        "electrodes": base.with_name((stem + "_electrodes.tsv").replace("_recording-lf", "")),
+        "electrodes": base.with_name(
+            (stem + "_electrodes.tsv").replace("_recording-lf", "")
+        ),
     }
 
 
@@ -70,7 +72,9 @@ def load_ecephys_metadata(lfp_path, sidecars=None) -> dict:
     }
 
 
-def from_file(dat_file: Union[str, Path], sidecars=None, as_float=False) -> xr.DataArray:
+def from_file(
+    dat_file: Union[str, Path], sidecars=None, as_float=False
+) -> xr.DataArray:
     """
     Creates a memory-mapped (dask) array from a .dat file, reshaped to (num_channels, num_samples).
 

@@ -13,7 +13,7 @@ TensorScope is part of `cogpy`.
 For visualization support, install the `viz` extra:
 
 ```bash
-pip install "cogpy[viz]"
+pip install "ecogpy[viz]"
 ```
 
 ### Quick start (Python)

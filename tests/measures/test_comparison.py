@@ -26,6 +26,7 @@ def flat_psd(freqs):
 # residual_energy_ratio
 # ---------------------------------------------------------------------------
 
+
 class TestResidualEnergyRatio:
     def test_no_change(self):
         """Same signal → ratio = 0."""
@@ -43,7 +44,7 @@ class TestResidualEnergyRatio:
         x = np.array([1.0, 2.0, 3.0])
         c = np.array([0.5, 1.0, 1.5])  # half removed
         ratio = residual_energy_ratio(x, c)
-        expected = np.sum((x - c) ** 2) / np.sum(x ** 2)
+        expected = np.sum((x - c) ** 2) / np.sum(x**2)
         np.testing.assert_allclose(ratio, expected, atol=1e-10)
 
     def test_multichannel(self):
@@ -58,6 +59,7 @@ class TestResidualEnergyRatio:
 # ---------------------------------------------------------------------------
 # bandpower_change
 # ---------------------------------------------------------------------------
+
 
 class TestBandpowerChange:
     def test_no_change(self, flat_psd, freqs):
@@ -87,11 +89,15 @@ class TestBandpowerChange:
 # snr_improvement
 # ---------------------------------------------------------------------------
 
+
 class TestSnrImprovement:
     def test_no_change(self, flat_psd, freqs):
         imp = snr_improvement(
-            flat_psd, flat_psd, freqs,
-            signal_band=(1, 30), noise_band=(100, 200),
+            flat_psd,
+            flat_psd,
+            freqs,
+            signal_band=(1, 30),
+            noise_band=(100, 200),
         )
         assert imp == pytest.approx(0.0, abs=1e-10)
 
@@ -101,8 +107,11 @@ class TestSnrImprovement:
         psd_after = np.ones_like(freqs)
         psd_after[100:200] = 0.1  # reduce noise band
         imp = snr_improvement(
-            psd_before, psd_after, freqs,
-            signal_band=(1, 30), noise_band=(100, 200),
+            psd_before,
+            psd_after,
+            freqs,
+            signal_band=(1, 30),
+            noise_band=(100, 200),
         )
         assert imp > 0
 
@@ -112,8 +121,11 @@ class TestSnrImprovement:
         psd_after = np.ones_like(freqs)
         psd_after[1:30] = 0.1  # reduce signal
         imp = snr_improvement(
-            psd_before, psd_after, freqs,
-            signal_band=(1, 30), noise_band=(100, 200),
+            psd_before,
+            psd_after,
+            freqs,
+            signal_band=(1, 30),
+            noise_band=(100, 200),
         )
         assert imp < 0
 
@@ -121,6 +133,7 @@ class TestSnrImprovement:
 # ---------------------------------------------------------------------------
 # waveform_residual_rms
 # ---------------------------------------------------------------------------
+
 
 class TestWaveformResidualRms:
     def test_identical(self):

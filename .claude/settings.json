@@ -3,6 +3,7 @@
   "permissions": {
     "allow": [
       "Read(/storage2/arash/projects/cogpy/**)",
+      "Read(/storage/share/codelib/**)",
       "Edit(/storage2/arash/projects/cogpy/**)",
       "Write(/storage2/arash/projects/cogpy/**)",
       "Bash(pwd)",
@@ -40,6 +41,7 @@
       "Bash(which:*)",
       "Bash(echo:*)",
       "mcp__projio__*",
+      "mcp__sirocampus__*",
       "mcp__worklog__*"
     ],
     "deny": [
@@ -51,6 +53,7 @@
   },
   "allowedTools": [
     "mcp__worklog__*",
-    "mcp__projio__*"
+    "mcp__projio__*",
+    "mcp__sirocampus__*"
   ]
 }

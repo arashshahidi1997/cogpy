@@ -42,4 +42,3 @@ def test_threshold_detector_serialization_roundtrip():
     assert det2.threshold == det.threshold
     assert det2.direction == det.direction
     assert det2.merge_gap == det.merge_gap
-

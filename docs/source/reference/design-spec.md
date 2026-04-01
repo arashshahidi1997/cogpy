@@ -9,7 +9,8 @@ from earlier per-version specs into one living document.
 cogpy exists to provide **composable, file-agnostic compute primitives** for
 ECoG / iEEG signal analysis, backed by a structured I/O layer and reproducible
 pipelines. It also serves as the **backend API** for visualization frontends
-(TensorScope, React + TypeScript).
+([TensorScope](https://github.com/arashshahidi1997/tensorscope), a standalone
+React + TypeScript application).
 
 ## 2. Data Model
 
@@ -79,7 +80,7 @@ cogpy.*           Pure compute (filtering, spectral, detection, …)
     ↓ xarray + EventCatalog
 cogpy.cli / wf    Thin orchestration (Snakemake, argparse)
     ↓ API
-Frontend          TensorScope (React + TS), notebooks
+Frontend          TensorScope (standalone React + TS app), notebooks
 ```
 
 Compute functions never touch the filesystem. Functions in `cogpy.io`
@@ -178,5 +179,6 @@ development:
   — current code has both; spec target is `("time", "AP", "ML")`.
 - Standardize `fs` as coordinate vs attribute (currently both are accepted).
 - Define when `from_file()` should return `DataArray` vs `Dataset`.
-- Define a public API surface for TensorScope backend (which functions/schemas
-  the React frontend should depend on).
+- Define a public API surface that the
+  [TensorScope](https://github.com/arashshahidi1997/tensorscope) frontend
+  should depend on.

@@ -4,14 +4,14 @@
 - Version: 2.6.0
 - Date: 2026-03-05
 - Status: Implementation
-- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`), `cogpy.tensorscope.events` (`EventStream`)
+- Depends on: `cogpy.datasets.schemas` (`Events`, `Intervals`)
 
 ## Overview
 
 `EventCatalog` provides a unified, lightweight event representation that bridges:
 
 - **Analysis workflows:** typed containers (`Events`, `Intervals`) for integration with pynapple/MNE-style pipelines.
-- **Visualization workflows:** `EventStream` for TensorScope UI (tables, navigation, overlays).
+- **Visualization workflows:** event export for frontends like TensorScope (tables, navigation, overlays).
 
 It is a wrapper around a pandas DataFrame with:
 - a **minimal required schema** (`event_id`, `t`)
@@ -59,7 +59,7 @@ Converters:
 - `to_events()` → `Events`
 - `to_intervals()` → `Intervals` (requires `t0`, `t1`)
 - `to_point_intervals(half_window)` → `Intervals`
-- `to_event_stream(style=...)` → TensorScope `EventStream`
+- `to_event_stream(style=...)` → serializable event stream for frontends
 
 Factories:
 - `from_hmaxima(...)`
@@ -76,7 +76,7 @@ Queries:
 
 - `EventCatalog` implemented in `cogpy.events`
 - Factories cover common existing detector outputs
-- Converters to `Events`, `Intervals`, and TensorScope `EventStream` work
+- Converters to `Events`, `Intervals`, and serializable event streams work
 - Validation and basic filters are tested
 - Example demonstrates end-to-end usage
 

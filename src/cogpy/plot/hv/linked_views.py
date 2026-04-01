@@ -37,11 +37,21 @@ def link_topomap_to_viewer(
 
     # Ensure stream exists.
     viewer.panel()
-    if not hasattr(viewer, "_range_stream") or viewer._range_stream is None:  # noqa: SLF001
-        raise ValueError("viewer has no _range_stream; call viewer.panel() before linking")
+    if (
+        not hasattr(viewer, "_range_stream") or viewer._range_stream is None
+    ):  # noqa: SLF001
+        raise ValueError(
+            "viewer has no _range_stream; call viewer.panel() before linking"
+        )
 
-    if time_dim not in sig_grid.dims or "ML" not in sig_grid.dims or "AP" not in sig_grid.dims:
-        raise ValueError(f"sig_grid must have dims including ('{time_dim}','ML','AP'); got dims={tuple(sig_grid.dims)}")
+    if (
+        time_dim not in sig_grid.dims
+        or "ML" not in sig_grid.dims
+        or "AP" not in sig_grid.dims
+    ):
+        raise ValueError(
+            f"sig_grid must have dims including ('{time_dim}','ML','AP'); got dims={tuple(sig_grid.dims)}"
+        )
 
     n_ap = int(sig_grid.sizes["AP"])
     n_ml = int(sig_grid.sizes["ML"])
@@ -103,4 +113,3 @@ def link_topomap_to_viewer(
             _compute_and_update(float(lo), float(hi))
     except Exception:  # noqa: BLE001
         pass
-

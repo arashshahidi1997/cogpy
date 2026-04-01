@@ -33,7 +33,9 @@ def _fs_scalar(sigx: xr.DataArray) -> float:
     if fs is None:
         fs = sigx.attrs.get("fs", None)
     if fs is None:
-        raise ValueError("Input must have a `.fs` coordinate/attribute indicating sampling frequency.")
+        raise ValueError(
+            "Input must have a `.fs` coordinate/attribute indicating sampling frequency."
+        )
     # xarray coord returns a 0D DataArray; convert robustly
     if hasattr(fs, "item"):
         fs = fs.item()
@@ -65,7 +67,13 @@ def _apply_full_array(
         dask="parallelized",
         output_dtypes=[output_dtype],
     )
-    out = xr.DataArray(out.data, dims=sigx.dims, coords=sigx.coords, attrs=dict(sigx.attrs), name=sigx.name)
+    out = xr.DataArray(
+        out.data,
+        dims=sigx.dims,
+        coords=sigx.coords,
+        attrs=dict(sigx.attrs),
+        name=sigx.name,
+    )
     return out
 
 

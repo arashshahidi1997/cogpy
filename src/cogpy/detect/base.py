@@ -55,4 +55,3 @@ class EventDetector(ABC):
     def __repr__(self) -> str:
         parts = ", ".join(f"{k}={v!r}" for k, v in self.params.items())
         return f"{self.name}({parts})"
-

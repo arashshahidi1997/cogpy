@@ -20,11 +20,13 @@ Typical usage
     frame = GridFrameElement(sig_grid, hair, mode="rms", chain=chain)
     pn.Row(frame.panel(), viewer.panel()).servable()
 """
+
 from __future__ import annotations
 
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 
 from .topomap import TopoMap
@@ -167,7 +169,7 @@ class GridFrameElement:
         if win.sizes["time"] == 0:
             return self._frame_instantaneous(t_mid)
         if self._mode == "rms":
-            return np.sqrt(np.asarray((win ** 2).mean("time").values, dtype=float))
+            return np.sqrt(np.asarray((win**2).mean("time").values, dtype=float))
         return np.asarray(win.mean("time").values, dtype=float)
 
     def _frame_windowed_chain(self, t0: float, t1: float, t_mid: float) -> np.ndarray:
@@ -179,13 +181,13 @@ class GridFrameElement:
             win_grid = win.transpose("time", "AP", "ML")
             if self._mode == "rms":
                 return np.sqrt(
-                    np.asarray((win_grid ** 2).mean("time").values, dtype=float)
+                    np.asarray((win_grid**2).mean("time").values, dtype=float)
                 )
             return np.asarray(win_grid.mean("time").values, dtype=float)
 
         # Flat (time, channel) form — reduce then reconstruct grid.
         if self._mode == "rms":
-            reduced = np.sqrt((win ** 2).mean("time"))
+            reduced = np.sqrt((win**2).mean("time"))
         else:
             reduced = win.mean("time")
         return self._channel_to_grid(reduced)

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-import numpy as np
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 param = import_optional("param")
 
@@ -65,10 +65,18 @@ def ieeg_toolkit_app(
     state.n = min(int(state.n), bundle.n_ap * bundle.n_ml)
     state.seed_channel = 0
 
-    metric_select = pn.widgets.Select(name="Metric", options=["variance", "correlation"], value=state.metric)
-    n_slider = pn.widgets.IntSlider(name="Top-N", start=1, end=min(256, bundle.n_ap * bundle.n_ml), value=16)
-    seed_slider = pn.widgets.IntSlider(name="Seed ch (flat)", start=0, end=bundle.n_ap * bundle.n_ml - 1, value=0)
-    apply_btn = pn.widgets.Button(name="Select on grid", button_type="primary", width=140)
+    metric_select = pn.widgets.Select(
+        name="Metric", options=["variance", "correlation"], value=state.metric
+    )
+    n_slider = pn.widgets.IntSlider(
+        name="Top-N", start=1, end=min(256, bundle.n_ap * bundle.n_ml), value=16
+    )
+    seed_slider = pn.widgets.IntSlider(
+        name="Seed ch (flat)", start=0, end=bundle.n_ap * bundle.n_ml - 1, value=0
+    )
+    apply_btn = pn.widgets.Button(
+        name="Select on grid", button_type="primary", width=140
+    )
 
     def _apply_autoselect(_):
         # Use current viewer window, if available
@@ -111,4 +119,3 @@ def ieeg_toolkit_app(
         viewer.panel(),
         sizing_mode="fixed",
     )
-

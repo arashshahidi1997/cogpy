@@ -8,7 +8,12 @@ Provides a unified detector interface and concrete detectors that return
 from .base import EventDetector
 from .burst import BurstDetector
 from .pipeline import DetectionPipeline
-from .pipelines import BURST_PIPELINE, FAST_RIPPLE_PIPELINE, GAMMA_BURST_PIPELINE, RIPPLE_PIPELINE
+from .pipelines import (
+    BURST_PIPELINE,
+    FAST_RIPPLE_PIPELINE,
+    GAMMA_BURST_PIPELINE,
+    RIPPLE_PIPELINE,
+)
 from .ripple import RippleDetector, SpindleDetector
 from .slowwave import SlowWaveDetector, gamma_envelope_validator
 from .threshold import ThresholdDetector

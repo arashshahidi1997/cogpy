@@ -243,8 +243,6 @@ def concat_ss_series(ss_series):
     ss_concat.ldx_slc_maxfreq = xr.concat(
         [ss.ldx_slc_maxfreq for ss in ss_list], dim="rec"
     )
-    ss_concat.ldx_slc_maxch = xr.concat(
-        [ss.ldx_slc_maxch for ss in ss_list], dim="rec"
-    )
+    ss_concat.ldx_slc_maxch = xr.concat([ss.ldx_slc_maxch for ss in ss_list], dim="rec")
     ss_concat.ldx_df = None
     return ss_concat

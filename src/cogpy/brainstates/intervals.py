@@ -254,7 +254,9 @@ def restrict(
     cogpy.brainstates.intervals.map_numbers_to_disjoint_intervals.
     """
     if time_dim not in xsig.dims:
-        raise ValueError(f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}")
+        raise ValueError(
+            f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}"
+        )
     if time_dim not in xsig.coords:
         raise ValueError(f"xsig must have a {time_dim!r} coordinate")
 
@@ -267,7 +269,9 @@ def restrict(
                 continue
             arr = np.asarray(v, dtype=float)
             if arr.ndim != 2 or arr.shape[1] != 2:
-                raise ValueError(f"State intervals must be (n, 2), got shape {arr.shape}")
+                raise ValueError(
+                    f"State intervals must be (n, 2), got shape {arr.shape}"
+                )
             parts.append(arr)
         iv = np.concatenate(parts, axis=0) if parts else np.zeros((0, 2), dtype=float)
     else:
@@ -275,7 +279,9 @@ def restrict(
         if iv.ndim == 1 and len(iv) == 2:
             iv = iv[np.newaxis, :]
         if iv.ndim != 2 or iv.shape[1] != 2:
-            raise ValueError(f"intervals must be (n, 2) array or Intervals object, got shape {iv.shape}")
+            raise ValueError(
+                f"intervals must be (n, 2) array or Intervals object, got shape {iv.shape}"
+            )
 
     t = np.asarray(xsig.coords[time_dim].values, dtype=float)
     mask = np.zeros(len(t), dtype=bool)
@@ -332,7 +338,9 @@ def perievent_epochs(
     Events are not dropped — the caller can filter NaN epochs if needed.
     """
     if time_dim not in xsig.dims:
-        raise ValueError(f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}")
+        raise ValueError(
+            f"xsig must have a {time_dim!r} dimension, got dims={tuple(xsig.dims)}"
+        )
     if time_dim not in xsig.coords:
         raise ValueError(f"xsig must have a {time_dim!r} coordinate")
     if fs <= 0:
@@ -383,7 +391,9 @@ def perievent_epochs(
 
         epoch = xsig_other_last.isel({time_dim: slice(src_start, src_end)})
         epoch_data = np.asarray(epoch.data)
-        out[(ie, *([slice(None)] * len(other_dims)), slice(dest_start, dest_end))] = epoch_data
+        out[(ie, *([slice(None)] * len(other_dims)), slice(dest_start, dest_end))] = (
+            epoch_data
+        )
 
     coords = {}
     for name, coord in xsig.coords.items():

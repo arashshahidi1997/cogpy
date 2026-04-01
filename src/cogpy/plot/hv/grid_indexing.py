@@ -22,7 +22,9 @@ def grid_shape(sig: xr.DataArray) -> tuple[int, int]:
     Return (n_ap, n_ml) for a grid-shaped signal with dims including AP and ML.
     """
     if "AP" not in sig.dims or "ML" not in sig.dims:
-        raise ValueError(f"sig must have dims including 'AP' and 'ML'; got dims={tuple(sig.dims)}")
+        raise ValueError(
+            f"sig must have dims including 'AP' and 'ML'; got dims={tuple(sig.dims)}"
+        )
     return int(sig.sizes["AP"]), int(sig.sizes["ML"])
 
 
@@ -35,7 +37,9 @@ def to_apml_view(sig: xr.DataArray) -> xr.DataArray:
         stack(channel=("AP","ML"))
     """
     if "time" not in sig.dims or "AP" not in sig.dims or "ML" not in sig.dims:
-        raise ValueError(f"sig must include dims ('time','AP','ML'); got dims={tuple(sig.dims)}")
+        raise ValueError(
+            f"sig must include dims ('time','AP','ML'); got dims={tuple(sig.dims)}"
+        )
     return sig.transpose("time", "AP", "ML")
 
 
@@ -50,6 +54,7 @@ def apml_from_flat_index(ix: int, n_ml: int) -> tuple[int, int]:
         raise ValueError("n_ml must be > 0")
     ap, ml = divmod(ix_i, n_ml_i)
     return int(ap), int(ml)
+
 
 def flat_index_from_apml_order(
     ap: int,
@@ -115,7 +120,9 @@ def flat_indices_from_selected(
     """
     out: list[int] = []
     for ap, ml in selected:
-        ix = flat_index_from_apml_order(int(ap), int(ml), n_ap=int(n_ap), n_ml=int(n_ml), order=order)
+        ix = flat_index_from_apml_order(
+            int(ap), int(ml), n_ap=int(n_ap), n_ml=int(n_ml), order=order
+        )
         if n_ch is None or ix < int(n_ch):
             out.append(ix)
     return sorted(set(out))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from cogpy.utils.imports import import_optional
+
 plt = import_optional("matplotlib.pyplot")
 import numpy as np
 from scipy.interpolate import interp1d
@@ -103,9 +104,7 @@ def plot_maxfreq_slc(ss, imshow_kwargs=None):
         imshow_kwargs = dict(cmap="jet", vmin=0)
     fig, axes = plt.subplots(12, 5, figsize=(12, 24))
     for ifactor, ax in enumerate(axes.flatten()):
-        ss.ldx_slc_maxfreq.sel(factor=ifactor).plot.imshow(
-            cmap="jet", vmin=0, ax=ax
-        )
+        ss.ldx_slc_maxfreq.sel(factor=ifactor).plot.imshow(cmap="jet", vmin=0, ax=ax)
         ax.set(
             title=f"fac{ifactor}, {ss.ldx_df.loc[ifactor].freqmax:.0f}Hz",
             xlabel="ML",

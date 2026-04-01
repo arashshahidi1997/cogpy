@@ -82,7 +82,9 @@ class ThresholdDetector(EventDetector):
         if self.bandpass is not None:
             from .utils import bandpass_filter
 
-            x = bandpass_filter(x, self.bandpass[0], self.bandpass[1], order=self.filter_order)
+            x = bandpass_filter(
+                x, self.bandpass[0], self.bandpass[1], order=self.filter_order
+            )
 
         if self.use_envelope:
             from .utils import hilbert_envelope
@@ -106,17 +108,29 @@ class ThresholdDetector(EventDetector):
         else:
             events.extend(self._detect_1d(x))
 
-        df = pd.DataFrame.from_records(events) if events else pd.DataFrame(columns=["event_id", "t"])
+        df = (
+            pd.DataFrame.from_records(events)
+            if events
+            else pd.DataFrame(columns=["event_id", "t"])
+        )
         if not df.empty:
             df["event_id"] = [f"thresh_{i:06d}" for i in range(len(df))]
             # Ensure canonical columns exist.
             for col in ("t", "t0", "t1"):
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
-            if ("t0" in df.columns) and ("t1" in df.columns) and ("duration" not in df.columns):
+            if (
+                ("t0" in df.columns)
+                and ("t1" in df.columns)
+                and ("duration" not in df.columns)
+            ):
                 df["duration"] = df["t1"] - df["t0"]
 
-        return EventCatalog(df=df, name="threshold_events", metadata={"detector": self.name, **self.params})
+        return EventCatalog(
+            df=df,
+            name="threshold_events",
+            metadata={"detector": self.name, **self.params},
+        )
 
     def _detect_1d(self, ts: xr.DataArray, **loc: Any) -> list[dict[str, Any]]:
         if "time" not in ts.dims:
@@ -188,4 +202,3 @@ class ThresholdDetector(EventDetector):
 
     def get_event_dims(self) -> list[str]:
         return ["time"]
-

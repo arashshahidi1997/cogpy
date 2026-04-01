@@ -258,4 +258,3 @@ def summarize_windowed_features(
         out = out.drop_dims(dim)
     out.attrs.update({"summary_dim": dim, "summary_stats": list(stats)})
     return out
-

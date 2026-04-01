@@ -73,7 +73,9 @@ def noise_to_signal(
 
     axis_psd = axis if axis >= 0 else (psd.ndim + axis)
     low = np.nanmean(np.take(psd, np.where(low_mask)[0], axis=axis_psd), axis=axis_psd)
-    high = np.nanmean(np.take(psd, np.where(high_mask)[0], axis=axis_psd), axis=axis_psd)
+    high = np.nanmean(
+        np.take(psd, np.where(high_mask)[0], axis=axis_psd), axis=axis_psd
+    )
     return high / (low + EPS)
 
 
@@ -119,7 +121,7 @@ DEFAULT_FEATURES: tuple[str, ...] = (
     "time_derivative",
     "hurst_exponent",
     "kurtosis",
-    'snr'
+    "snr",
 )
 
 SPECTRAL_FEATURES: tuple[str, ...] = (
@@ -136,20 +138,22 @@ _feature_func = {
     # canonical names
     "variance": relative_variance,
     "mean": deviation,
-    'relative_variance': relative_variance,
-    'deviation': deviation,
-    'standard_deviation': standard_deviation,
-    'amplitude': amplitude,
-    'time_derivative': time_derivative,
-    'hurst_exponent': hurst_exponent,
-    'kurtosis': kurtosis,
-    'temporal_mean_laplacian': temporal_mean_laplacian,
-    'noise_to_signal': noise_to_signal,
+    "relative_variance": relative_variance,
+    "deviation": deviation,
+    "standard_deviation": standard_deviation,
+    "amplitude": amplitude,
+    "time_derivative": time_derivative,
+    "hurst_exponent": hurst_exponent,
+    "kurtosis": kurtosis,
+    "temporal_mean_laplacian": temporal_mean_laplacian,
+    "noise_to_signal": noise_to_signal,
     "snr": snr,
 }
 
 
-def _coerce_xsig_to_schema(xsig: xr.DataArray, *, time_dim: str) -> tuple[xr.DataArray, str]:
+def _coerce_xsig_to_schema(
+    xsig: xr.DataArray, *, time_dim: str
+) -> tuple[xr.DataArray, str]:
     """
     Coerce `xsig` into a canonical schemas.py representation.
 
@@ -200,10 +204,14 @@ def _coerce_xsig_to_schema(xsig: xr.DataArray, *, time_dim: str) -> tuple[xr.Dat
 
 def _require_fs(xsig: xr.DataArray) -> float:
     if "fs" not in xsig.attrs:
-        raise ValueError("Sampling rate required: set xsig.attrs['fs'] (Hz) for noise_to_signal.")
+        raise ValueError(
+            "Sampling rate required: set xsig.attrs['fs'] (Hz) for noise_to_signal."
+        )
     fs = float(xsig.attrs["fs"])
     if not np.isfinite(fs) or fs <= 0:
-        raise ValueError(f"xsig.attrs['fs'] must be positive and finite, got {xsig.attrs['fs']!r}.")
+        raise ValueError(
+            f"xsig.attrs['fs'] must be positive and finite, got {xsig.attrs['fs']!r}."
+        )
     return fs
 
 
@@ -271,7 +279,9 @@ def extract_channel_features_xr(
                 stacklevel=3,
             )
         if name not in _feature_func:
-            raise ValueError(f"Unknown feature {name!r}. Known: {sorted(_feature_func.keys())}")
+            raise ValueError(
+                f"Unknown feature {name!r}. Known: {sorted(_feature_func.keys())}"
+            )
 
     # Fail fast for attributes needed by requested features.
     fs = _require_fs(xsig) if any(f in SPECTRAL_FEATURES for f in feats) else None
@@ -297,7 +307,9 @@ def extract_channel_features_xr(
         if window_size is None:
             if name == "temporal_mean_laplacian":
                 if not is_grid:
-                    raise ValueError("temporal_mean_laplacian requires an IEEGGridTimeSeries input.")
+                    raise ValueError(
+                        "temporal_mean_laplacian requires an IEEGGridTimeSeries input."
+                    )
                 da = xr.apply_ufunc(
                     _tml_ml_ap,
                     xsig,
@@ -342,7 +354,9 @@ def extract_channel_features_xr(
         # windowed features
         if name == "temporal_mean_laplacian":
             if not is_grid:
-                raise ValueError("temporal_mean_laplacian requires an IEEGGridTimeSeries input.")
+                raise ValueError(
+                    "temporal_mean_laplacian requires an IEEGGridTimeSeries input."
+                )
             da = running_blockwise_xr(
                 xsig,
                 int(window_size),

@@ -12,10 +12,17 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 param = import_optional("param")
 pn = import_optional("panel")
 
-from cogpy.preprocess.filtering import bandpassx, cmrx, median_spatialx, notchesx, zscorex
+from cogpy.preprocess.filtering import (
+    bandpassx,
+    cmrx,
+    median_spatialx,
+    notchesx,
+    zscorex,
+)
 
 __all__ = ["ProcessingChain"]
 
@@ -149,14 +156,22 @@ class ProcessingChain(param.Parameterized):
 
     @staticmethod
     def _extract_ap_ml(sig: xr.DataArray) -> tuple[object, object]:
-        if "AP" in sig.coords and "ML" in sig.coords and sig.coords["AP"].dims == ("channel",) and sig.coords["ML"].dims == ("channel",):
+        if (
+            "AP" in sig.coords
+            and "ML" in sig.coords
+            and sig.coords["AP"].dims == ("channel",)
+            and sig.coords["ML"].dims == ("channel",)
+        ):
             return sig.coords["AP"].values, sig.coords["ML"].values
 
         try:
             idx = sig["channel"].to_index()
             names = set(getattr(idx, "names", []) or [])
             if {"AP", "ML"}.issubset(names):
-                return idx.get_level_values("AP").to_numpy(), idx.get_level_values("ML").to_numpy()
+                return (
+                    idx.get_level_values("AP").to_numpy(),
+                    idx.get_level_values("ML").to_numpy(),
+                )
         except Exception:  # noqa: BLE001
             pass
 
@@ -166,7 +181,9 @@ class ProcessingChain(param.Parameterized):
         )
 
     @staticmethod
-    def _median_spatial_flat(sig: xr.DataArray, *, size: int, time_dim: str) -> xr.DataArray:
+    def _median_spatial_flat(
+        sig: xr.DataArray, *, size: int, time_dim: str
+    ) -> xr.DataArray:
         """
         Apply spatial median to a flat (time, channel) DataArray with AP/ML coords.
 
@@ -265,7 +282,9 @@ class ProcessingChain(param.Parameterized):
         if (channels is not None) and ("channel" in win.dims):
             # For grid-capable flat data, CMR and spatial filters should see the full grid
             # (median across channels / spatial neighborhood). Subset after processing.
-            if bool(self._is_grid) and (bool(self.cmr_on) or bool(self.spatial_median_on)):
+            if bool(self._is_grid) and (
+                bool(self.cmr_on) or bool(self.spatial_median_on)
+            ):
                 apply_channels_late = True
             else:
                 win = win.isel(channel=list(channels))
@@ -280,7 +299,9 @@ class ProcessingChain(param.Parameterized):
             lo = float(self.bandpass_lo)
             hi = float(self.bandpass_hi)
             if not (hi > lo):
-                raise ValueError(f"bandpass_hi must be > bandpass_lo; got lo={lo}, hi={hi}")
+                raise ValueError(
+                    f"bandpass_hi must be > bandpass_lo; got lo={lo}, hi={hi}"
+                )
             win = bandpassx(win, lo, hi, int(self.bandpass_order), axis=self._time_dim)
 
         if bool(self.notch_on):
@@ -292,7 +313,12 @@ class ProcessingChain(param.Parameterized):
                 freqs_to_notch = [float(f) for f in (self.notch_freqs or [])]
 
             if freqs_to_notch:
-                win = notchesx(win, freqs=freqs_to_notch, Q=float(self.notch_q), time_dim=self._time_dim)
+                win = notchesx(
+                    win,
+                    freqs=freqs_to_notch,
+                    Q=float(self.notch_q),
+                    time_dim=self._time_dim,
+                )
 
         if bool(self.spatial_median_on) and bool(self._is_grid):
             if "AP" in win.dims and "ML" in win.dims:
@@ -339,9 +365,15 @@ class ProcessingChain(param.Parameterized):
         )
 
         bp_chk = pn.widgets.Checkbox.from_param(self.param.bandpass_on, name="Bandpass")
-        bp_lo = pn.widgets.FloatInput.from_param(self.param.bandpass_lo, name="Lo (Hz)", width=140)
-        bp_hi = pn.widgets.FloatInput.from_param(self.param.bandpass_hi, name="Hi (Hz)", width=140)
-        bp_ord = pn.widgets.IntInput.from_param(self.param.bandpass_order, name="Order", width=140)
+        bp_lo = pn.widgets.FloatInput.from_param(
+            self.param.bandpass_lo, name="Lo (Hz)", width=140
+        )
+        bp_hi = pn.widgets.FloatInput.from_param(
+            self.param.bandpass_hi, name="Hi (Hz)", width=140
+        )
+        bp_ord = pn.widgets.IntInput.from_param(
+            self.param.bandpass_order, name="Order", width=140
+        )
         self._bp_group = pn.Column(
             pn.GridBox(bp_lo, bp_hi, ncols=2),
             bp_ord,
@@ -372,7 +404,9 @@ class ProcessingChain(param.Parameterized):
 
         def _update_notch_freqs(event):
             try:
-                freqs = [float(f.strip()) for f in str(event.new).split(",") if f.strip()]
+                freqs = [
+                    float(f.strip()) for f in str(event.new).split(",") if f.strip()
+                ]
             except ValueError:
                 return
             if freqs:
@@ -397,6 +431,7 @@ class ProcessingChain(param.Parameterized):
 
         self._notch_list_group = pn.Column(notch_freqs_input)
         self._notch_harm_group = pn.Column(notch_fund, notch_harm)
+
         def _apply_notch_mode(use_harmonics: bool) -> None:
             self._notch_list_group.visible = not bool(use_harmonics)
             self._notch_harm_group.visible = bool(use_harmonics)
@@ -405,7 +440,9 @@ class ProcessingChain(param.Parameterized):
                 notch_mode.value = desired
 
         _apply_notch_mode(bool(self.notch_use_harmonics))
-        self.param.watch(lambda e: _apply_notch_mode(bool(e.new)), "notch_use_harmonics")
+        self.param.watch(
+            lambda e: _apply_notch_mode(bool(e.new)), "notch_use_harmonics"
+        )
 
         self._notch_group = pn.Column(
             notch_mode,

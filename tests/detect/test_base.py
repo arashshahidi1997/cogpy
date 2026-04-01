@@ -60,4 +60,3 @@ def test_eventdetector_defaults():
     info = det.get_transform_info()
     assert info["required"] is False
     assert info["transform_type"] is None
-

@@ -60,4 +60,3 @@ def detect_overlaps(catalog: Any) -> pd.DataFrame:
             )
 
     return pd.DataFrame(overlaps, columns=cols)
-

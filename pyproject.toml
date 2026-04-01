@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ecogpy"
-version = "0.1.2"
+version = "0.2.0"
 description = "Atomic, composable primitives for ECoG / iEEG signal processing"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -91,7 +91,7 @@ all = [
 cogpy-preproc = "cogpy.cli.preprocess:main"
 
 [tool.setuptools.package-data]
-cogpy = ["workflows/**"]  # ship all workflow files
+cogpy = ["workflows/**", "datasets/cached_data/*"]  # ship workflows + sample data
 
 [tool.setuptools]
 # by default, find_packages() is assumed.

@@ -39,7 +39,9 @@ class erpPCA(BaseEstimator, TransformerMixin):
         rank-deficient — e.g. ``sklearn.covariance.LedoitWolf()``.
     """
 
-    def __init__(self, nfac=None, max_it=100, tol=1e-3, verbose=True, cov_estimator=None):
+    def __init__(
+        self, nfac=None, max_it=100, tol=1e-3, verbose=True, cov_estimator=None
+    ):
         self.nfac = nfac
         self.max_it = max_it
         self.tol = tol
@@ -233,8 +235,15 @@ def sort_by_eigv(L, ev):
     return L[:, ux], ev[ux]
 
 
-def erppca(X, nFac=None, maxIt=100, Tol=1e-3, IfVerbose=1, return_attrs=False,
-           cov_estimator=None):
+def erppca(
+    X,
+    nFac=None,
+    maxIt=100,
+    Tol=1e-3,
+    IfVerbose=1,
+    return_attrs=False,
+    cov_estimator=None,
+):
     """Run ERP-PCA: covariance → eigen → varimax → sort.
 
     Parameters
@@ -322,7 +331,9 @@ def get_similarity(ss_series: pd.Series, freq_threshold: float):
     simil_arr = np.zeros((nrec, nrec), dtype=object)
     for i in np.ndindex((nrec, nrec)):
         ss1, ss2 = ss_series.iloc[i[0]], ss_series.iloc[i[1]]
-        simil_arr[i] = compute_similarity_matrix(ss1, ss2, freq_threshold=freq_threshold)
+        simil_arr[i] = compute_similarity_matrix(
+            ss1, ss2, freq_threshold=freq_threshold
+        )
     return simil_arr
 
 
@@ -365,7 +376,6 @@ def erpPCA2factors(erp, mtx_sws):
 
 def spatspec2erpPCA(ss):
     """Create an erpPCA estimator from a SpatSpecDecomposition."""
-    from .spatspec import get_norm
 
     nFac = ss.ldx.shape[0]
     LR = ss.ldx.data.reshape(nFac, -1).T

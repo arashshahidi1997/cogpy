@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 from scipy.signal import resample_poly
 
+
 def resample_sigx(sigx: xr.DataArray, f_d=64, axis="time") -> xr.DataArray:
     """
     Resample an xarray.DataArray along a specified axis to a target frequency.

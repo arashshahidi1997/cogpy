@@ -42,4 +42,3 @@ class SpectrogramTransform(Transform):
             bandwidth=self.bandwidth,
             axis=self.axis,
         )
-

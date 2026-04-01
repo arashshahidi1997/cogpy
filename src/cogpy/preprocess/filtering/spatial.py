@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import scipy.ndimage as nd
 
-from ._utils import _apply_full_array, _fs_scalar
+from ._utils import _apply_full_array
 
 
 def gaussian_spatialx(
@@ -20,7 +20,9 @@ def gaussian_spatialx(
 ) -> xr.DataArray:
     """Spatial Gaussian lowpass over (AP, ML), leaving other dims untouched."""
     if ap_dim not in sigx.dims or ml_dim not in sigx.dims:
-        raise ValueError(f"Expected dims '{ap_dim}' and '{ml_dim}' in sigx.dims={tuple(sigx.dims)}")
+        raise ValueError(
+            f"Expected dims '{ap_dim}' and '{ml_dim}' in sigx.dims={tuple(sigx.dims)}"
+        )
 
     if isinstance(sigma, (list, tuple, np.ndarray)):
         sigma_ap, sigma_ml = float(sigma[0]), float(sigma[1])
@@ -36,7 +38,9 @@ def gaussian_spatialx(
         else:
             sigma_by_axis.append(0.0)
 
-    out = _apply_full_array(sigx, nd.gaussian_filter, sigma=tuple(sigma_by_axis), mode=str(mode))
+    out = _apply_full_array(
+        sigx, nd.gaussian_filter, sigma=tuple(sigma_by_axis), mode=str(mode)
+    )
     out.name = (sigx.name + "_gauss_spatial") if sigx.name else "gaussian_spatial"
     out.attrs.update({"filter_type": "gaussian_spatial", "sigma": (sigma_ap, sigma_ml)})
     return out
@@ -51,7 +55,9 @@ def median_spatialx(
 ) -> xr.DataArray:
     """Spatial median lowpass over (AP, ML), leaving other dims untouched."""
     if ap_dim not in sigx.dims or ml_dim not in sigx.dims:
-        raise ValueError(f"Expected dims '{ap_dim}' and '{ml_dim}' in sigx.dims={tuple(sigx.dims)}")
+        raise ValueError(
+            f"Expected dims '{ap_dim}' and '{ml_dim}' in sigx.dims={tuple(sigx.dims)}"
+        )
 
     if isinstance(size, (list, tuple, np.ndarray)):
         size_ap, size_ml = int(size[0]), int(size[1])
@@ -82,7 +88,9 @@ def median_subtractx(
     """Subtract the median across spatial dims (common average/median reference)."""
     for d in dims:
         if d not in sigx.dims:
-            raise ValueError(f"median_subtractx expected dim {d!r} in sigx.dims={tuple(sigx.dims)}")
+            raise ValueError(
+                f"median_subtractx expected dim {d!r} in sigx.dims={tuple(sigx.dims)}"
+            )
     axes = tuple(sigx.get_axis_num(d) for d in dims)
 
     def _medsub_full(x: np.ndarray) -> np.ndarray:
@@ -151,6 +159,10 @@ def median_highpassx(
     out.attrs = dict(sigx.attrs)
     out.name = (sigx.name + "_medhp") if sigx.name else "median_highpass"
     out.attrs.update(
-        {"filter_type": "median_highpass", "size": (size_ap, size_ml, size_t), "dims": (ap_dim, ml_dim, time_dim)}
+        {
+            "filter_type": "median_highpass",
+            "size": (size_ap, size_ml, size_t),
+            "dims": (ap_dim, ml_dim, time_dim),
+        }
     )
     return out

@@ -19,7 +19,9 @@ orchestration outside the package whenever possible.
    package's internal xarray-centered representations.
 3. **Stable enough internal conventions** that external pipelines and frontends
    can compose `cogpy` outputs without per-project glue everywhere.
-4. **Backend-facing utilities** for notebooks and frontends such as TensorScope.
+4. **Backend-facing utilities** for notebooks and visualization frontends (e.g.
+   [TensorScope](https://github.com/arashshahidi1997/tensorscope), a separate
+   React + TypeScript application).
 
 ## What `cogpy` Is And Is Not
 
@@ -267,27 +269,28 @@ Legacy modules may remain as compatibility shims, but new code should prefer the
 more explicit modules that preserve schema clarity and keep compute separate
 from orchestration.
 
-## TensorScope And Frontend Boundary
+## Frontend Boundary
 
-TensorScope remains the clearest frontend boundary example.
+[TensorScope](https://github.com/arashshahidi1997/tensorscope) is the primary
+visualization frontend. It is a **standalone React + TypeScript application**
+in its own repository — it is not part of cogpy.
 
-`cogpy` should act as the **compute and data backend** for TensorScope-like
+`cogpy` acts as the **compute and data backend** for TensorScope and similar
 tools:
 
 - provide stable tensor representations
 - provide transforms, measures, and detector outputs that can be visualized
 - provide event-like outputs that a frontend can overlay or inspect
 
-TensorScope itself should own:
+TensorScope itself owns:
 
 - UI state
 - interaction logic
 - layout and rendering
 - frontend-specific persistence and application behavior
 
-Archived TensorScope docs remain useful for backend requirements, but they do
-not change the architectural boundary: visualization frontends live outside
-`cogpy`, even when they depend heavily on it.
+Archived TensorScope design docs remain in `explanation/plot/_archive/` for
+historical reference on backend requirements.
 
 ## Open Questions
 

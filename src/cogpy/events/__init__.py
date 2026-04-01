@@ -12,4 +12,3 @@ from .registry import EventRegistry
 from . import match
 
 __all__ = ["EventCatalog", "EventStream", "EventStyle", "EventRegistry", "match"]
-

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 import scipy.ndimage as nd
@@ -40,7 +40,9 @@ def neighbors_from_adjacency(adj: Any, n_nodes: int | None = None) -> list[np.nd
         if n_nodes is None:
             n_nodes = int(np.max(src)) + 1 if len(src) else 0
         buckets: list[list[int]] = [[] for _ in range(n_nodes)]
-        for s, d in zip(np.asarray(src).tolist(), np.asarray(dst).tolist(), strict=False):
+        for s, d in zip(
+            np.asarray(src).tolist(), np.asarray(dst).tolist(), strict=False
+        ):
             buckets[int(s)].append(int(d))
         return [np.asarray(b, dtype=np.int64) for b in buckets]
 
@@ -50,7 +52,9 @@ def neighbors_from_adjacency(adj: Any, n_nodes: int | None = None) -> list[np.nd
     return [np.where(adj_arr[i])[0].astype(np.int64) for i in range(adj_arr.shape[0])]
 
 
-def neighborhood_median(values: np.ndarray, *, neighbors: list[np.ndarray]) -> np.ndarray:
+def neighborhood_median(
+    values: np.ndarray, *, neighbors: list[np.ndarray]
+) -> np.ndarray:
     x = np.asarray(values)
     if x.ndim == 1:
         out = np.full((len(neighbors),), np.nan, dtype=np.float64)
@@ -91,14 +95,18 @@ def neighborhood_mad(values: np.ndarray, *, neighbors: list[np.ndarray]) -> np.n
 
 
 def normalize_ratio(x: np.ndarray, neigh_med: np.ndarray) -> np.ndarray:
-    return np.asarray(x, dtype=np.float64) / (np.asarray(neigh_med, dtype=np.float64) + EPS)
+    return np.asarray(x, dtype=np.float64) / (
+        np.asarray(neigh_med, dtype=np.float64) + EPS
+    )
 
 
 def normalize_difference(x: np.ndarray, neigh_med: np.ndarray) -> np.ndarray:
     return np.asarray(x, dtype=np.float64) - np.asarray(neigh_med, dtype=np.float64)
 
 
-def normalize_robust_z(x: np.ndarray, neigh_med: np.ndarray, neigh_mad: np.ndarray) -> np.ndarray:
+def normalize_robust_z(
+    x: np.ndarray, neigh_med: np.ndarray, neigh_mad: np.ndarray
+) -> np.ndarray:
     num = np.asarray(x, dtype=np.float64) - np.asarray(neigh_med, dtype=np.float64)
     mad = np.asarray(neigh_mad, dtype=np.float64)
     denom = np.where(mad > 0, mad, np.nan)
@@ -122,7 +130,9 @@ def anticorrelation(arr: np.ndarray, *, neighbors: list[np.ndarray]) -> np.ndarr
     return (1.0 - med_corr).reshape(grid_shape)
 
 
-def local_robust_zscore_grid(input_arr: np.ndarray, *, footprint: np.ndarray) -> np.ndarray:
+def local_robust_zscore_grid(
+    input_arr: np.ndarray, *, footprint: np.ndarray
+) -> np.ndarray:
     """Local robust z-score on a 2D grid using a footprint neighborhood.
 
     This matches the behavior used in the current preprocess `feature.py`:

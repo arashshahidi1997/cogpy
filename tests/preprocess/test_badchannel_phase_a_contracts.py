@@ -7,7 +7,10 @@ from cogpy.measures.temporal import (
     relative_variance,
     time_derivative,
 )
-from cogpy.preprocess.badchannel.spatial import anticorrelation, neighbors_from_adjacency
+from cogpy.preprocess.badchannel.spatial import (
+    anticorrelation,
+    neighbors_from_adjacency,
+)
 from cogpy.utils.grid_neighborhood import adjacency_matrix, make_footprint
 
 
@@ -40,4 +43,3 @@ def test_temporal_feature_shapes():
     assert amplitude(arr).shape == (2, 3)
     assert time_derivative(arr).shape == (2, 3)
     assert hurst_exponent(arr).shape == (2, 3)
-

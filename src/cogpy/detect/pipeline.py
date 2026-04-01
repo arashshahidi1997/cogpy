@@ -42,13 +42,18 @@ class DetectionPipeline:
             if isinstance(md, dict):
                 md["pipeline"] = self.name
                 md["transforms"] = [t.to_dict() for t in self.transforms]
-                md["detector"] = getattr(self.detector, "name", self.detector.__class__.__name__)
+                md["detector"] = getattr(
+                    self.detector, "name", self.detector.__class__.__name__
+                )
         except Exception:  # noqa: BLE001
             pass
         return catalog
 
     def to_dict(self) -> dict[str, Any]:
-        d: dict[str, Any] = {"name": self.name, "transforms": [t.to_dict() for t in self.transforms]}
+        d: dict[str, Any] = {
+            "name": self.name,
+            "transforms": [t.to_dict() for t in self.transforms],
+        }
         if self.detector is not None:
             d["detector"] = self.detector.to_dict()
         return d
@@ -77,11 +82,12 @@ class DetectionPipeline:
                 dcls = get_detector_class(str(det_name))
                 detector = dcls.from_dict(det_cfg)
 
-        return cls(transforms=transforms, detector=detector, name=(config or {}).get("name"))
+        return cls(
+            transforms=transforms, detector=detector, name=(config or {}).get("name")
+        )
 
     def __repr__(self) -> str:
         parts = [str(t) for t in self.transforms]
         det = str(self.detector) if self.detector is not None else "None"
         chain = " -> ".join(parts) if parts else "(no transforms)"
         return f"DetectionPipeline(name={self.name!r}, chain={chain} -> {det})"
-

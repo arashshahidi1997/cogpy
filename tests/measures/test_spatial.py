@@ -16,6 +16,7 @@ from cogpy.measures.spatial import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _uniform_grid(ap=8, ml=8, value=1.0):
     return np.full((ap, ml), value)
 
@@ -50,6 +51,7 @@ def _bright_column_grid(ap=8, ml=8, col=3, bright=100.0):
 # ---------------------------------------------------------------------------
 # moran_i — directional adjacency
 # ---------------------------------------------------------------------------
+
 
 class TestMoranDirectional:
     def test_original_modes_still_work(self):
@@ -99,6 +101,7 @@ class TestMoranDirectional:
 # marginal_energy_outlier
 # ---------------------------------------------------------------------------
 
+
 class TestMarginalEnergyOutlier:
     def test_uniform_no_outliers(self):
         """Uniform grid → no outliers."""
@@ -120,8 +123,14 @@ class TestMarginalEnergyOutlier:
         """All expected keys present."""
         g = _uniform_grid()
         result = marginal_energy_outlier(g)
-        expected_keys = {"row_energy", "col_energy", "row_zscore", "col_zscore",
-                         "row_outlier", "col_outlier"}
+        expected_keys = {
+            "row_energy",
+            "col_energy",
+            "row_zscore",
+            "col_zscore",
+            "row_outlier",
+            "col_outlier",
+        }
         assert set(result.keys()) == expected_keys
 
     def test_output_shapes(self):
@@ -156,6 +165,7 @@ class TestMarginalEnergyOutlier:
 # ---------------------------------------------------------------------------
 # gradient_anisotropy
 # ---------------------------------------------------------------------------
+
 
 class TestGradientAnisotropy:
     def test_isotropic_near_zero(self):
@@ -210,6 +220,7 @@ class TestGradientAnisotropy:
 # Batch-dim tests  — (..., AP, ML) support
 # ---------------------------------------------------------------------------
 
+
 class TestBatchGradientAnisotropy:
     def test_3d_matches_loop(self):
         """Batch result matches per-slice loop."""
@@ -250,10 +261,18 @@ class TestBatchMarginalEnergyOutlier:
         assert batch_result["col_energy"].shape == (5, 8)
         for i in range(5):
             single = marginal_energy_outlier(grids[i])
-            np.testing.assert_allclose(batch_result["row_energy"][i], single["row_energy"])
-            np.testing.assert_allclose(batch_result["col_energy"][i], single["col_energy"])
-            np.testing.assert_allclose(batch_result["row_zscore"][i], single["row_zscore"])
-            np.testing.assert_allclose(batch_result["col_zscore"][i], single["col_zscore"])
+            np.testing.assert_allclose(
+                batch_result["row_energy"][i], single["row_energy"]
+            )
+            np.testing.assert_allclose(
+                batch_result["col_energy"][i], single["col_energy"]
+            )
+            np.testing.assert_allclose(
+                batch_result["row_zscore"][i], single["row_zscore"]
+            )
+            np.testing.assert_allclose(
+                batch_result["col_zscore"][i], single["col_zscore"]
+            )
 
     def test_4d_shapes(self):
         """(time, freq, AP, ML) → correct output shapes."""
@@ -318,6 +337,7 @@ class TestBatchMoranI:
 # spatial_kurtosis
 # ---------------------------------------------------------------------------
 
+
 class TestSpatialKurtosis:
     def test_uniform_zero(self):
         """Uniform grid → excess kurtosis near -1.2 (platykurtic uniform)."""
@@ -365,6 +385,7 @@ class TestSpatialKurtosis:
 # ---------------------------------------------------------------------------
 # spatial_noise_concentration
 # ---------------------------------------------------------------------------
+
 
 class TestSpatialNoiseConcentration:
     def test_uniform_grid(self):
@@ -416,6 +437,7 @@ class TestSpatialNoiseConcentration:
 # spatial_summary_xr — xarray wrapper
 # ---------------------------------------------------------------------------
 
+
 class TestSpatialSummaryXr:
     def test_basic_output(self):
         """Returns xr.Dataset with one variable per measure."""
@@ -432,9 +454,15 @@ class TestSpatialSummaryXr:
                 "ML": np.arange(6),
             },
         )
-        ds = spatial_summary_xr(da, measures=("moran_i", "gradient_anisotropy", "spatial_kurtosis"))
+        ds = spatial_summary_xr(
+            da, measures=("moran_i", "gradient_anisotropy", "spatial_kurtosis")
+        )
         assert isinstance(ds, xr.Dataset)
-        assert set(ds.data_vars) == {"moran_i", "gradient_anisotropy", "spatial_kurtosis"}
+        assert set(ds.data_vars) == {
+            "moran_i",
+            "gradient_anisotropy",
+            "spatial_kurtosis",
+        }
         for var in ds.data_vars:
             assert ds[var].dims == ("time_win",)
             assert ds[var].shape == (5,)

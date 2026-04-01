@@ -14,7 +14,11 @@ def test_psdx_multitaper_dims_and_attrs():
     data = xr.DataArray(
         rng.normal(size=(2000, 4, 3)),
         dims=("time", "AP", "ML"),
-        coords={"time": np.arange(2000) / 1000.0, "AP": np.arange(4), "ML": np.arange(3)},
+        coords={
+            "time": np.arange(2000) / 1000.0,
+            "AP": np.arange(4),
+            "ML": np.arange(3),
+        },
         attrs={"fs": 1000.0},
     )
 
@@ -74,7 +78,11 @@ def test_spectrogramx_dims():
     data = xr.DataArray(
         rng.normal(size=(2048, 3, 2)),
         dims=("time", "AP", "ML"),
-        coords={"time": np.arange(2048) / 1000.0, "AP": np.arange(3), "ML": np.arange(2)},
+        coords={
+            "time": np.arange(2048) / 1000.0,
+            "AP": np.arange(3),
+            "ML": np.arange(2),
+        },
         attrs={"fs": 1000.0},
     )
 

@@ -33,7 +33,9 @@ class ZScoreTransform(Transform):
 
     def compute(self, data: xr.DataArray) -> xr.DataArray:
         if self.time_dim not in data.dims:
-            raise ValueError(f"Expected time_dim={self.time_dim!r} in data.dims={tuple(data.dims)}")
+            raise ValueError(
+                f"Expected time_dim={self.time_dim!r} in data.dims={tuple(data.dims)}"
+            )
 
         axis = int(data.get_axis_num(self.time_dim))
         values = data.data
@@ -48,5 +50,10 @@ class ZScoreTransform(Transform):
             return zscore_1d(np.asarray(v, dtype=float))
 
         out = np.apply_along_axis(_z, axis=axis, arr=arr)
-        return xr.DataArray(out, dims=data.dims, coords=data.coords, attrs=dict(data.attrs), name=data.name)
-
+        return xr.DataArray(
+            out,
+            dims=data.dims,
+            coords=data.coords,
+            attrs=dict(data.attrs),
+            name=data.name,
+        )

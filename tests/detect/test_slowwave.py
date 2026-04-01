@@ -79,7 +79,14 @@ def test_slowwave_event_columns(slow_wave_signal):
     if len(catalog) == 0:
         pytest.skip("No events detected")
     df = catalog.df
-    for col in ["trough_time", "midcrossing_time", "peak_time", "amplitude", "state", "label"]:
+    for col in [
+        "trough_time",
+        "midcrossing_time",
+        "peak_time",
+        "amplitude",
+        "state",
+        "label",
+    ]:
         assert col in df.columns, f"Missing column: {col}"
     assert (df["label"] == "slow_wave").all()
     assert (df["state"] == "DOWN").all()
@@ -106,7 +113,9 @@ def test_slowwave_multichannel():
     data = np.zeros((t.size, n_ch))
     for ch in range(n_ch):
         data[:, ch] = 4.0 * np.sin(2 * np.pi * 1.0 * t) + 0.2 * rng.randn(t.size)
-    sig = xr.DataArray(data, dims=["time", "channel"], coords={"time": t}, attrs={"fs": fs})
+    sig = xr.DataArray(
+        data, dims=["time", "channel"], coords={"time": t}, attrs={"fs": fs}
+    )
 
     det = SlowWaveDetector(amp_ptp_percentile=10.0)
     catalog = det.detect(sig)
@@ -160,4 +169,6 @@ def test_gamma_envelope_validator(slow_wave_signal):
     # In our synthetic signal, gamma is suppressed during DOWN states,
     # so most troughs should have low (negative z-scored) gamma.
     valid_frac = result["gamma_valid"].mean()
-    assert valid_frac > 0.3, f"Expected most troughs to coincide with gamma minima, got {valid_frac:.2f}"
+    assert (
+        valid_frac > 0.3
+    ), f"Expected most troughs to coincide with gamma minima, got {valid_frac:.2f}"

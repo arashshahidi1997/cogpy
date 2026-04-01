@@ -62,7 +62,9 @@ def psd_to_db(psd: xr.DataArray, *, ref: float = 1.0) -> xr.DataArray:
     vals = np.asarray(psd.data, dtype=float)
     with np.errstate(divide="ignore", invalid="ignore"):
         out = 10.0 * np.log10(vals / ref)
-    da = xr.DataArray(out, dims=psd.dims, coords=psd.coords, attrs=dict(psd.attrs), name=psd.name)
+    da = xr.DataArray(
+        out, dims=psd.dims, coords=psd.coords, attrs=dict(psd.attrs), name=psd.name
+    )
     da.attrs["units"] = "dB"
     return da
 
@@ -78,4 +80,3 @@ def stack_spatial_dims(data: xr.DataArray) -> xr.DataArray:
     if "channel" in data.dims:
         return data
     return data.expand_dims(channel=[0])
-

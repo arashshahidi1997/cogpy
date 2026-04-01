@@ -33,7 +33,9 @@ def cmrx(
     channel_dims = tuple(channel_dims)
     for d in channel_dims:
         if d not in sigx.dims:
-            raise ValueError(f"cmrx expected channel dim {d!r} in sigx.dims={tuple(sigx.dims)}")
+            raise ValueError(
+                f"cmrx expected channel dim {d!r} in sigx.dims={tuple(sigx.dims)}"
+            )
 
     axis = tuple(range(-len(channel_dims), 0))
     if bool(skipna):
@@ -59,6 +61,8 @@ def cmrx(
 
     out = sigx - med
     out.attrs = dict(sigx.attrs)
-    out.attrs.update({"filter_type": "common_median_reference", "channel_dims": channel_dims})
+    out.attrs.update(
+        {"filter_type": "common_median_reference", "channel_dims": channel_dims}
+    )
     out.name = sigx.name
     return out

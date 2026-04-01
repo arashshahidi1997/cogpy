@@ -210,7 +210,9 @@ def sample_entropy(
     return out
 
 
-def lempel_ziv(arr: np.ndarray, *, axis: int = -1, normalize: bool = True) -> np.ndarray:
+def lempel_ziv(
+    arr: np.ndarray, *, axis: int = -1, normalize: bool = True
+) -> np.ndarray:
     """
     Lempel-Ziv complexity on binarized signal.
 

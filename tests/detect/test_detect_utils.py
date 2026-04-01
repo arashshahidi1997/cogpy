@@ -14,15 +14,18 @@ from cogpy.detect.utils import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _ramp_score(n=100, fs=10.0):
     """Score that ramps up, plateaus, ramps down — one clear bout."""
     times = np.arange(n) / fs
     score = np.zeros(n)
     # Bout from sample 20..60
-    score[20:60] = np.concatenate([
-        np.linspace(0, 5, 20),   # ramp up
-        np.linspace(5, 0, 20),   # ramp down
-    ])
+    score[20:60] = np.concatenate(
+        [
+            np.linspace(0, 5, 20),  # ramp up
+            np.linspace(5, 0, 20),  # ramp down
+        ]
+    )
     return score, times
 
 
@@ -39,13 +42,14 @@ def _two_bouts_score(n=200, fs=10.0, gap_samples=10):
     if end2 <= n:
         score[start2:end2] = 3.0
         mid2 = start2 + 8
-        score[mid2:mid2 + 4] = 6.0
+        score[mid2 : mid2 + 4] = 6.0
     return score, times
 
 
 # ---------------------------------------------------------------------------
 # score_to_bouts
 # ---------------------------------------------------------------------------
+
 
 class TestScoreToBouts:
     def test_single_bout(self):
@@ -84,9 +88,7 @@ class TestScoreToBouts:
         # Without merging: should find 2 events
         events_no_merge = score_to_bouts(score, times, low=2.0, high=5.0)
         # With merging at gap > 0.5s: should find 1 event
-        events_merged = score_to_bouts(
-            score, times, low=2.0, high=5.0, merge_gap=1.0
-        )
+        events_merged = score_to_bouts(score, times, low=2.0, high=5.0, merge_gap=1.0)
         assert len(events_no_merge) >= 2
         assert len(events_merged) == 1
 
@@ -115,6 +117,7 @@ class TestScoreToBouts:
 # merge_intervals (smoke tests for existing function)
 # ---------------------------------------------------------------------------
 
+
 class TestMergeIntervals:
     def test_no_merge(self):
         intervals = [(0, 5), (10, 15)]
@@ -134,6 +137,7 @@ class TestMergeIntervals:
 # ---------------------------------------------------------------------------
 # bout_occupancy / bout_duration_summary
 # ---------------------------------------------------------------------------
+
 
 class TestBoutOccupancy:
     def test_basic(self):

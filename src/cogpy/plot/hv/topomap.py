@@ -15,13 +15,20 @@ from typing import Callable
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 bokeh_models = import_optional("bokeh.models")
-from bokeh.models import BasicTicker, ColorBar, ColumnDataSource, HoverTool, LinearColorMapper
+from bokeh.models import (
+    BasicTicker,
+    ColorBar,
+    ColumnDataSource,
+    HoverTool,
+    LinearColorMapper,
+)
 from bokeh.models import FixedTicker
 from bokeh.plotting import figure
 
-from .theme import BG, BORDER, COLORMAPS, TEXT, style_figure
+from .theme import BG, COLORMAPS, TEXT, style_figure
 
 __all__ = ["TopoMap"]
 
@@ -70,14 +77,18 @@ class TopoMap:
     ):
         values = np.asarray(values, dtype=float)
         if values.ndim != 2:
-            raise ValueError(f"values must be 2D (n_ap, n_ml), got shape {values.shape}")
+            raise ValueError(
+                f"values must be 2D (n_ap, n_ml), got shape {values.shape}"
+            )
 
         self._n_ap, self._n_ml = values.shape
         self._ap_coords = self._as_float_coords(ap_coords, self._n_ap, "ap_coords")
         self._ml_coords = self._as_float_coords(ml_coords, self._n_ml, "ml_coords")
 
         if colormap not in COLORMAPS:
-            raise ValueError(f"colormap must be one of {list(COLORMAPS)}, got {colormap!r}")
+            raise ValueError(
+                f"colormap must be one of {list(COLORMAPS)}, got {colormap!r}"
+            )
 
         if style not in {"electrodes", "image"}:
             raise ValueError("style must be 'electrodes' or 'image'")
@@ -126,7 +137,9 @@ class TopoMap:
     def update(self, values: np.ndarray) -> None:
         values = np.asarray(values, dtype=float)
         if values.shape != (self._n_ap, self._n_ml):
-            raise ValueError(f"values shape {values.shape} does not match ({self._n_ap}, {self._n_ml})")
+            raise ValueError(
+                f"values shape {values.shape} does not match ({self._n_ap}, {self._n_ml})"
+            )
         lo, hi = self._color_range(values)
         self._mapper.low = lo
         self._mapper.high = hi
@@ -197,12 +210,18 @@ class TopoMap:
             return lo - 1.0, hi + 1.0
         return lo, hi
 
-    def _build_source_and_mapper(self, values: np.ndarray) -> tuple[ColumnDataSource, LinearColorMapper]:
-        ap_idx_grid, ml_idx_grid = np.meshgrid(np.arange(self._n_ap), np.arange(self._n_ml), indexing="ij")
-        ap_phys_grid, ml_phys_grid = np.meshgrid(self._ap_coords, self._ml_coords, indexing="ij")
+    def _build_source_and_mapper(
+        self, values: np.ndarray
+    ) -> tuple[ColumnDataSource, LinearColorMapper]:
+        ap_idx_grid, ml_idx_grid = np.meshgrid(
+            np.arange(self._n_ap), np.arange(self._n_ml), indexing="ij"
+        )
+        ap_phys_grid, ml_phys_grid = np.meshgrid(
+            self._ap_coords, self._ml_coords, indexing="ij"
+        )
 
         # Display convention: AP index starts at the top (opposite physical direction when AP increases upward).
-        ap_idx_display = (self._n_ap - 1 - ap_idx_grid)
+        ap_idx_display = self._n_ap - 1 - ap_idx_grid
 
         flat_vals = values.ravel()
         lo, hi = self._color_range(values)
@@ -219,15 +238,21 @@ class TopoMap:
             )
         )
 
-        mapper = LinearColorMapper(palette=COLORMAPS[self._colormap], low=lo, high=hi, nan_color="#2a2a2a")
+        mapper = LinearColorMapper(
+            palette=COLORMAPS[self._colormap], low=lo, high=hi, nan_color="#2a2a2a"
+        )
         return source, mapper
 
     def _build_figure(self, pw: int, ph: int) -> figure:
         ap_phys = self._ap_coords
         ml_phys = self._ml_coords
 
-        ap_pad = (float(ap_phys[-1]) - float(ap_phys[0])) * 0.08 if len(ap_phys) > 1 else 1.0
-        ml_pad = (float(ml_phys[-1]) - float(ml_phys[0])) * 0.08 if len(ml_phys) > 1 else 1.0
+        ap_pad = (
+            (float(ap_phys[-1]) - float(ap_phys[0])) * 0.08 if len(ap_phys) > 1 else 1.0
+        )
+        ml_pad = (
+            (float(ml_phys[-1]) - float(ml_phys[0])) * 0.08 if len(ml_phys) > 1 else 1.0
+        )
 
         fig = figure(
             width=pw,
@@ -260,7 +285,9 @@ class TopoMap:
         else:
             # Continuous heatmap image in physical coordinates.
             # Note: image expects rows correspond to y (AP) increasing upward.
-            initial = np.array(self._source.data["value"], dtype=float).reshape(self._n_ap, self._n_ml)
+            initial = np.array(self._source.data["value"], dtype=float).reshape(
+                self._n_ap, self._n_ml
+            )
             self._img_source = ColumnDataSource({"image": [initial]})
             x0 = float(ml_phys.min())
             y0 = float(ap_phys.min())
@@ -304,8 +331,12 @@ class TopoMap:
         # Show ML/AP indices as axis tick labels, positioned at physical coords.
         fig.xaxis.ticker = FixedTicker(ticks=[float(v) for v in ml_phys.tolist()])
         fig.yaxis.ticker = FixedTicker(ticks=[float(v) for v in ap_phys.tolist()])
-        fig.xaxis.major_label_overrides = {float(v): str(i) for i, v in enumerate(ml_phys.tolist())}
-        fig.yaxis.major_label_overrides = {float(v): str(self._n_ap - 1 - i) for i, v in enumerate(ap_phys.tolist())}
+        fig.xaxis.major_label_overrides = {
+            float(v): str(i) for i, v in enumerate(ml_phys.tolist())
+        }
+        fig.yaxis.major_label_overrides = {
+            float(v): str(self._n_ap - 1 - i) for i, v in enumerate(ap_phys.tolist())
+        }
 
         fig.add_tools(
             HoverTool(

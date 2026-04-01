@@ -12,13 +12,20 @@ __all__ = ["BandpassTransform", "HighpassTransform", "LowpassTransform"]
 class BandpassTransform(Transform):
     """Bandpass filter using `cogpy.preprocess.filtering.bandpassx`."""
 
-    def __init__(self, *, low: float, high: float, order: int = 4, axis: str = "time") -> None:
+    def __init__(
+        self, *, low: float, high: float, order: int = 4, axis: str = "time"
+    ) -> None:
         super().__init__("BandpassTransform")
         self.low = float(low)
         self.high = float(high)
         self.order = int(order)
         self.axis = str(axis)
-        self.params = {"low": self.low, "high": self.high, "order": self.order, "axis": self.axis}
+        self.params = {
+            "low": self.low,
+            "high": self.high,
+            "order": self.order,
+            "axis": self.axis,
+        }
 
     def compute(self, data: xr.DataArray) -> xr.DataArray:
         from cogpy.preprocess.filtering import bandpassx
@@ -56,4 +63,3 @@ class LowpassTransform(Transform):
         from cogpy.preprocess.filtering import lowpassx
 
         return lowpassx(data, self.cutoff, self.order, axis=self.axis)
-

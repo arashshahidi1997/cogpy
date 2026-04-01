@@ -8,7 +8,9 @@ import xarray as xr
 __all__ = ["top_n_variance", "top_n_correlation"]
 
 
-def _time_slice_indices(time_vals: np.ndarray, t0: float | None, t1: float | None) -> tuple[int, int]:
+def _time_slice_indices(
+    time_vals: np.ndarray, t0: float | None, t1: float | None
+) -> tuple[int, int]:
     t = np.asarray(time_vals, dtype=np.float64)
     if t.ndim != 1:
         raise ValueError("time_vals must be 1D")
@@ -29,7 +31,9 @@ def _as_tc(sig_tc: xr.DataArray) -> xr.DataArray:
     if not isinstance(sig_tc, xr.DataArray):
         raise TypeError("sig_tc must be an xarray.DataArray")
     if "time" not in sig_tc.dims or "channel" not in sig_tc.dims:
-        raise ValueError(f"sig_tc must have dims ('time','channel'); got dims={tuple(sig_tc.dims)}")
+        raise ValueError(
+            f"sig_tc must have dims ('time','channel'); got dims={tuple(sig_tc.dims)}"
+        )
     return sig_tc.transpose("time", "channel")
 
 
@@ -98,4 +102,3 @@ def top_n_correlation(
     corr = (x[:, None] * y).mean(axis=0) / (x_sd * y_sd)
     order = np.argsort(corr)[::-1]
     return [int(i) for i in order[:n]]
-

@@ -44,7 +44,9 @@ def _fs_scalar(sigx: xr.DataArray) -> float:
     if fs is None:
         fs = sigx.attrs.get("fs", None)
     if fs is None:
-        raise ValueError("Input must have a `.fs` coordinate/attribute indicating sampling frequency.")
+        raise ValueError(
+            "Input must have a `.fs` coordinate/attribute indicating sampling frequency."
+        )
     if hasattr(fs, "item"):
         fs = fs.item()
     return float(fs)
@@ -111,7 +113,11 @@ def psdx(
             detrend=kwargs.pop("detrend", True),
             **kwargs,
         )
-        meta = {"method": "multitaper", "bandwidth_hz": float(bandwidth), "NW": float(NW)}
+        meta = {
+            "method": "multitaper",
+            "bandwidth_hz": float(bandwidth),
+            "NW": float(NW),
+        }
     elif method == "welch":
         if noverlap is None:
             noverlap = int(nperseg) // 2
@@ -326,7 +332,9 @@ def normalize_spectrogram(
 
         out = zscorex(spec, dim=dim, robust=True)
     elif method == "db":
-        out = spec.copy(data=10.0 * np.log10(np.maximum(spec.values, np.finfo(float).tiny)))
+        out = spec.copy(
+            data=10.0 * np.log10(np.maximum(spec.values, np.finfo(float).tiny))
+        )
         out.attrs = dict(spec.attrs)
         out.attrs["units"] = "dB"
     else:

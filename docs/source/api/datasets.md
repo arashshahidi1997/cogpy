@@ -1,6 +1,10 @@
 # `cogpy.datasets`
 
-Dataset loaders and helpers used throughout `cogpy`.
+Sample data loaders and synthetic signal generators for testing and
+tutorials. Use `cogpy.datasets.load_sample()` to get started quickly.
+
+**Tutorial:** {doc}`/tutorials/quickstart` |
+**Schemas:** {doc}`/reference/schemas`
 
 ## Submodules
 

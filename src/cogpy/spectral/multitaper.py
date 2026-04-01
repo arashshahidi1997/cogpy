@@ -12,13 +12,10 @@ Superseded by: n/a
 Safe to remove: no
 """
 
-import warnings
 import numpy as np
 import xarray as xr
 from scipy import signal
-from typing import Callable, Dict, List, Any
 from ..utils.convert import closest_power_of_two
-from ..utils import sliding as sl
 
 try:
     import dask.array as da
@@ -103,12 +100,12 @@ def mtm_kwarg_to_gsp(NW, fs, window_size, window_step):
 
 def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     """
-    Compute a multitaper spectrogram (Thomson method) on a NumPy or 
-    Dask array by applying ``ghostipy.mtm_spectrogram`` independently 
+    Compute a multitaper spectrogram (Thomson method) on a NumPy or
+    Dask array by applying ``ghostipy.mtm_spectrogram`` independently
     along a chosen time axis.
 
     This function acts as a wrapper around ``ghostipy.mtm_spectrogram``:
-    - Ghostipy performs the *inner*, highly optimized 1-D multitaper 
+    - Ghostipy performs the *inner*, highly optimized 1-D multitaper
       spectrogram computation (as_strided windowing, vectorized tapering,
       batched FFTW).
     - Dask provides *outer* parallelism across channels / trials /
@@ -119,8 +116,8 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
 
     Notes on scaling and chunking
     -----------------------------
-    - The time axis **must not be chunked**. Each Dask block must contain 
-      the full time series along ``axis``; otherwise the underlying 1-D 
+    - The time axis **must not be chunked**. Each Dask block must contain
+      the full time series along ``axis``; otherwise the underlying 1-D
       multitaper algorithm cannot be applied. This function will rechunk
       as needed.
 
@@ -151,7 +148,7 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     fs : float, optional
         Sampling rate in Hz. Default is 1.
     timestamps : np.ndarray, optional
-        Timestamps for the samples. If omitted, they are inferred as 
+        Timestamps for the samples. If omitted, they are inferred as
         ``np.arange(n_time) / fs``.
     nperseg : int, optional
         Window length in samples. Default: 256.
@@ -167,7 +164,7 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     nfft : int, optional
         FFT length. Default: ``nperseg``.
     n_fft_threads : int, optional
-        Number of threads used internally by FFTW. Default: 
+        Number of threads used internally by FFTW. Default:
         the number of available CPUs, but using 1 is recommended when
         Dask itself is providing parallelism.
 
@@ -175,7 +172,7 @@ def mtm_spectrogram(x, bandwidth, axis=-1, **kwargs):
     -------
     mtspec : dask.array.Array or np.ndarray
         Multitaper spectrogram with shape ``(..., n_freq, n_time_segments)``.
-        The output corresponds to applying the 1-D spectrogram along 
+        The output corresponds to applying the 1-D spectrogram along
         ``axis`` for each slice of the other axes.
     f : np.ndarray
         Frequency vector.

@@ -34,7 +34,9 @@ def _finite_row_mask(x: np.ndarray) -> np.ndarray:
     return np.isfinite(x).all(axis=1)
 
 
-def _estimate_eps_knee(x_scaled: np.ndarray, *, eps_optimize_k: int, sigma: float) -> float | None:
+def _estimate_eps_knee(
+    x_scaled: np.ndarray, *, eps_optimize_k: int, sigma: float
+) -> float | None:
     if x_scaled.shape[0] <= eps_optimize_k + 1:
         return None
     nbrs = NearestNeighbors(n_neighbors=eps_optimize_k + 1).fit(x_scaled)
@@ -66,10 +68,14 @@ def dbscan_outliers(x: np.ndarray, *, params: DbscanParams) -> tuple[np.ndarray,
     if params.eps is not None:
         eps_used = float(params.eps)
     else:
-        eps_est = _estimate_eps_knee(x_scaled, eps_optimize_k=params.eps_optimize_k, sigma=params.sigma)
+        eps_est = _estimate_eps_knee(
+            x_scaled, eps_optimize_k=params.eps_optimize_k, sigma=params.sigma
+        )
         eps_used = float(params.eps_fallback if eps_est is None else eps_est)
 
-    labels_raw = DBSCAN(eps=eps_used, min_samples=int(params.min_samples)).fit_predict(x_scaled)
+    labels_raw = DBSCAN(eps=eps_used, min_samples=int(params.min_samples)).fit_predict(
+        x_scaled
+    )
     is_outlier[finite] = labels_raw == -1
     return is_outlier, eps_used
 
@@ -100,4 +106,3 @@ def grouped_dbscan_outliers(
         out[mask] = out_mask
         eps_by_group[label] = eps_used
     return out, eps_by_group
-

@@ -13,7 +13,7 @@ v2.6.4 expands the detector library beyond `BurstDetector` by adding:
 - `RippleDetector`: bandpass + Hilbert envelope + z-score + dual threshold (interval events)
 - `SpindleDetector` (optional): spindle-band wrapper with longer duration constraints
 
-All detectors return `EventCatalog` and are compatible with TensorScope v2.6.2+ (`TensorScopeState.run_detector()` / overlays / event explorer).
+All detectors return `EventCatalog` and are compatible with visualization frontends via the event stream export API.
 
 ## Components
 

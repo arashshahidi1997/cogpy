@@ -45,8 +45,12 @@ DEFAULT_FEATURE_SPECS: list[FeatureSpec] = [
 ]
 
 
-def window_centers(*, n_time: int, window_size: int, window_step: int) -> tuple[np.ndarray, np.ndarray]:
-    starts = window_onsets(int(n_time), int(window_size), int(window_step)).astype(np.int64)
+def window_centers(
+    *, n_time: int, window_size: int, window_step: int
+) -> tuple[np.ndarray, np.ndarray]:
+    starts = window_onsets(int(n_time), int(window_size), int(window_step)).astype(
+        np.int64
+    )
     # Keep existing pipeline semantics for even window sizes: start + window_size//2.
     centers = window_centers_idx(
         int(n_time),
@@ -83,7 +87,9 @@ def compute_feature_maps_for_window(
     specs: list[FeatureSpec] = DEFAULT_FEATURE_SPECS,
     adjacency: Any,
 ) -> dict[str, np.ndarray]:
-    neighbors = neighbors_from_adjacency(adjacency, n_nodes=int(np.prod(block.shape[:2])))
+    neighbors = neighbors_from_adjacency(
+        adjacency, n_nodes=int(np.prod(block.shape[:2]))
+    )
     out: dict[str, np.ndarray] = {}
 
     for spec in specs:
@@ -123,8 +129,12 @@ def compute_raw_feature_maps_for_window(
     neighbors = None
     if need_neighbors:
         if adjacency is None:
-            raise ValueError("adjacency is required when specs include 'anticorrelation'")
-        neighbors = neighbors_from_adjacency(adjacency, n_nodes=int(np.prod(block.shape[:2])))
+            raise ValueError(
+                "adjacency is required when specs include 'anticorrelation'"
+            )
+        neighbors = neighbors_from_adjacency(
+            adjacency, n_nodes=int(np.prod(block.shape[:2]))
+        )
     out: dict[str, np.ndarray] = {}
 
     for spec in specs:
@@ -137,7 +147,8 @@ def compute_raw_feature_maps_for_window(
         out[spec.name] = raw
 
     return out
-    
+
+
 def compute_features_sliding(
     x: np.ndarray,
     *,
@@ -145,12 +156,14 @@ def compute_features_sliding(
     window_step: int,
     specs: list[FeatureSpec] = DEFAULT_FEATURE_SPECS,
     adjacency: Any,
-    raw=False
+    raw=False,
 ) -> tuple[np.ndarray, list[str], np.ndarray]:
     if x.ndim != 3:
         raise ValueError("Expected x shaped (AP, ML, time)")
     ap, ml, t = x.shape
-    _, centers = window_centers(n_time=t, window_size=window_size, window_step=window_step)
+    _, centers = window_centers(
+        n_time=t, window_size=window_size, window_step=window_step
+    )
     n_windows = int(centers.shape[0])
 
     feature_names = [s.name for s in specs]
@@ -168,9 +181,13 @@ def compute_features_sliding(
         start = int(widx * window_step)
         block = x[:, :, start : start + window_size]
         if raw:
-            maps = compute_raw_feature_maps_for_window(block, specs=specs, adjacency=adjacency)
+            maps = compute_raw_feature_maps_for_window(
+                block, specs=specs, adjacency=adjacency
+            )
         else:
-            maps = compute_feature_maps_for_window(block, specs=specs, adjacency=adjacency)
+            maps = compute_feature_maps_for_window(
+                block, specs=specs, adjacency=adjacency
+            )
         for fidx, name in enumerate(feature_names):
             feat[fidx, :, :, widx] = maps[name].astype(np.float32, copy=False)
 
@@ -264,12 +281,16 @@ def compute_features_sliding_legacy(
     if x.ndim != 3:
         raise ValueError("Expected x shaped (AP, ML, time)")
     ap, ml, t = x.shape
-    _, centers = window_centers(n_time=t, window_size=window_size, window_step=window_step)
+    _, centers = window_centers(
+        n_time=t, window_size=window_size, window_step=window_step
+    )
     n_windows = int(centers.shape[0])
 
     neighbors = neighbors_from_adjacency(adjacency, n_nodes=int(ap * ml))
 
-    feat = np.full((len(LEGACY_FEATURE_NAMES), ap, ml, n_windows), np.nan, dtype=np.float32)
+    feat = np.full(
+        (len(LEGACY_FEATURE_NAMES), ap, ml, n_windows), np.nan, dtype=np.float32
+    )
 
     iterator = range(n_windows)
     try:

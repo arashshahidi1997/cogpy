@@ -19,7 +19,7 @@ discoverable as methods while still delegating to the existing functional APIs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Literal
 
 import numpy as np
 import xarray as xr
@@ -115,7 +115,9 @@ def ensure_fs(
 
     fs_value = float(fs) if fs is not None else get_fs(sig, schema=schema)
     if fs_value is None or not np.isfinite(fs_value) or fs_value <= 0:
-        raise ValueError("Sampling rate not found; provide fs=... or set sig.coords['fs'] / sig.attrs['fs']")
+        raise ValueError(
+            "Sampling rate not found; provide fs=... or set sig.coords['fs'] / sig.attrs['fs']"
+        )
 
     # Use a 0D coordinate so existing code can do `sig.fs` or `sig.fs.item()`.
     out = sig
@@ -149,7 +151,9 @@ def ensure_time_coord(
         n = int(sig.sizes[schema.time])
     else:
         # If time isn't a dim, don't guess.
-        raise ValueError(f"Signal has no '{schema.time}' dim; cannot create time coordinate.")
+        raise ValueError(
+            f"Signal has no '{schema.time}' dim; cannot create time coordinate."
+        )
 
     t = np.arange(n, dtype=float) / fs_value
     return sig.assign_coords({schema.time: t})
@@ -169,16 +173,22 @@ def validate_ecog(
     if kind == "grid":
         missing = [d for d in schema.grid_dims if d not in sig.dims]
         if missing:
-            raise ValueError(f"Expected dims {schema.grid_dims}; missing {missing}. Got dims={tuple(sig.dims)}")
+            raise ValueError(
+                f"Expected dims {schema.grid_dims}; missing {missing}. Got dims={tuple(sig.dims)}"
+            )
     elif kind == "flat":
         missing = [d for d in schema.flat_dims if d not in sig.dims]
         if missing:
-            raise ValueError(f"Expected dims {schema.flat_dims}; missing {missing}. Got dims={tuple(sig.dims)}")
+            raise ValueError(
+                f"Expected dims {schema.flat_dims}; missing {missing}. Got dims={tuple(sig.dims)}"
+            )
     else:
         raise ValueError(f"Unknown kind={kind!r}")
 
     if require_fs and get_fs(sig, schema=schema) is None:
-        raise ValueError("Missing sampling rate; set sig.coords['fs'] or sig.attrs['fs'] (or pass fs=...)")
+        raise ValueError(
+            "Missing sampling rate; set sig.coords['fs'] or sig.attrs['fs'] (or pass fs=...)"
+        )
 
 
 def standardize_ecog(
@@ -247,7 +257,9 @@ class ECoG:
         from cogpy.preprocess import filtering
 
         td = self.schema.time if time_dim is None else str(time_dim)
-        out = filtering.bandpassx(self.x, wl=float(low_hz), wh=float(high_hz), order=int(order), axis=td)
+        out = filtering.bandpassx(
+            self.x, wl=float(low_hz), wh=float(high_hz), order=int(order), axis=td
+        )
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
 
@@ -275,7 +287,9 @@ class ECoG:
         from cogpy.preprocess import filtering
 
         td = self.schema.time if time_dim is None else str(time_dim)
-        out = filtering.highpassx(self.x, wh=float(cutoff_hz), order=int(order), axis=td)
+        out = filtering.highpassx(
+            self.x, wh=float(cutoff_hz), order=int(order), axis=td
+        )
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)
 
@@ -292,6 +306,12 @@ class ECoG:
         axis = self.x.get_axis_num(td)
         b, a = signal.iirnotch(float(w0_hz), float(q), fs=self.fs)
         y = signal.filtfilt(b, a, self.x.values, axis=axis)
-        out = xr.DataArray(y, coords=self.x.coords, dims=self.x.dims, attrs=dict(self.x.attrs), name=self.x.name)
+        out = xr.DataArray(
+            y,
+            coords=self.x.coords,
+            dims=self.x.dims,
+            attrs=dict(self.x.attrs),
+            name=self.x.name,
+        )
         out = ensure_fs(out, fs=self.fs, schema=self.schema)
         return ECoG(out, kind=self.kind, schema=self.schema)

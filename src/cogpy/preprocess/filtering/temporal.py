@@ -132,7 +132,9 @@ def notchx(
     b, a = signal.iirnotch(float(w0), float(Q), fs=fs)
     out = _apply_full_array(sigx, lambda x: signal.filtfilt(b, a, x, axis=axis))
     out.name = (sigx.name + "_notch") if sigx.name else "notch_filtered"
-    out.attrs.update({"filter_type": "notch", "w0_hz": float(w0), "Q": float(Q), "fs": fs})
+    out.attrs.update(
+        {"filter_type": "notch", "w0_hz": float(w0), "Q": float(Q), "fs": fs}
+    )
     return out
 
 
@@ -157,9 +159,13 @@ def notchesx(
 
     nyq = float(fs) / 2.0
     if np.any(freqs_arr <= 0) or np.any(freqs_arr >= nyq):
-        raise ValueError(f"All notch frequencies must be in (0, fs/2). Got freqs={freqs_arr.tolist()}, fs={fs}")
+        raise ValueError(
+            f"All notch frequencies must be in (0, fs/2). Got freqs={freqs_arr.tolist()}, fs={fs}"
+        )
 
-    bas = [signal.iirnotch(float(f), float(Q), fs=float(fs)) for f in freqs_arr.tolist()]
+    bas = [
+        signal.iirnotch(float(f), float(Q), fs=float(fs)) for f in freqs_arr.tolist()
+    ]
 
     def _multi_notch(x: np.ndarray) -> np.ndarray:
         y = x
@@ -203,7 +209,9 @@ def decimatex(
         return sigx
 
     axis = sigx.get_axis_num(time_dim)
-    y = signal.decimate(sigx.data, q, axis=axis, ftype=ftype, zero_phase=bool(zero_phase))
+    y = signal.decimate(
+        sigx.data, q, axis=axis, ftype=ftype, zero_phase=bool(zero_phase)
+    )
 
     coords = dict(sigx.coords)
     dims = tuple(sigx.dims)

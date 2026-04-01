@@ -2,6 +2,14 @@
 
 Event detection framework: detectors, transforms, and pipelines.
 
+Detectors wrap existing detection functions behind a unified interface that
+returns `EventCatalog`. Pre-built pipelines chain transforms (spectrogram,
+filtering, envelope) with a detector for reproducible, serializable workflows.
+
+**Guide:** {doc}`/howto/event-detection` |
+**Tutorial:** {doc}`/tutorials/detection-and-events` |
+**Design:** {doc}`/explanation/detection-framework`
+
 ## Submodules
 
 ```{eval-rst}

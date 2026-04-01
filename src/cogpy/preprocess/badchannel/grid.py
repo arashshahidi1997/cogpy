@@ -9,9 +9,13 @@ import scipy.ndimage as nd
 import scipy.sparse as sp
 
 
-def make_footprint(*, rank: int = 2, connectivity: int = 1, niter: int = 2) -> np.ndarray:
+def make_footprint(
+    *, rank: int = 2, connectivity: int = 1, niter: int = 2
+) -> np.ndarray:
     if rank != 2:
-        raise ValueError("Only rank=2 footprints are supported in this pipeline module.")
+        raise ValueError(
+            "Only rank=2 footprints are supported in this pipeline module."
+        )
     if niter < 1:
         raise ValueError("niter must be >= 1")
     fp = nd.generate_binary_structure(rank, connectivity).astype(bool)
@@ -40,7 +44,9 @@ class GridAdjacency:
         return self.nrows * self.ncols
 
 
-def grid_edges(nrows: int, ncols: int, *, footprint: np.ndarray, exclude_center: bool = True):
+def grid_edges(
+    nrows: int, ncols: int, *, footprint: np.ndarray, exclude_center: bool = True
+):
     fp = np.asarray(footprint, dtype=bool)
     if fp.ndim != 2:
         raise ValueError("footprint must be 2D")
@@ -78,7 +84,9 @@ def grid_adjacency(
 ) -> GridAdjacency:
     if footprint is None:
         footprint = make_footprint(rank=2, connectivity=1, niter=2)
-    src, dst = grid_edges(nrows, ncols, footprint=footprint, exclude_center=exclude_center)
+    src, dst = grid_edges(
+        nrows, ncols, footprint=footprint, exclude_center=exclude_center
+    )
     if group_labels is not None:
         labels = np.asarray(group_labels)
         if labels.shape != (nrows, ncols):
@@ -90,4 +98,6 @@ def grid_adjacency(
     n = nrows * ncols
     adj = sp.csr_matrix((np.ones_like(src, dtype=bool), (src, dst)), shape=(n, n))
     adj.eliminate_zeros()
-    return GridAdjacency(nrows=nrows, ncols=ncols, footprint=np.asarray(footprint, bool), adj=adj)
+    return GridAdjacency(
+        nrows=nrows, ncols=ncols, footprint=np.asarray(footprint, bool), adj=adj
+    )

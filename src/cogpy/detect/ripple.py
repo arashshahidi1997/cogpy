@@ -9,7 +9,12 @@ import pandas as pd
 import xarray as xr
 
 from .base import EventDetector
-from .utils import bandpass_filter, dual_threshold_events_1d, hilbert_envelope, zscore_1d
+from .utils import (
+    bandpass_filter,
+    dual_threshold_events_1d,
+    hilbert_envelope,
+    zscore_1d,
+)
 
 __all__ = ["RippleDetector", "SpindleDetector"]
 
@@ -59,7 +64,9 @@ class RippleDetector(EventDetector):
         from cogpy.events import EventCatalog
 
         # (1) Bandpass + (2) envelope.
-        x_f = bandpass_filter(data, self.freq_range[0], self.freq_range[1], order=self.filter_order)
+        x_f = bandpass_filter(
+            data, self.freq_range[0], self.freq_range[1], order=self.filter_order
+        )
         env = hilbert_envelope(x_f)
 
         events: list[dict[str, Any]] = []
@@ -78,12 +85,18 @@ class RippleDetector(EventDetector):
         else:
             events.extend(self._detect_1d(env))
 
-        df = pd.DataFrame.from_records(events) if events else pd.DataFrame(columns=["event_id", "t", "t0", "t1"])
+        df = (
+            pd.DataFrame.from_records(events)
+            if events
+            else pd.DataFrame(columns=["event_id", "t", "t0", "t1"])
+        )
         if not df.empty:
             df = df.sort_values("t").reset_index(drop=True)
             df["event_id"] = [f"ripple_{i:06d}" for i in range(len(df))]
             df["label"] = "ripple"
-        return EventCatalog(df=df, name="ripple_events", metadata={"detector": self.name, **self.params})
+        return EventCatalog(
+            df=df, name="ripple_events", metadata={"detector": self.name, **self.params}
+        )
 
     def _detect_1d(self, ts: xr.DataArray, **loc: Any) -> list[dict[str, Any]]:
         if "time" not in ts.dims:
@@ -182,7 +195,10 @@ class SpindleDetector(RippleDetector):
         self.name = "SpindleDetector"
         self.compute_frequency = bool(compute_frequency)
         self.compute_rel_power = bool(compute_rel_power)
-        self.rel_power_broadband = (float(rel_power_broadband[0]), float(rel_power_broadband[1]))
+        self.rel_power_broadband = (
+            float(rel_power_broadband[0]),
+            float(rel_power_broadband[1]),
+        )
         self.rel_power_min = float(rel_power_min) if rel_power_min is not None else None
         self.compute_symmetry = bool(compute_symmetry)
         self.min_isolation = float(min_isolation) if min_isolation is not None else None
@@ -208,23 +224,41 @@ class SpindleDetector(RippleDetector):
         if not df.empty:
             df = self._enrich(df, data)
 
-        return EventCatalog(df=df, name="spindle_events", metadata={"detector": self.name, **self.params})
+        return EventCatalog(
+            df=df,
+            name="spindle_events",
+            metadata={"detector": self.name, **self.params},
+        )
 
     def _enrich(self, df: pd.DataFrame, data: xr.DataArray) -> pd.DataFrame:
         """Apply optional enrichment columns to the detected events."""
-        if not (self.compute_frequency or self.compute_rel_power or self.compute_symmetry or self.min_isolation is not None):
+        if not (
+            self.compute_frequency
+            or self.compute_rel_power
+            or self.compute_symmetry
+            or self.min_isolation is not None
+        ):
             return df
 
         t_arr = np.asarray(data["time"].values, dtype=float)
 
         # Precompute filtered signal for frequency estimation
         if self.compute_frequency:
-            x_f = bandpass_filter(data, self.freq_range[0], self.freq_range[1], order=self.filter_order)
+            x_f = bandpass_filter(
+                data, self.freq_range[0], self.freq_range[1], order=self.filter_order
+            )
 
         # Precompute broadband power for rel_power
         if self.compute_rel_power:
-            x_broad = bandpass_filter(data, self.rel_power_broadband[0], self.rel_power_broadband[1], order=self.filter_order)
-            x_sigma = bandpass_filter(data, self.freq_range[0], self.freq_range[1], order=self.filter_order)
+            x_broad = bandpass_filter(
+                data,
+                self.rel_power_broadband[0],
+                self.rel_power_broadband[1],
+                order=self.filter_order,
+            )
+            x_sigma = bandpass_filter(
+                data, self.freq_range[0], self.freq_range[1], order=self.filter_order
+            )
 
         freq_vals: list[float] = []
         rel_power_vals: list[float] = []
@@ -256,7 +290,9 @@ class SpindleDetector(RippleDetector):
                 if seg.size > 2:
                     crossings = np.sum(np.diff(np.sign(seg)) != 0)
                     dur = t1 - t0
-                    freq_vals.append(float(crossings / (2.0 * dur)) if dur > 0 else np.nan)
+                    freq_vals.append(
+                        float(crossings / (2.0 * dur)) if dur > 0 else np.nan
+                    )
                 else:
                     freq_vals.append(np.nan)
 
@@ -266,7 +302,9 @@ class SpindleDetector(RippleDetector):
                 seg_broad = _sel(x_broad)
                 sigma_pow = float(np.mean(seg_sigma**2)) if seg_sigma.size > 0 else 0.0
                 broad_pow = float(np.mean(seg_broad**2)) if seg_broad.size > 0 else 0.0
-                rel_power_vals.append(sigma_pow / broad_pow if broad_pow > 0 else np.nan)
+                rel_power_vals.append(
+                    sigma_pow / broad_pow if broad_pow > 0 else np.nan
+                )
 
             # --- Symmetry index ---
             if self.compute_symmetry:

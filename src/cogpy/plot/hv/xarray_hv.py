@@ -13,7 +13,9 @@ import numpy as np
 import xarray as xr
 
 
-def normalize_coords_to_index(sigx: xr.DataArray, coos: list[str] | tuple[str, ...] = ("AP", "ML")) -> xr.DataArray:
+def normalize_coords_to_index(
+    sigx: xr.DataArray, coos: list[str] | tuple[str, ...] = ("AP", "ML")
+) -> xr.DataArray:
     """
     Replace selected coordinate values with 0..N-1 indices.
 
@@ -48,7 +50,9 @@ def snap_ch_from_apml(
     ap_ch = np.asarray(ap_ch, dtype=float).reshape(-1)
     ml_ch = np.asarray(ml_ch, dtype=float).reshape(-1)
     if ap_ch.shape != ml_ch.shape:
-        raise ValueError(f"ap_ch and ml_ch must have the same shape, got {ap_ch.shape} vs {ml_ch.shape}")
+        raise ValueError(
+            f"ap_ch and ml_ch must have the same shape, got {ap_ch.shape} vs {ml_ch.shape}"
+        )
     if ap_ch.size == 0:
         raise ValueError("ap_ch/ml_ch are empty")
     d2 = (ap_ch - ap) ** 2 + (ml_ch - ml) ** 2
@@ -68,7 +72,9 @@ def channel_geometry_from_time_channel(
     e.g. after ``to_time_channel(...)`` + ``reset_index("ch")`` in ECoG grid data.
     """
     if ch_dim not in sig_tc.dims:
-        raise ValueError(f"Expected ch_dim={ch_dim!r} in sig_tc.dims={tuple(sig_tc.dims)}")
+        raise ValueError(
+            f"Expected ch_dim={ch_dim!r} in sig_tc.dims={tuple(sig_tc.dims)}"
+        )
     if ap_name not in sig_tc.coords or ml_name not in sig_tc.coords:
         raise ValueError(f"Expected coords {ap_name!r} and {ml_name!r} on sig_tc")
     ap_ch = np.asarray(sig_tc.coords[ap_name].values, dtype=float).reshape(-1)
@@ -255,7 +261,9 @@ def multichannel_view(
     t = np.asarray(sig_tc[time_dim].values, dtype=float).reshape(-1)
     x = np.asarray(sig_tc.values, dtype=float)
     if x.ndim != 2:
-        raise ValueError(f"Expected stacked signal values to be 2D (time, ch), got shape {x.shape}.")
+        raise ValueError(
+            f"Expected stacked signal values to be 2D (time, ch), got shape {x.shape}."
+        )
 
     # Default labels: use channel coordinate values (handles MultiIndex nicely via str()).
     try:
@@ -317,7 +325,9 @@ def grid_movie(
     from holoviews import opts
 
     if x_dim not in sigx.dims or y_dim not in sigx.dims:
-        raise ValueError(f"sigx must have dims {x_dim!r} and {y_dim!r}, got {list(sigx.dims)}")
+        raise ValueError(
+            f"sigx must have dims {x_dim!r} and {y_dim!r}, got {list(sigx.dims)}"
+        )
 
     data = normalize_coords_to_index(sigx, (y_dim, x_dim)) if normalize_index else sigx
 
@@ -333,6 +343,7 @@ def grid_movie(
         )
     )
     return hm
+
 
 def add_time_hair(
     obj,
@@ -524,7 +535,9 @@ def selected_channel_curve(
     hv.extension("bokeh", logo=False)
 
     if time_dim not in sig_tc.dims or ch_dim not in sig_tc.dims:
-        raise ValueError(f"sig_tc must have dims ({time_dim!r}, {ch_dim!r}); got {tuple(sig_tc.dims)}")
+        raise ValueError(
+            f"sig_tc must have dims ({time_dim!r}, {ch_dim!r}); got {tuple(sig_tc.dims)}"
+        )
 
     ch_vals = np.asarray(sig_tc[ch_dim].values)
 
@@ -545,7 +558,11 @@ def selected_channel_curve(
     params = streams.Params(ch_controller, ["value"])
 
     def _curve(value=None, **_):
-        ch = _snap_ch(value) if value is not None else _snap_ch(ch_vals[0] if ch_vals.size else 0)
+        ch = (
+            _snap_ch(value)
+            if value is not None
+            else _snap_ch(ch_vals[0] if ch_vals.size else 0)
+        )
         da = sig_tc.sel({ch_dim: ch})
         title = f"{ch_dim}={ch}"
         try:
@@ -578,7 +595,9 @@ def selected_channel_curve(
             c = c.opts(height=int(height))
         return c
 
-    return hv.DynamicMap(_curve, streams=[params]).opts(opts.Curve(framewise=bool(framewise)))
+    return hv.DynamicMap(_curve, streams=[params]).opts(
+        opts.Curve(framewise=bool(framewise))
+    )
 
 
 def apml_crosshair_from_channel(
@@ -604,7 +623,9 @@ def apml_crosshair_from_channel(
 
     def _cross(value=None, **_):
         if value is None or ap_ch.size == 0:
-            return hv.HLine(0).opts(alpha=0.0, line_width=0) * hv.VLine(0).opts(alpha=0.0, line_width=0)
+            return hv.HLine(0).opts(alpha=0.0, line_width=0) * hv.VLine(0).opts(
+                alpha=0.0, line_width=0
+            )
         try:
             ch = int(round(float(value)))
         except Exception:
@@ -685,7 +706,9 @@ def hair_from_controller(
             placeholder = hv.VLine(0) if o == "v" else hv.HLine(0)
             return placeholder.opts(alpha=0.0, line_width=0)
         el = hv.VLine(v) if o == "v" else hv.HLine(v)
-        return el.opts(color=str(color), line_width=int(line_width), alpha=float(line_alpha))
+        return el.opts(
+            color=str(color), line_width=int(line_width), alpha=float(line_alpha)
+        )
 
     return hv.DynamicMap(_hair, streams=[params])
 
@@ -813,4 +836,8 @@ def grid_movie_with_time_curve(
 
     img_dm = hv.DynamicMap(_image_frame, streams=[t_stream])
 
-    return (img_dm + curve_with_hair, controller) if bool(return_controller) else (img_dm + curve_with_hair)
+    return (
+        (img_dm + curve_with_hair, controller)
+        if bool(return_controller)
+        else (img_dm + curve_with_hair)
+    )

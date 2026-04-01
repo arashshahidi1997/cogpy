@@ -10,6 +10,7 @@ from cogpy.measures.temporal import temporal_stability
 # temporal_stability
 # ---------------------------------------------------------------------------
 
+
 class TestTemporalStability:
     def test_constant_signal(self):
         """Constant values → CV near 0."""

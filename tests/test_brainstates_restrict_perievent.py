@@ -24,7 +24,9 @@ def test_restrict_intervals_object():
     iv = Intervals(starts=[1.0, 5.0, 8.0], ends=[3.0, 7.0, 9.5], name="PerSWS")
     out = restrict(sig, iv)
 
-    expected_mask = ((t >= 1.0) & (t < 3.0)) | ((t >= 5.0) & (t < 7.0)) | ((t >= 8.0) & (t < 9.5))
+    expected_mask = (
+        ((t >= 1.0) & (t < 3.0)) | ((t >= 5.0) & (t < 7.0)) | ((t >= 8.0) & (t < 9.5))
+    )
     assert out.sizes["time"] == int(expected_mask.sum())
 
 
@@ -170,4 +172,3 @@ def test_perievent_epochs_events_object_input():
     ev = Events(times=[2.0, 5.5, 8.5], name="spindles")
     epochs = perievent_epochs(sig, ev, fs=1000.0, pre=0.5, post=1.0)
     assert np.allclose(epochs.coords["event"].values, ev.times)
-

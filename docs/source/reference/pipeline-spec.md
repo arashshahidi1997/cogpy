@@ -45,17 +45,9 @@ Provided presets:
 - `FAST_RIPPLE_PIPELINE`
 - `GAMMA_BURST_PIPELINE`
 
-### TensorScope integration
-
-**File:** `cogpy/core/plot/tensorscope/state.py`
-
-Adds `TensorScopeState.run_pipeline(pipeline, signal_id=..., event_type=...)` which:
-- runs the pipeline on the selected signal
-- registers the returned `EventCatalog` as an event stream for overlays/explorer
-
 ## Success Criteria
 
 - Pipelines are serializable and reloadable (`to_dict` / `from_dict`).
 - Presets run (subject to their transform dependencies).
-- TensorScope can run pipelines and visualize results via v2.6.2+ event layers.
+- Pipeline outputs (`EventCatalog`) are compatible with visualization frontends.
 

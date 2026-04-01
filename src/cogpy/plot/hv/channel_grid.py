@@ -44,6 +44,7 @@ from typing import FrozenSet, Tuple
 
 import numpy as np
 from cogpy.utils.imports import import_optional
+
 param = import_optional("param")
 
 __all__ = ["ChannelGrid"]
@@ -84,16 +85,18 @@ class ChannelGrid(param.Parameterized):
     # ------------------------------------------------------------------
     # Mode-specific inputs
     # ------------------------------------------------------------------
-    row    = param.Integer(default=0, doc="AP row index for 'row' mode.")
+    row = param.Integer(default=0, doc="AP row index for 'row' mode.")
     column = param.Integer(default=0, doc="ML column index for 'column' mode.")
 
     # sparse: strided subgrid covering full extent
     sparse_stride = param.Integer(
-        default=2, bounds=(1, None),
+        default=2,
+        bounds=(1, None),
         doc="Step between selected electrodes in both AP and ML directions.",
     )
     sparse_offset = param.Integer(
-        default=0, bounds=(0, None),
+        default=0,
+        bounds=(0, None),
         doc="Phase offset (applied equally to AP and ML). 0 = start from (0,0).",
     )
 
@@ -103,7 +106,8 @@ class ChannelGrid(param.Parameterized):
         doc="(ap, ml) center for 'neighborhood' mode.",
     )
     neighborhood_radius = param.Integer(
-        default=2, bounds=(0, None),
+        default=2,
+        bounds=(0, None),
         doc="Chebyshev (L∞) radius in grid steps. r=1 → 3×3, r=2 → 5×5.",
     )
 
@@ -133,9 +137,13 @@ class ChannelGrid(param.Parameterized):
         self.param.watch(
             self._on_change,
             [
-                "mode", "row", "column",
-                "sparse_stride", "sparse_offset",
-                "neighborhood_center", "neighborhood_radius",
+                "mode",
+                "row",
+                "column",
+                "sparse_stride",
+                "sparse_offset",
+                "neighborhood_center",
+                "neighborhood_radius",
                 "manual_selection",
             ],
         )
@@ -144,7 +152,7 @@ class ChannelGrid(param.Parameterized):
     # Internal
     # ------------------------------------------------------------------
     def _clamp_inputs(self):
-        self.row    = int(np.clip(self.row,    0, self.n_ap - 1))
+        self.row = int(np.clip(self.row, 0, self.n_ap - 1))
         self.column = int(np.clip(self.column, 0, self.n_ml - 1))
         ap_c, ml_c = self.neighborhood_center
         self.neighborhood_center = (
@@ -170,7 +178,7 @@ class ChannelGrid(param.Parameterized):
             return frozenset((ap, ml) for ap in range(self.n_ap))
 
         if mode == "sparse":
-            s   = max(1, self.sparse_stride)
+            s = max(1, self.sparse_stride)
             off = self.sparse_offset % s
             return frozenset(
                 (ap, ml)
@@ -221,11 +229,11 @@ class ChannelGrid(param.Parameterized):
     # ------------------------------------------------------------------
     def select_row(self, ap: int) -> "ChannelGrid":
         self.mode = "row"
-        self.row  = int(np.clip(ap, 0, self.n_ap - 1))
+        self.row = int(np.clip(ap, 0, self.n_ap - 1))
         return self
 
     def select_column(self, ml: int) -> "ChannelGrid":
-        self.mode   = "column"
+        self.mode = "column"
         self.column = int(np.clip(ml, 0, self.n_ml - 1))
         return self
 
@@ -238,11 +246,11 @@ class ChannelGrid(param.Parameterized):
         """
         self.sparse_stride = max(1, int(stride))
         self.sparse_offset = int(offset)
-        self.mode          = "sparse"
+        self.mode = "sparse"
         return self
 
     def select_neighborhood(self, ap: int, ml: int, radius: int = 2) -> "ChannelGrid":
-        self.mode                = "neighborhood"
+        self.mode = "neighborhood"
         self.neighborhood_radius = int(radius)
         self.neighborhood_center = (
             int(np.clip(ap, 0, self.n_ap - 1)),
@@ -251,14 +259,14 @@ class ChannelGrid(param.Parameterized):
         return self
 
     def select_manual(self, pairs: set[APMLPair]) -> "ChannelGrid":
-        self.mode             = "manual"
+        self.mode = "manual"
         self.manual_selection = frozenset(pairs)
         return self
 
     def toggle_manual(self, ap: int, ml: int) -> "ChannelGrid":
         """Toggle one cell in manual mode (switches to manual if needed)."""
         self.mode = "manual"
-        pair    = (int(ap), int(ml))
+        pair = (int(ap), int(ml))
         current = set(self.manual_selection)
         if pair in current:
             current.discard(pair)

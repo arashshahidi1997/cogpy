@@ -20,4 +20,3 @@ __all__ = [
     "xr_to_mne",
     "XarrayToMNEReport",
 ]
-

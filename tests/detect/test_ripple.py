@@ -54,6 +54,7 @@ def test_spindle_detector_smoke(lfp_data):
 # Spindle signal fixture (13 Hz bursts, spindle-like)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def spindle_data():
     """Synthetic signal with 13 Hz spindle bursts."""
@@ -79,6 +80,7 @@ def spindle_data():
 # Enrichment tests
 # ---------------------------------------------------------------------------
 
+
 def test_spindle_no_enrichment_by_default(spindle_data):
     """Without enrichment flags, no extra columns are added."""
     det = SpindleDetector(threshold_low=1.5, threshold_high=2.5)
@@ -90,7 +92,9 @@ def test_spindle_no_enrichment_by_default(spindle_data):
 
 def test_spindle_frequency_enrichment(spindle_data):
     det = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5, compute_frequency=True,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_frequency=True,
     )
     cat = det.detect(spindle_data)
     assert isinstance(cat, EventCatalog)
@@ -104,7 +108,9 @@ def test_spindle_frequency_enrichment(spindle_data):
 
 def test_spindle_rel_power_enrichment(spindle_data):
     det = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5, compute_rel_power=True,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_rel_power=True,
     )
     cat = det.detect(spindle_data)
     if len(cat) > 0:
@@ -118,13 +124,17 @@ def test_spindle_rel_power_enrichment(spindle_data):
 def test_spindle_rel_power_threshold(spindle_data):
     """rel_power_min should reject events below the threshold."""
     det_no_thresh = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5, compute_rel_power=True,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_rel_power=True,
     )
     cat_all = det_no_thresh.detect(spindle_data)
 
     det_high_thresh = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5,
-        compute_rel_power=True, rel_power_min=0.99,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_rel_power=True,
+        rel_power_min=0.99,
     )
     cat_strict = det_high_thresh.detect(spindle_data)
     assert len(cat_strict) <= len(cat_all)
@@ -132,7 +142,9 @@ def test_spindle_rel_power_threshold(spindle_data):
 
 def test_spindle_symmetry_enrichment(spindle_data):
     det = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5, compute_symmetry=True,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_symmetry=True,
     )
     cat = det.detect(spindle_data)
     if len(cat) > 0:
@@ -149,7 +161,9 @@ def test_spindle_isolation(spindle_data):
     cat_all = det_no_iso.detect(spindle_data)
 
     det_iso = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5, min_isolation=100.0,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        min_isolation=100.0,
     )
     cat_iso = det_iso.detect(spindle_data)
     # With a very large isolation, at most 1 event should survive
@@ -159,9 +173,12 @@ def test_spindle_isolation(spindle_data):
 def test_spindle_all_enrichments(spindle_data):
     """All enrichments enabled simultaneously."""
     det = SpindleDetector(
-        threshold_low=1.5, threshold_high=2.5,
-        compute_frequency=True, compute_rel_power=True,
-        compute_symmetry=True, min_isolation=0.5,
+        threshold_low=1.5,
+        threshold_high=2.5,
+        compute_frequency=True,
+        compute_rel_power=True,
+        compute_symmetry=True,
+        min_isolation=0.5,
     )
     cat = det.detect(spindle_data)
     assert isinstance(cat, EventCatalog)
@@ -173,10 +190,11 @@ def test_spindle_all_enrichments(spindle_data):
 def test_spindle_params_serialization():
     """Enrichment params should appear in detector params dict."""
     det = SpindleDetector(
-        compute_frequency=True, compute_symmetry=True, min_isolation=1.0,
+        compute_frequency=True,
+        compute_symmetry=True,
+        min_isolation=1.0,
     )
     assert det.params["compute_frequency"] is True
     assert det.params["compute_symmetry"] is True
     assert det.params["min_isolation"] == 1.0
     assert det.params["compute_rel_power"] is False
-

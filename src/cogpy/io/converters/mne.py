@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
-import numpy as np
 import xarray as xr
 
 from . import _deps
@@ -49,7 +48,9 @@ def to_mne(
 
     mne = _deps.require("mne", extra="interop-mne")
 
-    mode: Literal["tc", "grid"] = "grid" if {"ML", "AP"}.issubset(set(da.dims)) else "tc"
+    mode: Literal["tc", "grid"] = (
+        "grid" if {"ML", "AP"}.issubset(set(da.dims)) else "tc"
+    )
     grid_shape: tuple[int, int] | None = None
     if mode == "grid":
         try:
@@ -70,7 +71,9 @@ def to_mne(
     x_tc_v, scaled_to_v = scale_to_volts(view.x_tc, unit)
 
     x_ct = x_tc_v.T  # (n_ch, n_times)
-    info = mne.create_info(ch_names=view.ch_names, sfreq=float(view.fs), ch_types=ch_type)
+    info = mne.create_info(
+        ch_names=view.ch_names, sfreq=float(view.fs), ch_types=ch_type
+    )
     raw = mne.io.RawArray(x_ct, info, verbose=verbose)
 
     raw.info["description"] = (
@@ -92,4 +95,3 @@ def to_mne(
         return raw, rep
 
     return raw
-

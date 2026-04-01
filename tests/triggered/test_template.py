@@ -27,6 +27,7 @@ def template_waveform():
 # estimate_template
 # ---------------------------------------------------------------------------
 
+
 class TestEstimateTemplate:
     def test_mean_ndarray(self, rng, template_waveform):
         noise = rng.normal(0, 0.1, size=(40, 20))
@@ -82,6 +83,7 @@ class TestEstimateTemplate:
 # fit_scaling
 # ---------------------------------------------------------------------------
 
+
 class TestFitScaling:
     def test_uniform_scaling(self, template_waveform):
         """Epochs that are exactly 2x template → alpha = 2."""
@@ -120,6 +122,7 @@ class TestFitScaling:
 # ---------------------------------------------------------------------------
 # subtract_template
 # ---------------------------------------------------------------------------
+
 
 class TestSubtractTemplate:
     def test_perfect_subtraction(self, template_waveform):

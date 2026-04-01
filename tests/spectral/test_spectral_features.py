@@ -15,6 +15,7 @@ from cogpy.spectral.features import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _white_psd(nf=256, seed=42):
     """Flat PSD (white noise)."""
     rng = np.random.default_rng(seed)
@@ -47,6 +48,7 @@ def _synth_signal(fs=1000.0, duration=2.0, f_line=60.0, snr_db=20.0, seed=42):
 # spectral_flatness
 # ---------------------------------------------------------------------------
 
+
 class TestSpectralFlatness:
     def test_white_noise(self):
         """Flat PSD → flatness near 1."""
@@ -74,6 +76,7 @@ class TestSpectralFlatness:
 # ---------------------------------------------------------------------------
 # narrowband_ratio
 # ---------------------------------------------------------------------------
+
 
 class TestNarrowbandRatio:
     def test_flat_psd_ratio_near_one(self):
@@ -117,6 +120,7 @@ class TestNarrowbandRatio:
 # ---------------------------------------------------------------------------
 # spectral_peak_freqs
 # ---------------------------------------------------------------------------
+
 
 class TestSpectralPeakFreqs:
     def test_single_peak(self):
@@ -173,6 +177,7 @@ class TestSpectralPeakFreqs:
 # ---------------------------------------------------------------------------
 # ftest_line_scan
 # ---------------------------------------------------------------------------
+
 
 class TestFtestLineScan:
     def test_detects_injected_line(self):
@@ -243,11 +248,13 @@ class TestFtestLineScan:
 # reduce_tf_bands
 # ---------------------------------------------------------------------------
 
+
 class TestReduceTfBands:
     @staticmethod
     def _score_da():
         """(time_win, freq) score array."""
         import xarray as xr
+
         return xr.DataArray(
             np.ones((10, 100)),
             dims=("time_win", "freq"),
@@ -304,10 +311,12 @@ class TestReduceTfBands:
 # normalize_spectrogram
 # ---------------------------------------------------------------------------
 
+
 class TestNormalizeSpectrogram:
     @staticmethod
     def _spec_da():
         import xarray as xr
+
         rng = np.random.default_rng(42)
         return xr.DataArray(
             rng.random((4, 8, 64, 10)) + 0.01,

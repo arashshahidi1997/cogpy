@@ -16,6 +16,7 @@ from cogpy.events.match import (
 # match_nearest
 # ---------------------------------------------------------------------------
 
+
 class TestMatchNearest:
     def test_perfect_alignment(self):
         """Identical event trains → zero lags, all matched."""
@@ -92,6 +93,7 @@ class TestMatchNearest:
 # match_nearest_symmetric
 # ---------------------------------------------------------------------------
 
+
 class TestMatchNearestSymmetric:
     def test_bijective(self):
         """Each B event appears at most once in output."""
@@ -121,6 +123,7 @@ class TestMatchNearestSymmetric:
 # event_lag_histogram
 # ---------------------------------------------------------------------------
 
+
 class TestEventLagHistogram:
     def test_symmetric_identical(self):
         """Identical trains → all counts at lag 0."""
@@ -149,6 +152,7 @@ class TestEventLagHistogram:
 # ---------------------------------------------------------------------------
 # estimate_lag
 # ---------------------------------------------------------------------------
+
 
 class TestEstimateLag:
     def test_constant_offset_median(self):
@@ -183,6 +187,7 @@ class TestEstimateLag:
 # ---------------------------------------------------------------------------
 # estimate_drift
 # ---------------------------------------------------------------------------
+
 
 class TestEstimateDrift:
     def test_linear_drift(self):

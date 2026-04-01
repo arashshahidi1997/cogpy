@@ -20,7 +20,9 @@ def zscorex(
     Not a filter — does not modify frequency content.
     """
     if dim not in sigx.dims:
-        raise ValueError(f"zscorex expected dim {dim!r} in sigx.dims={tuple(sigx.dims)}")
+        raise ValueError(
+            f"zscorex expected dim {dim!r} in sigx.dims={tuple(sigx.dims)}"
+        )
 
     if bool(robust):
         center = sigx.median(dim=dim)
@@ -33,5 +35,7 @@ def zscorex(
     out = (sigx - center) / (scale + float(eps))
     out.attrs = dict(sigx.attrs)
     out.name = (sigx.name + "_zscore") if sigx.name else "zscore"
-    out.attrs.update({"normalization": "zscore", "dim": str(dim), "robust": bool(robust)})
+    out.attrs.update(
+        {"normalization": "zscore", "dim": str(dim), "robust": bool(robust)}
+    )
     return out

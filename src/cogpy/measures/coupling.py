@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from cogpy.events.catalog import EventCatalog
+    pass
 
 __all__ = [
     "cross_correlogram",
@@ -50,7 +50,9 @@ def _to_timestamps(events) -> np.ndarray:
     return np.asarray(events, dtype=float).ravel()
 
 
-def _circular_shift(times: np.ndarray, rng: np.random.Generator, t_min: float, t_max: float) -> np.ndarray:
+def _circular_shift(
+    times: np.ndarray, rng: np.random.Generator, t_min: float, t_max: float
+) -> np.ndarray:
     """Circularly shift timestamps by a random offset within [t_min, t_max]."""
     span = t_max - t_min
     shift = rng.uniform(0.1 * span, 0.9 * span)
@@ -233,7 +235,12 @@ def peri_event_histogram(
             peth_sem = peth_sem / bl_mean
 
     lags = 0.5 * (bins[:-1] + bins[1:])
-    result: dict = {"lags": lags, "peth": peth, "peth_sem": peth_sem, "n_events": len(te)}
+    result: dict = {
+        "lags": lags,
+        "peth": peth,
+        "peth_sem": peth_sem,
+        "n_events": len(te),
+    }
 
     if n_surrogates > 0:
         rng = np.random.default_rng(seed)

@@ -1,4 +1,5 @@
 """Signal preprocessing: filtering, bad-channel detection, resampling, and interpolation."""
+
 from lazy_loader import attach
 from typing import TYPE_CHECKING
 

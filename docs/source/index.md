@@ -20,10 +20,10 @@ frontends.
 **Learning-oriented.** Step-by-step lessons that take you from installation
 to working analysis pipelines. Start here if you are new to cogpy.
 
+- {doc}`tutorials/install`
 - {doc}`tutorials/quickstart`
 - {doc}`tutorials/spectral-analysis`
 - {doc}`tutorials/bad-channel-detection`
-- {doc}`tutorials/spatial-measures`
 :::
 
 :::{grid-item-card} How-to Guides
@@ -72,10 +72,10 @@ auto-generated from docstrings.
 ## Installation
 
 ```bash
-pip install -e ".[all]"        # full install (dev)
-pip install cogpy               # minimal core
-pip install "cogpy[viz]"        # with visualization deps
-pip install "cogpy[io]"         # with I/O format support
+pip install -e ".[all]"        # full install (editable dev)
+pip install ecogpy              # minimal core
+pip install "ecogpy[viz]"      # with visualization deps
+pip install "ecogpy[io]"       # with I/O format support
 ```
 
 ## Quick Example
@@ -114,6 +114,13 @@ howto/index
 :caption: Explanation
 
 explanation/index
+```
+
+```{toctree}
+:hidden:
+:caption: Reference
+
+reference/index
 ```
 
 ```{toctree}

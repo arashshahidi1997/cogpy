@@ -101,7 +101,7 @@ def embed_chan(x_embed, kernel_shape, bad_dims):
     kernel_grid = kernel_shape[0]
     kernel_halfwidth = kernel_grid // 2
     valid_slice = slice(None)
-    
+
     outside_win = bad_dims
     if kernel_halfwidth:
         valid_slice = slice(kernel_halfwidth, -kernel_halfwidth)

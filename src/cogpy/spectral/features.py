@@ -230,8 +230,12 @@ def am_artifact_score(psd, freqs, *, fc, fm, carrier_bw=2.0, sideband_bw=2.0):
     p_sb2 = band_power(psd, freqs, (fc + fm - sideband_bw, fc + fm + sideband_bw))
     p_side = p_sb1 + p_sb2
 
-    p_bg1 = band_power(psd, freqs, (fc - 3 * fm - sideband_bw, fc - 3 * fm + sideband_bw))
-    p_bg2 = band_power(psd, freqs, (fc + 3 * fm - sideband_bw, fc + 3 * fm + sideband_bw))
+    p_bg1 = band_power(
+        psd, freqs, (fc - 3 * fm - sideband_bw, fc - 3 * fm + sideband_bw)
+    )
+    p_bg2 = band_power(
+        psd, freqs, (fc + 3 * fm - sideband_bw, fc + 3 * fm + sideband_bw)
+    )
     p_bg = 0.5 * (p_bg1 + p_bg2)
 
     return np.log10((p_side + EPS) / (p_bg + EPS))
@@ -409,7 +413,9 @@ def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
 
     signal = np.asarray(signal, dtype=np.float64)
     if signal.ndim < 1:
-        raise ValueError(f"signal must have at least 1 dimension, got shape {signal.shape}")
+        raise ValueError(
+            f"signal must have at least 1 dimension, got shape {signal.shape}"
+        )
 
     N = signal.shape[-1]
     NW = float(NW)
@@ -433,12 +439,12 @@ def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
 
     # Eigenvalue-weighted line amplitude estimate (Thomson 1982)
     weights = eigenvalues * H0  # (K,)
-    w_norm = np.sum(eigenvalues * H0 ** 2)  # scalar
+    w_norm = np.sum(eigenvalues * H0**2)  # scalar
     # mu_hat(f) = sum_k(w_k * Y_k(f)) / w_norm
     # weights[:, None] broadcasts over freq; sum over K axis
-    mu_hat = np.sum(
-        weights[..., :, np.newaxis] * mtfft, axis=-2
-    ) / (w_norm + EPS)  # (..., freq)
+    mu_hat = np.sum(weights[..., :, np.newaxis] * mtfft, axis=-2) / (
+        w_norm + EPS
+    )  # (..., freq)
 
     # Total power per frequency
     S = np.mean(np.abs(mtfft) ** 2, axis=-2)  # (..., freq)
@@ -533,7 +539,9 @@ def fooof_periodic(psd, freqs, *, freq_range=None):
             ap = getattr(sm, "_ap_fit", None)
             if model is None or ap is None:
                 return np.full_like(pxx, np.nan, dtype=np.float64)
-            return np.asarray(model, dtype=np.float64) - np.asarray(ap, dtype=np.float64)
+            return np.asarray(model, dtype=np.float64) - np.asarray(
+                ap, dtype=np.float64
+            )
 
     except ImportError:
         try:
@@ -546,7 +554,9 @@ def fooof_periodic(psd, freqs, *, freq_range=None):
                 ap = getattr(fm, "_ap_fit", None)
                 if model is None or ap is None:
                     return np.full_like(pxx, np.nan, dtype=np.float64)
-                return np.asarray(model, dtype=np.float64) - np.asarray(ap, dtype=np.float64)
+                return np.asarray(model, dtype=np.float64) - np.asarray(
+                    ap, dtype=np.float64
+                )
 
         except ImportError as e:
             raise ImportError(
@@ -591,12 +601,16 @@ def reduce_tf_bands(
         One variable per band, *freq_dim* removed.
     """
     if freq_dim not in score.dims:
-        raise ValueError(f"Dimension {freq_dim!r} not in score.dims={tuple(score.dims)}")
+        raise ValueError(
+            f"Dimension {freq_dim!r} not in score.dims={tuple(score.dims)}"
+        )
     if freq_dim not in score.coords:
         raise ValueError(f"Coordinate {freq_dim!r} required for frequency selection")
     reduce_fn = _REDUCE_METHODS.get(method)
     if reduce_fn is None:
-        raise ValueError(f"Unknown method {method!r}. Use one of {sorted(_REDUCE_METHODS)}")
+        raise ValueError(
+            f"Unknown method {method!r}. Use one of {sorted(_REDUCE_METHODS)}"
+        )
 
     freqs = score[freq_dim].values
     variables: dict[str, xr.DataArray] = {}
@@ -611,4 +625,3 @@ def reduce_tf_bands(
         variables[name] = reduce_fn(band_slice, freq_dim)
 
     return xr.Dataset(variables)
-

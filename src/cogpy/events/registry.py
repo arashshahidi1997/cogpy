@@ -28,7 +28,11 @@ class EventRegistry:
         self._streams.pop(str(name), None)
 
     def to_dict(self) -> dict:
-        return {"streams": {name: stream.to_dict() for name, stream in self._streams.items()}}
+        return {
+            "streams": {
+                name: stream.to_dict() for name, stream in self._streams.items()
+            }
+        }
 
     @classmethod
     def from_dict(cls, dct: dict) -> "EventRegistry":
@@ -38,7 +42,9 @@ class EventRegistry:
         if isinstance(streams, dict):
             for name, sd in streams.items():
                 try:
-                    stream = EventStream.from_dict(sd if isinstance(sd, dict) else {"name": name})
+                    stream = EventStream.from_dict(
+                        sd if isinstance(sd, dict) else {"name": name}
+                    )
                 except Exception:  # noqa: BLE001
                     continue
                 # Ensure stream is registered under the mapping key.

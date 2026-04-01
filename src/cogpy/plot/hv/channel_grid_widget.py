@@ -44,23 +44,24 @@ from __future__ import annotations
 from collections.abc import Callable
 import numpy as np
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 param = import_optional("param")
-from bokeh.models import ColumnDataSource, HoverTool, TapTool
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 
 from .channel_grid import ChannelGrid
-from .theme import BG, BORDER, TEAL, TEXT, TEXT_MED, style_figure
+from .theme import BG, TEAL, TEXT, TEXT_MED, style_figure
 from .topomap import TopoMap
 from cogpy.datasets.schemas import AtlasImageOverlay
 
 __all__ = ["ChannelGridWidget"]
 
 _COL_UNSELECTED = "#2c2c3e"
-_COL_SELECTED   = TEAL
-_COL_BORDER     = "#1a1a2e"
-_COL_TEXT       = TEXT
-_BG             = BG
+_COL_SELECTED = TEAL
+_COL_BORDER = "#1a1a2e"
+_COL_TEXT = TEXT
+_BG = BG
 
 
 class ChannelGridWidget(param.Parameterized):
@@ -106,37 +107,47 @@ class ChannelGridWidget(param.Parameterized):
         ap_coords: np.ndarray | None = None,
         ml_coords: np.ndarray | None = None,
         atlas_image: np.ndarray | None = None,
-        atlas_mode: str = "crop",          # "crop" | "full"
+        atlas_mode: str = "crop",  # "crop" | "full"
         bl_distance: float = 7.5,
         **params,
     ):
         params.setdefault("grid", ChannelGrid(n_ap=n_ap, n_ml=n_ml))
         super().__init__(**params)
 
-        self._cell_size   = cell_size
-        self._topomap     = topomap
-        self._cell_values = None if topomap is not None else self._validate_cell_values(cell_values, self.grid.n_ap, self.grid.n_ml)
-        self._bad_mask    = self._validate_bad_mask(bad_mask, self.grid.n_ap, self.grid.n_ml)
+        self._cell_size = cell_size
+        self._topomap = topomap
+        self._cell_values = (
+            None
+            if topomap is not None
+            else self._validate_cell_values(cell_values, self.grid.n_ap, self.grid.n_ml)
+        )
+        self._bad_mask = self._validate_bad_mask(
+            bad_mask, self.grid.n_ap, self.grid.n_ml
+        )
 
         self._tap_callbacks: list[Callable[[dict], None]] = []
 
         # atlas
-        self._ap_coords   = np.asarray(ap_coords) if ap_coords is not None else None
-        self._ml_coords   = np.asarray(ml_coords) if ml_coords is not None else None
+        self._ap_coords = np.asarray(ap_coords) if ap_coords is not None else None
+        self._ml_coords = np.asarray(ml_coords) if ml_coords is not None else None
         if atlas_overlay is not None and atlas_image is not None:
             raise ValueError("Provide only one of atlas_overlay or atlas_image")
         self._atlas_overlay = atlas_overlay
         if atlas_overlay is not None:
             self._atlas_image = atlas_overlay.image
-            self._atlas_mode = "full" if (self._ap_coords is not None and self._ml_coords is not None) else "crop"
+            self._atlas_mode = (
+                "full"
+                if (self._ap_coords is not None and self._ml_coords is not None)
+                else "crop"
+            )
             self._bl_distance = float(atlas_overlay.bl_distance)
         else:
             self._atlas_image = atlas_image
             self._atlas_mode = atlas_mode
             self._bl_distance = float(bl_distance)
 
-        self._source   = self._build_source()
-        self._fig      = self._build_figure()
+        self._source = self._build_source()
+        self._fig = self._build_figure()
         self._controls = self._build_controls()
 
         self.grid.param.watch(self._on_grid_change, "selected")
@@ -155,7 +166,9 @@ class ChannelGridWidget(param.Parameterized):
                     "also display the same TopoMap separately. Create a fresh TopoMap "
                     "instance (or display only the widget)."
                 )
-            if int(self._topomap.n_ap) != int(self.grid.n_ap) or int(self._topomap.n_ml) != int(self.grid.n_ml):
+            if int(self._topomap.n_ap) != int(self.grid.n_ap) or int(
+                self._topomap.n_ml
+            ) != int(self.grid.n_ml):
                 raise ValueError(
                     "topomap shape must match grid shape: "
                     f"grid=({self.grid.n_ap},{self.grid.n_ml}) topomap=({self._topomap.n_ap},{self._topomap.n_ml})"
@@ -182,7 +195,8 @@ class ChannelGridWidget(param.Parameterized):
         bl_distance: float = 7.5,
     ) -> "ChannelGridWidget":
         return cls(
-            grid.n_ap, grid.n_ml,
+            grid.n_ap,
+            grid.n_ml,
             grid=grid,
             cell_size=cell_size,
             cell_values=cell_values,
@@ -242,32 +256,53 @@ class ChannelGridWidget(param.Parameterized):
         if self._topomap is not None:
             self._topomap.update(values)
             return
-        self._cell_values = self._validate_cell_values(values, self.grid.n_ap, self.grid.n_ml)
+        self._cell_values = self._validate_cell_values(
+            values, self.grid.n_ap, self.grid.n_ml
+        )
         self._patch_colors()
 
     def update_bad_mask(self, bad_mask: np.ndarray | None) -> None:
         """Push a new bad-channel mask and redraw overlay."""
-        self._bad_mask = self._validate_bad_mask(bad_mask, self.grid.n_ap, self.grid.n_ml)
+        self._bad_mask = self._validate_bad_mask(
+            bad_mask, self.grid.n_ap, self.grid.n_ml
+        )
         self._patch_bad()
 
     # ------------------------------------------------------------------ #
     # Data source                                                          #
     # ------------------------------------------------------------------ #
     def _build_source(self) -> ColumnDataSource:
-        g   = self.grid
+        g = self.grid
         sel = g.selected
-        cv  = self._cell_values
+        cv = self._cell_values
         bad = self._bad_mask
 
-        aps, mls, ap_idx, ml_idx, colors, alphas, labels, bad_alpha = [], [], [], [], [], [], [], []
+        aps, mls, ap_idx, ml_idx, colors, alphas, labels, bad_alpha = (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
 
         # TopoMap-wired mode draws overlays in physical coords (ap/ml) but uses
         # integer indices for selection logic.
         if self._topomap is not None:
             ap_coords = np.asarray(self._topomap.ap_coords, dtype=float)
             ml_coords = np.asarray(self._topomap.ml_coords, dtype=float)
-            ap_step = float(np.median(np.abs(np.diff(ap_coords)))) if len(ap_coords) > 1 else 1.0
-            ml_step = float(np.median(np.abs(np.diff(ml_coords)))) if len(ml_coords) > 1 else 1.0
+            ap_step = (
+                float(np.median(np.abs(np.diff(ap_coords))))
+                if len(ap_coords) > 1
+                else 1.0
+            )
+            ml_step = (
+                float(np.median(np.abs(np.diff(ml_coords))))
+                if len(ml_coords) > 1
+                else 1.0
+            )
             self._overlay_ap_step = ap_step
             self._overlay_ml_step = ml_step
 
@@ -316,7 +351,7 @@ class ChannelGridWidget(param.Parameterized):
     # Bokeh figure                                                         #
     # ------------------------------------------------------------------ #
     def _build_figure(self) -> figure:
-        g  = self.grid
+        g = self.grid
         cs = self._cell_size
         pw = g.n_ml * cs + 50
         ph = g.n_ap * cs + 50
@@ -361,7 +396,8 @@ class ChannelGridWidget(param.Parameterized):
             return fig
 
         fig = figure(
-            width=pw, height=ph,
+            width=pw,
+            height=ph,
             x_range=(-0.5, g.n_ml - 0.5),
             y_range=(-0.5, g.n_ap - 0.5),
             tools="tap",
@@ -373,8 +409,10 @@ class ChannelGridWidget(param.Parameterized):
         self._maybe_add_atlas(fig)
 
         fig.rect(
-            x="ml", y="ap",
-            width=0.88, height=0.88,
+            x="ml",
+            y="ap",
+            width=0.88,
+            height=0.88,
             source=self._source,
             fill_color="color",
             fill_alpha="alpha",
@@ -441,8 +479,8 @@ class ChannelGridWidget(param.Parameterized):
         if self._atlas_image is None:
             return
 
-        img  = self._atlas_image
-        g    = self.grid
+        img = self._atlas_image
+        g = self.grid
         mode = self._atlas_mode
 
         # Ensure RGBA uint32 for Bokeh image_rgba
@@ -456,7 +494,7 @@ class ChannelGridWidget(param.Parameterized):
             img = np.clip(img, 0, 255).astype(np.uint8)
         if img.ndim == 3 and img.shape[2] == 3:
             alpha = np.full((*img.shape[:2], 1), 180, dtype=np.uint8)
-            img   = np.concatenate([img, alpha], axis=2)
+            img = np.concatenate([img, alpha], axis=2)
         # Bokeh wants (H, W) uint32 in RGBA packed
         img_u32 = img.view(np.uint32).reshape(img.shape[:2])
         # Bokeh's image glyphs map array row 0 to the *bottom* of the image in
@@ -496,7 +534,9 @@ class ChannelGridWidget(param.Parameterized):
         # Non-TopoMap mode uses grid index space on axes.
         if mode == "crop" or self._ap_coords is None or self._ml_coords is None:
             # Fill the whole plot area — simple stretch to grid extent.
-            fig.image_rgba(image=[img_u32], x=-0.5, y=-0.5, dw=g.n_ml, dh=g.n_ap, level="image")
+            fig.image_rgba(
+                image=[img_u32], x=-0.5, y=-0.5, dw=g.n_ml, dh=g.n_ap, level="image"
+            )
             return
 
         # "full" mode: place the image at correct physical coords, mapped into grid index space.
@@ -528,7 +568,9 @@ class ChannelGridWidget(param.Parameterized):
         y0 = (y0_mm - ap_min) / ap_step - 0.5
         y1 = (y1_mm - ap_min) / ap_step - 0.5
 
-        fig.image_rgba(image=[img_u32], x=x0, y=y0, dw=(x1 - x0), dh=(y1 - y0), level="image")
+        fig.image_rgba(
+            image=[img_u32], x=x0, y=y0, dw=(x1 - x0), dh=(y1 - y0), level="image"
+        )
 
     # ------------------------------------------------------------------ #
     # Controls                                                             #
@@ -558,7 +600,10 @@ class ChannelGridWidget(param.Parameterized):
             name="Offset", value=g.sparse_offset, start=0, end=max(g.n_ap, g.n_ml) - 1
         )
         self._radius_slider = pn.widgets.IntSlider(
-            name="Radius", value=g.neighborhood_radius, start=0, end=max(g.n_ap, g.n_ml) // 2
+            name="Radius",
+            value=g.neighborhood_radius,
+            start=0,
+            end=max(g.n_ap, g.n_ml) // 2,
         )
         self._n_selected_md = pn.pane.Markdown(
             self._selected_label(),
@@ -568,9 +613,15 @@ class ChannelGridWidget(param.Parameterized):
         # Wire secondary widgets → grid
         self._row_slider.param.watch(lambda e: setattr(g, "row", e.new), "value")
         self._col_slider.param.watch(lambda e: setattr(g, "column", e.new), "value")
-        self._stride_slider.param.watch(lambda e: setattr(g, "sparse_stride", e.new), "value")
-        self._offset_slider.param.watch(lambda e: setattr(g, "sparse_offset", e.new), "value")
-        self._radius_slider.param.watch(lambda e: setattr(g, "neighborhood_radius", e.new), "value")
+        self._stride_slider.param.watch(
+            lambda e: setattr(g, "sparse_stride", e.new), "value"
+        )
+        self._offset_slider.param.watch(
+            lambda e: setattr(g, "sparse_offset", e.new), "value"
+        )
+        self._radius_slider.param.watch(
+            lambda e: setattr(g, "neighborhood_radius", e.new), "value"
+        )
 
         self._secondary = pn.Row()
         self._refresh_secondary()
@@ -609,9 +660,9 @@ class ChannelGridWidget(param.Parameterized):
         if not new:
             return
         src = self._source.data
-        ap  = int(src["ap"][new[0]])
-        ml  = int(src["ml"][new[0]])
-        g   = self.grid
+        ap = int(src["ap"][new[0]])
+        ml = int(src["ml"][new[0]])
+        g = self.grid
 
         # Always clear Bokeh's own selection — we own the visual state
         self._source.selected.indices = []
@@ -650,9 +701,9 @@ class ChannelGridWidget(param.Parameterized):
     # Color update — patch only, never replace source.data wholesale      #
     # ------------------------------------------------------------------ #
     def _patch_colors(self):
-        g   = self.grid
+        g = self.grid
         sel = g.selected
-        cv  = self._cell_values
+        cv = self._cell_values
         src = self._source.data
 
         color_patches = []
@@ -660,8 +711,12 @@ class ChannelGridWidget(param.Parameterized):
         for i, (ap, ml) in enumerate(zip(src["ap_idx"], src["ml_idx"])):
             selected = (int(ap), int(ml)) in sel
             if self._topomap is None:
-                color_patches.append((i, _COL_SELECTED if selected else _COL_UNSELECTED))
-                alpha_patches.append((i, self._cell_alpha(int(ap), int(ml), selected, cv)))
+                color_patches.append(
+                    (i, _COL_SELECTED if selected else _COL_UNSELECTED)
+                )
+                alpha_patches.append(
+                    (i, self._cell_alpha(int(ap), int(ml), selected, cv))
+                )
             else:
                 color_patches.append((i, _COL_SELECTED))
                 alpha_patches.append((i, 1.0 if selected else 0.0))
@@ -691,7 +746,9 @@ class ChannelGridWidget(param.Parameterized):
             return None
         cv = np.asarray(cv, dtype=float)
         if cv.shape != (n_ap, n_ml):
-            raise ValueError(f"cell_values must have shape ({n_ap}, {n_ml}), got {cv.shape}")
+            raise ValueError(
+                f"cell_values must have shape ({n_ap}, {n_ml}), got {cv.shape}"
+            )
         lo, hi = np.nanmin(cv), np.nanmax(cv)
         return (cv - lo) / (hi - lo) if hi > lo else np.full_like(cv, 0.5)
 
@@ -701,7 +758,9 @@ class ChannelGridWidget(param.Parameterized):
             return None
         bad = np.asarray(bad_mask, dtype=bool)
         if bad.shape != (n_ap, n_ml):
-            raise ValueError(f"bad_mask must have shape ({n_ap}, {n_ml}), got {bad.shape}")
+            raise ValueError(
+                f"bad_mask must have shape ({n_ap}, {n_ml}), got {bad.shape}"
+            )
         return bad
 
     def __repr__(self) -> str:

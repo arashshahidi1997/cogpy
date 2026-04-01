@@ -5,7 +5,12 @@ from __future__ import annotations
 from .burst import BurstDetector
 from .pipeline import DetectionPipeline
 from .threshold import ThresholdDetector
-from .transforms import BandpassTransform, HilbertTransform, SpectrogramTransform, ZScoreTransform
+from .transforms import (
+    BandpassTransform,
+    HilbertTransform,
+    SpectrogramTransform,
+    ZScoreTransform,
+)
 
 __all__ = [
     "BURST_PIPELINE",
@@ -62,4 +67,3 @@ GAMMA_BURST_PIPELINE = DetectionPipeline(
     ),
     name="gamma_burst_detection",
 )
-

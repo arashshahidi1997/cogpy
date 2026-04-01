@@ -37,4 +37,3 @@ class Transform(ABC):
             return f"{self.name}()"
         inner = ", ".join(f"{k}={v!r}" for k, v in self.params.items())
         return f"{self.name}({inner})"
-

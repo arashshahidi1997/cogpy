@@ -141,7 +141,9 @@ def _detect_slow_waves_1d(
 
     # Compute PTP amplitude threshold from all candidates.
     ptps = np.array([c["ptp"] for c in candidates])
-    ptp_thresh = float(np.percentile(ptps, amp_ptp_percentile)) if len(ptps) > 1 else 0.0
+    ptp_thresh = (
+        float(np.percentile(ptps, amp_ptp_percentile)) if len(ptps) > 1 else 0.0
+    )
 
     events = []
     for c in candidates:
@@ -249,9 +251,7 @@ class SlowWaveDetector(EventDetector):
             for ap_i in range(int(x_f.sizes["AP"])):
                 for ml_i in range(int(x_f.sizes["ML"])):
                     ts = x_f.isel(AP=ap_i, ML=ml_i)
-                    events.extend(
-                        self._detect_1d(ts, AP=int(ap_i), ML=int(ml_i))
-                    )
+                    events.extend(self._detect_1d(ts, AP=int(ap_i), ML=int(ml_i)))
         elif "channel" in x_f.dims:
             for ch_i in range(int(x_f.sizes["channel"])):
                 ts = x_f.isel(channel=ch_i)
@@ -275,9 +275,7 @@ class SlowWaveDetector(EventDetector):
             metadata={"detector": self.name, **self.params},
         )
 
-    def _detect_1d(
-        self, ts: xr.DataArray, **loc: Any
-    ) -> list[dict[str, Any]]:
+    def _detect_1d(self, ts: xr.DataArray, **loc: Any) -> list[dict[str, Any]]:
         if "time" not in ts.dims:
             return []
 
@@ -361,9 +359,7 @@ def gamma_envelope_validator(
     from .utils import hilbert_envelope, zscore_1d
 
     # Compute gamma envelope.
-    gamma_filt = bandpass_filter(
-        lfp, gamma_band[0], gamma_band[1], order=filter_order
-    )
+    gamma_filt = bandpass_filter(lfp, gamma_band[0], gamma_band[1], order=filter_order)
     gamma_env = hilbert_envelope(gamma_filt)
 
     # Smooth the envelope.

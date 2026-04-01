@@ -48,7 +48,9 @@ __all__ = [
 ]
 
 
-def _validate_window_params(x: np.ndarray, window_size: int, window_step: int) -> Tuple[int, int]:
+def _validate_window_params(
+    x: np.ndarray, window_size: int, window_step: int
+) -> Tuple[int, int]:
     """
     Validate sliding-window parameters for the last axis and return (N, n_windows).
     """
@@ -141,15 +143,21 @@ def window_centers_time(
     if m == "midpoint":
         return 0.5 * (t[on] + t[en])
     if m == "lower":
-        idx = window_centers_idx(t.size, window_size, window_step, method="lower").astype(int)
+        idx = window_centers_idx(
+            t.size, window_size, window_step, method="lower"
+        ).astype(int)
         return t[idx]
     if m == "upper":
-        idx = window_centers_idx(t.size, window_size, window_step, method="upper").astype(int)
+        idx = window_centers_idx(
+            t.size, window_size, window_step, method="upper"
+        ).astype(int)
         return t[idx]
     raise ValueError("method must be one of {'midpoint','lower','upper'}")
 
 
-def _window_view_last_axis(x: np.ndarray, window_size: int, window_step: int) -> np.ndarray:
+def _window_view_last_axis(
+    x: np.ndarray, window_size: int, window_step: int
+) -> np.ndarray:
     """
     Return a non-copying sliding-window view along the last axis of `x`.
     """
@@ -163,7 +171,9 @@ def _window_view_last_axis(x: np.ndarray, window_size: int, window_step: int) ->
     return view
 
 
-def _naive_windows_last_axis(x: np.ndarray, window_size: int, window_step: int) -> np.ndarray:
+def _naive_windows_last_axis(
+    x: np.ndarray, window_size: int, window_step: int
+) -> np.ndarray:
     """
     Slow, copy-based reference implementation of sliding windows along the last axis.
     """
@@ -363,7 +373,9 @@ def running_blockwise_xr(
 
     feature_shape = tuple(np.asarray(out).shape[1:])
     if feature_dims is None:
-        feature_dims = _infer_feature_dims(tuple(xsig.dims), run_dim=run_dim, feature_shape=feature_shape)
+        feature_dims = _infer_feature_dims(
+            tuple(xsig.dims), run_dim=run_dim, feature_shape=feature_shape
+        )
     if len(feature_dims) != len(feature_shape):
         raise ValueError(
             f"feature_dims has length {len(feature_dims)} but func output has {len(feature_shape)} dims"
@@ -373,7 +385,10 @@ def running_blockwise_xr(
     # window coordinate
     if run_dim in xsig.coords:
         coords[out_dim] = window_centers_time(
-            xsig.coords[run_dim].values, int(window_size), int(window_step), method=str(center_method)
+            xsig.coords[run_dim].values,
+            int(window_size),
+            int(window_step),
+            method=str(center_method),
         )
     else:
         coords[out_dim] = centers_idx
@@ -390,7 +405,13 @@ def running_blockwise_xr(
         attrs=dict(xsig.attrs),
         name=xsig.name,
     )
-    da.attrs.update({"window_size": int(window_size), "window_step": int(window_step), "run_dim": str(run_dim)})
+    da.attrs.update(
+        {
+            "window_size": int(window_size),
+            "window_step": int(window_step),
+            "run_dim": str(run_dim),
+        }
+    )
     if return_centers:
         return da, centers_idx
     return da
@@ -440,7 +461,10 @@ def running_reduce_xr(
             coords[d] = xsig.coords[d].values
     if run_dim in xsig.coords:
         coords[out_dim] = window_centers_time(
-            xsig.coords[run_dim].values, int(window_size), int(window_step), method=str(center_method)
+            xsig.coords[run_dim].values,
+            int(window_size),
+            int(window_step),
+            method=str(center_method),
         )
     else:
         coords[out_dim] = centers_idx
@@ -452,7 +476,13 @@ def running_reduce_xr(
         attrs=dict(xsig.attrs),
         name=xsig.name,
     )
-    da.attrs.update({"window_size": int(window_size), "window_step": int(window_step), "run_dim": str(run_dim)})
+    da.attrs.update(
+        {
+            "window_size": int(window_size),
+            "window_step": int(window_step),
+            "run_dim": str(run_dim),
+        }
+    )
     if return_centers:
         return da, centers_idx
     return da

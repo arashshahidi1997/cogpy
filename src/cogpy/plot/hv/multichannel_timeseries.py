@@ -22,19 +22,18 @@ compatibility shim.
 from __future__ import annotations
 
 import numpy as np
-import xarray as xr
 from cogpy.utils.imports import import_optional
+
 hv = import_optional("holoviews")
 pn = import_optional("panel")
 param = import_optional("param")
-from holoviews import opts, streams
 
-from .xarray_hv import to_time_channel, normalize_coords_to_index
 
 hv.extension("bokeh")
 pn.extension()
 
 from typing import Any
+
 
 def subgrid_indices(
     n_rows: int,
@@ -195,16 +194,22 @@ def multichannel_timeseries_view(
     if channel_labels is None:
         channel_labels = [f"ch{i}" for i in range(nch)]
     if len(channel_labels) != nch:
-        raise ValueError(f"Expected channel_labels length {nch}, got {len(channel_labels)}.")
+        raise ValueError(
+            f"Expected channel_labels length {nch}, got {len(channel_labels)}."
+        )
     if channel_colors is not None and len(channel_colors) != nch:
-        raise ValueError(f"Expected channel_colors length {nch}, got {len(channel_colors)}.")
+        raise ValueError(
+            f"Expected channel_colors length {nch}, got {len(channel_colors)}."
+        )
 
     if y_positions is None:
         y_positions = np.arange(nch, dtype=float)
     else:
         y_positions = np.asarray(y_positions, dtype=float).reshape(-1)
         if y_positions.size != nch:
-            raise ValueError(f"Expected y_positions length {nch}, got {y_positions.size}.")
+            raise ValueError(
+                f"Expected y_positions length {nch}, got {y_positions.size}."
+            )
 
     # Prefer interactive view; fall back cleanly if optional deps are missing.
     try:
@@ -222,12 +227,16 @@ def multichannel_timeseries_view(
 
         render_mode = str(render).lower()
         if render_mode not in {"auto", "vector", "raster"}:
-            raise ValueError(f"render must be one of 'auto', 'vector', 'raster' (got {render!r}).")
+            raise ValueError(
+                f"render must be one of 'auto', 'vector', 'raster' (got {render!r})."
+            )
         if render_mode == "auto":
             # Heuristic: downsample=True means "fast mode", prefer datashader.
             # Also rasterize very large point clouds to keep notebooks responsive.
             n_points = int(t.size) * int(nch)
-            render_mode = "raster" if bool(downsample) or n_points >= 2_000_000 else "vector"
+            render_mode = (
+                "raster" if bool(downsample) or n_points >= 2_000_000 else "vector"
+            )
 
         def _zscore_nan(x_tc: np.ndarray) -> np.ndarray:
             mu = np.nanmean(x_tc, axis=0, keepdims=True)
@@ -261,16 +270,27 @@ def multichannel_timeseries_view(
         else:
             curves = []
             for i in range(nch):
-                curve = hv.Curve((t, x[:, i]), kdims=[time_dim], vdims=[vdim], label=str(channel_labels[i]))
+                curve = hv.Curve(
+                    (t, x[:, i]),
+                    kdims=[time_dim],
+                    vdims=[vdim],
+                    label=str(channel_labels[i]),
+                )
 
                 opts_curve: dict[str, Any] = dict(
                     subcoordinate_y=True,
-                    color=("black" if channel_colors is None else str(channel_colors[i])),
+                    color=(
+                        "black" if channel_colors is None else str(channel_colors[i])
+                    ),
                     line_width=1,
                     line_alpha=0.8,
                 )
                 if nch <= 16:
-                    opts_curve["hover_tooltips"] = [("Channel", "$label"), ("Time", "@Time"), ("Value", "@Value")]
+                    opts_curve["hover_tooltips"] = [
+                        ("Channel", "$label"),
+                        ("Time", "@Time"),
+                        ("Value", "@Value"),
+                    ]
                 else:
                     opts_curve["tools"] = []
 
@@ -336,7 +356,12 @@ def multichannel_timeseries_view(
         )
         layout = (overlay + minimap).cols(1)
         if return_parts:
-            return {"layout": layout, "overlay": overlay, "minimap": minimap, "rtlink": rtlink}
+            return {
+                "layout": layout,
+                "overlay": overlay,
+                "minimap": minimap,
+                "rtlink": rtlink,
+            }
         return layout
 
     except Exception as e:
@@ -419,7 +444,6 @@ def multichannel_timeseries_lite(
     # Prefer returning a Panel Column of separate panes to avoid LayoutPlot issues.
     try:
         import panel as pn
-        import holoviews as hv
 
         pn.extension()
 
@@ -461,4 +485,3 @@ def multichannel_timeseries_lite(
     except Exception:
         # Fall back to returning the raw HoloViews object.
         return out
-

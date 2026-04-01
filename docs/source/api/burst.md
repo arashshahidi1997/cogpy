@@ -1,6 +1,11 @@
 # `cogpy.burst`
 
-API documentation for burst detection utilities.
+Low-level burst detection utilities: blob detection on spectrograms
+(`detect_hmaxima`, `detect_blobs`), burst merging, phase extraction, and
+travelling-wave analysis. For the high-level detector interface, see
+{doc}`detect`.
+
+**Tutorial:** {doc}`/tutorials/detection-and-events`
 
 ## Submodules
 

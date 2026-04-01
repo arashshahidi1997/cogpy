@@ -7,7 +7,6 @@ and static HTML export.
 
 from __future__ import annotations
 
-from typing import Sequence
 
 import numpy as np
 import xarray as xr
@@ -111,10 +110,12 @@ def psd_with_lines(
     import holoviews as hv
 
     c = psd_curve(psd, freqs, label=label, logx=logx, logy=logy)
-    vlines = hv.Overlay([
-        hv.VLine(f).opts(color="red", line_dash="dashed", alpha=0.6, line_width=1)
-        for f in np.asarray(line_freqs).ravel()
-    ])
+    vlines = hv.Overlay(
+        [
+            hv.VLine(f).opts(color="red", line_dash="dashed", alpha=0.6, line_width=1)
+            for f in np.asarray(line_freqs).ravel()
+        ]
+    )
     return (c * vlines).opts(title=title, width=600, height=300)
 
 
@@ -209,10 +210,18 @@ def spatial_heatmap_grid(
 
     plots = []
     for title, data in maps.items():
-        plots.append(spatial_heatmap(
-            data, ap_dim=ap_dim, ml_dim=ml_dim, title=title,
-            cmap=cmap, symmetric=symmetric, width=width, height=height,
-        ))
+        plots.append(
+            spatial_heatmap(
+                data,
+                ap_dim=ap_dim,
+                ml_dim=ml_dim,
+                title=title,
+                cmap=cmap,
+                symmetric=symmetric,
+                width=width,
+                height=height,
+            )
+        )
     return hv.Layout(plots).cols(cols)
 
 
@@ -317,14 +326,17 @@ def triggered_waveform_grid(
             if std_ch is not None:
                 band = hv.Area(
                     (lag_vals, tmpl - std_ch, tmpl + std_ch),
-                    kdims=["lag"], vdims=["lower", "upper"],
+                    kdims=["lag"],
+                    vdims=["lower", "upper"],
                 ).opts(alpha=0.2, line_alpha=0)
                 elements = [band, c]
 
             ov = hv.Overlay(elements).opts(
-                width=width, height=height,
+                width=width,
+                height=height,
                 title=f"AP={iap} ML={iml}",
-                xaxis=None, yaxis=None,
+                xaxis=None,
+                yaxis=None,
             )
             plots[(int(iap), int(iml))] = ov
 
@@ -425,7 +437,9 @@ def factor_loading_grid(
     import holoviews as hv
 
     if factor_dim not in loadings.dims:
-        raise ValueError(f"loadings must have {factor_dim!r} dim, got {list(loadings.dims)}")
+        raise ValueError(
+            f"loadings must have {factor_dim!r} dim, got {list(loadings.dims)}"
+        )
 
     factors = loadings.coords[factor_dim].values
     n_fac = len(factors)
@@ -447,11 +461,18 @@ def factor_loading_grid(
             spatial_map = ld_fac.values
             title = f"F{fac}"
 
-        plots.append(spatial_heatmap(
-            spatial_map, ap_dim=ap_dim, ml_dim=ml_dim,
-            title=title, cmap=cmap, symmetric=symmetric,
-            width=width, height=height,
-        ))
+        plots.append(
+            spatial_heatmap(
+                spatial_map,
+                ap_dim=ap_dim,
+                ml_dim=ml_dim,
+                title=title,
+                cmap=cmap,
+                symmetric=symmetric,
+                width=width,
+                height=height,
+            )
+        )
 
     return hv.Layout(plots).cols(cols)
 
@@ -492,12 +513,12 @@ def drift_plot(
     elements = [points]
 
     if coeffs is not None and not np.any(np.isnan(coeffs)):
-        t_fit = np.linspace(
-            float(matched_times.min()), float(matched_times.max()), 200
-        )
+        t_fit = np.linspace(float(matched_times.min()), float(matched_times.max()), 200)
         lag_fit = np.polyval(coeffs, t_fit)
         fit_curve = hv.Curve(
-            (t_fit, lag_fit), kdims=["Time (s)"], vdims=["Lag (s)"],
+            (t_fit, lag_fit),
+            kdims=["Time (s)"],
+            vdims=["Lag (s)"],
             label="fit",
         ).opts(color="red", line_width=2)
         elements.append(fit_curve)
@@ -570,5 +591,8 @@ def signal_traces_overlay(
     for label, (t, y) in signals.items():
         curves.append(signal_trace(np.asarray(y), time=np.asarray(t), label=label))
     return hv.Overlay(curves).opts(
-        title=title, width=width, height=height, legend_position="top_right",
+        title=title,
+        width=width,
+        height=height,
+        legend_position="top_right",
     )

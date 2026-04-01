@@ -23,12 +23,14 @@ Usage
     w = ChannelGridWidget.from_grid(grid)
     pn.Row(w.panel(), viewer.panel()).servable()
 """
+
 from __future__ import annotations
 
 import warnings
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+
 pn = import_optional("panel")
 
 from .multichannel_viewer import MultichannelViewer
@@ -38,7 +40,9 @@ from .processing_chain import ProcessingChain
 __all__ = ["ieeg_viewer"]
 
 
-def _make_channel_labels(ch_vals, *, n_ml: int | None = None, flat_order: str = "row-major") -> list[str]:
+def _make_channel_labels(
+    ch_vals, *, n_ml: int | None = None, flat_order: str = "row-major"
+) -> list[str]:
     """
     Build display labels for the channel coordinate.
 
@@ -78,7 +82,9 @@ def _make_channel_labels(ch_vals, *, n_ml: int | None = None, flat_order: str = 
     n_ap_i = int(np.ceil(n_ch / max(n_ml_i, 1)))
     labels: list[str] = []
     for i in idxs:
-        ap, ml = apml_from_flat_index_order(i, n_ap=n_ap_i, n_ml=n_ml_i, order=str(flat_order))
+        ap, ml = apml_from_flat_index_order(
+            i, n_ap=n_ap_i, n_ml=n_ml_i, order=str(flat_order)
+        )
         labels.append(f"({ml},{ap})")
     return labels
 
@@ -135,14 +141,14 @@ def ieeg_viewer(
             raise ValueError(f"{dim!r} not in data.dims={tuple(data.dims)}")
 
     # Canonical (channel, time) numpy
-    arr     = data.transpose(channel_dim, time_dim)
-    t_vals  = np.asarray(arr[time_dim].values, dtype=np.float64)
+    arr = data.transpose(channel_dim, time_dim)
+    t_vals = np.asarray(arr[time_dim].values, dtype=np.float64)
     ch_vals = list(arr[channel_dim].values)
-    n_ch    = len(ch_vals)
+    n_ch = len(ch_vals)
 
-    raw   = np.asarray(arr.values, dtype=np.float64)
+    raw = np.asarray(arr.values, dtype=np.float64)
     means = raw.mean(axis=1, keepdims=True)
-    stds  = raw.std(axis=1, keepdims=True) + 1e-12
+    stds = raw.std(axis=1, keepdims=True) + 1e-12
     sig_z = np.ascontiguousarray((raw - means) / stds)
 
     ch_labels = _make_channel_labels(ch_vals, n_ml=n_ml, flat_order=str(flat_order))
@@ -169,7 +175,9 @@ def ieeg_viewer(
             chain = ProcessingChain(sig_raw, time_dim=str(time_dim))
 
     viewer = MultichannelViewer(
-        sig_z, t_vals, ch_labels,
+        sig_z,
+        t_vals,
+        ch_labels,
         initial_window_s=initial_window_s,
         min_window_s=min_window_s,
         max_window_s=max_window_s,
@@ -180,7 +188,8 @@ def ieeg_viewer(
         detail_height=detail_height,
         overview_height=overview_height,
         time_dim=time_dim,
-        title=title or f"{data.name or 'iEEG'}  ({n_ch} ch, {t_vals[-1]-t_vals[0]:.1f} s)",
+        title=title
+        or f"{data.name or 'iEEG'}  ({n_ch} ch, {t_vals[-1]-t_vals[0]:.1f} s)",
         chain=chain,
     )
 
@@ -218,10 +227,10 @@ class IEEGViewer:
     ):
         self.viewer = viewer
         self.chain = chain
-        self._grid  = channel_grid
-        self._n_ap  = n_ap
-        self._n_ml  = n_ml
-        self._n_ch  = n_ch
+        self._grid = channel_grid
+        self._n_ap = n_ap
+        self._n_ml = n_ml
+        self._n_ch = n_ch
         self._flat_order = flat_order
         self._built = False
 
@@ -239,7 +248,11 @@ class IEEGViewer:
             proc_controls = None
 
         if self._grid is None:
-            return pn.Row(proc_controls, viewer_panel) if proc_controls is not None else viewer_panel
+            return (
+                pn.Row(proc_controls, viewer_panel)
+                if proc_controls is not None
+                else viewer_panel
+            )
 
         # Grid-wired controls
         n_sel_md = pn.pane.Markdown(
@@ -247,7 +260,9 @@ class IEEGViewer:
             styles={"color": "#cdd6f4", "font-size": "11px"},
         )
         apply_btn = pn.widgets.Button(
-            name="Apply selection", button_type="primary", width=140,
+            name="Apply selection",
+            button_type="primary",
+            width=140,
         )
         sort_sel = pn.widgets.Select(
             name="Sort",
@@ -265,7 +280,9 @@ class IEEGViewer:
             n_ap = self._n_ap
             if n_ap is None or n_ap == 0:
                 # Best-effort fallback; needed for col-major mapping.
-                n_ap = int(getattr(self._grid, "n_ap", 0)) if self._grid is not None else 0
+                n_ap = (
+                    int(getattr(self._grid, "n_ap", 0)) if self._grid is not None else 0
+                )
             if n_ap <= 0:
                 raise ValueError("n_ap must be available when channel_grid is provided")
             return flat_indices_from_selected(
@@ -298,7 +315,10 @@ class IEEGViewer:
                 return sorted(
                     indices,
                     key=lambda ix: apml_from_flat_index_order(
-                        int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                        int(ix),
+                        n_ap=int(self._n_ap),
+                        n_ml=int(self._n_ml),
+                        order=str(self._flat_order),
                     ),
                 )
             if key == "ML":
@@ -308,10 +328,16 @@ class IEEGViewer:
                     indices,
                     key=lambda ix: (
                         apml_from_flat_index_order(
-                            int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                            int(ix),
+                            n_ap=int(self._n_ap),
+                            n_ml=int(self._n_ml),
+                            order=str(self._flat_order),
                         )[1],
                         apml_from_flat_index_order(
-                            int(ix), n_ap=int(self._n_ap), n_ml=int(self._n_ml), order=str(self._flat_order)
+                            int(ix),
+                            n_ap=int(self._n_ap),
+                            n_ml=int(self._n_ml),
+                            order=str(self._flat_order),
                         )[0],
                     ),
                 )
@@ -343,7 +369,9 @@ class IEEGViewer:
         apply_btn.on_click(_on_apply)
 
         controls = pn.Row(
-            n_sel_md, sort_sel, apply_btn,
+            n_sel_md,
+            sort_sel,
+            apply_btn,
             styles={"background": "#1e1e2e", "padding": "8px", "border-radius": "6px"},
         )
 
@@ -359,9 +387,13 @@ class IEEGViewer:
         """
         self.viewer.add_time_hair(hair)
 
-    def attach_time_hair_to_overview(self, hair, *, time_kdim: str | None = None, **attach_kwargs):
+    def attach_time_hair_to_overview(
+        self, hair, *, time_kdim: str | None = None, **attach_kwargs
+    ):
         """Delegate to :meth:`MultichannelViewer.attach_time_hair_to_overview`."""
-        return self.viewer.attach_time_hair_to_overview(hair, time_kdim=time_kdim, **attach_kwargs)
+        return self.viewer.attach_time_hair_to_overview(
+            hair, time_kdim=time_kdim, **attach_kwargs
+        )
 
     def servable(self):
         return self.panel().servable()

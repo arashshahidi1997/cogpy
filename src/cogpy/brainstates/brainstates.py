@@ -13,17 +13,17 @@ Last Updated : 2025-08-26
 
 Extended description of the module.
 ----------------------------------------------
-The module focuses on interval-based state classification and transition analysis.  
-It offers core tools for verifying disjoint intervals, mapping time series or numerical values to state definitions, computing state durations, handling micro- and macro-state relationships, and converting state dictionaries into structured DataFrames.  
+The module focuses on interval-based state classification and transition analysis.
+It offers core tools for verifying disjoint intervals, mapping time series or numerical values to state definitions, computing state durations, handling micro- and macro-state relationships, and converting state dictionaries into structured DataFrames.
 Testing utilities are included to ensure correct mapping and labeling behavior.
 
 Notes
 -----
-- State intervals are defined as `[start, end]` pairs in lists, tuples, or arrays.  
-- Functions assume state labels are strings.  
-- Many utilities operate on DataFrames containing time or numeric columns to be classified into state intervals.  
-- Mapping functions return DataFrames that encode state membership using period indices or `-1` for non-membership.  
-- The module includes tools for cleaning corrupt intervals and subtracting microstates from macrostates to produce purified state sets.  
+- State intervals are defined as `[start, end]` pairs in lists, tuples, or arrays.
+- Functions assume state labels are strings.
+- Many utilities operate on DataFrames containing time or numeric columns to be classified into state intervals.
+- Mapping functions return DataFrames that encode state membership using period indices or `-1` for non-membership.
+- The module includes tools for cleaning corrupt intervals and subtracting microstates from macrostates to produce purified state sets.
 - Transition analysis functions generate DataFrames describing when and how states change over time.
 
 See Also
@@ -34,7 +34,6 @@ Examples
 --------
 """
 
-
 import numpy as np
 import pandas as pd
 import warnings
@@ -42,7 +41,6 @@ from tqdm import tqdm
 from typing import List
 from .intervals import (
     check_intervals_disjoint,
-    map_numbers_to_intervals,
     map_numbers_to_disjoint_intervals,
     subtract_intervals,
 )

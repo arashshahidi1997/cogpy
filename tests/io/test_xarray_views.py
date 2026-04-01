@@ -34,4 +34,3 @@ def test_as_ieeg_time_channel_accepts_time_ch():
     out = as_ieeg_time_channel(da)
     assert tuple(out.dims) == ("time", "channel")
     validate_ieeg_time_channel(out)
-

@@ -201,3 +201,8 @@ Any layout can be served as a standalone dashboard:
 pn.panel(layout).show()        # opens browser tab (blocking)
 pn.panel(layout).servable()    # use inside `panel serve notebook.ipynb`
 ```
+
+## See also
+
+- {doc}`/explanation/architecture` — compute vs visualization boundary
+- {doc}`/api/burst` — low-level burst detection for overlay data

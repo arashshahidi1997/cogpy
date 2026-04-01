@@ -177,7 +177,7 @@ class TestComodulogram:
 
         # 2 Hz phase modulates 20 Hz amplitude
         phase_2hz = np.sin(2 * np.pi * 2.0 * t)
-        amp_mod = (1 + 0.8 * np.sin(2 * np.pi * 2.0 * t))
+        amp_mod = 1 + 0.8 * np.sin(2 * np.pi * 2.0 * t)
         hf_carrier = amp_mod * np.sin(2 * np.pi * 20.0 * t)
         signal = phase_2hz + hf_carrier + 0.1 * rng.standard_normal(len(t))
 
@@ -249,17 +249,23 @@ class TestSurrogatePAC:
 
     def test_circular_shift_method(self, coupled_signals):
         phase, amp = coupled_signals
-        res = surrogate_pac(phase, amp, n_surrogates=10, surrogate_method="circular_shift", seed=0)
+        res = surrogate_pac(
+            phase, amp, n_surrogates=10, surrogate_method="circular_shift", seed=0
+        )
         assert res["surrogates"].shape == (10,)
 
     def test_swap_phase_method(self, coupled_signals):
         phase, amp = coupled_signals
-        res = surrogate_pac(phase, amp, n_surrogates=10, surrogate_method="swap_phase", seed=0)
+        res = surrogate_pac(
+            phase, amp, n_surrogates=10, surrogate_method="swap_phase", seed=0
+        )
         assert res["surrogates"].shape == (10,)
 
     def test_time_block_method(self, coupled_signals):
         phase, amp = coupled_signals
-        res = surrogate_pac(phase, amp, n_surrogates=10, surrogate_method="time_block", seed=0)
+        res = surrogate_pac(
+            phase, amp, n_surrogates=10, surrogate_method="time_block", seed=0
+        )
         assert res["surrogates"].shape == (10,)
 
     def test_unknown_surrogate_method(self, coupled_signals):

@@ -6,7 +6,9 @@ from cogpy.preprocess.badchannel.channel_features import extract_channel_feature
 from cogpy.datasets import schemas as sch
 
 
-def _grid_xsig(*, time: int = 200, ml: int = 4, ap: int = 4, fs: float = 100.0) -> xr.DataArray:
+def _grid_xsig(
+    *, time: int = 200, ml: int = 4, ap: int = 4, fs: float = 100.0
+) -> xr.DataArray:
     rng = np.random.default_rng(0)
     data = rng.standard_normal((time, ml, ap)).astype(np.float64)
     t = np.arange(time, dtype=float) / float(fs)
@@ -20,7 +22,9 @@ def _grid_xsig(*, time: int = 200, ml: int = 4, ap: int = 4, fs: float = 100.0) 
     return sch.validate_ieeg_grid(xsig)
 
 
-def _multichannel_xsig(*, time: int = 200, ch: int = 6, fs: float = 100.0) -> xr.DataArray:
+def _multichannel_xsig(
+    *, time: int = 200, ch: int = 6, fs: float = 100.0
+) -> xr.DataArray:
     rng = np.random.default_rng(1)
     data = rng.standard_normal((ch, time)).astype(np.float64)
     t = np.arange(time, dtype=float) / float(fs)
@@ -34,7 +38,9 @@ def _multichannel_xsig(*, time: int = 200, ch: int = 6, fs: float = 100.0) -> xr
     return sch.validate_multichannel(xsig)
 
 
-def _time_channel_xsig(*, time: int = 200, ch: int = 6, fs: float = 100.0) -> xr.DataArray:
+def _time_channel_xsig(
+    *, time: int = 200, ch: int = 6, fs: float = 100.0
+) -> xr.DataArray:
     rng = np.random.default_rng(2)
     data = rng.standard_normal((time, ch)).astype(np.float64)
     t = np.arange(time, dtype=float) / float(fs)

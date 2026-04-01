@@ -16,7 +16,11 @@ def grid_data():
     return xr.DataArray(
         data,
         dims=("time", "AP", "ML"),
-        coords={"time": np.arange(1024) / 1000.0, "AP": np.arange(4), "ML": np.arange(4)},
+        coords={
+            "time": np.arange(1024) / 1000.0,
+            "AP": np.arange(4),
+            "ML": np.arange(4),
+        },
         attrs={"fs": 1000.0},
     )
 
@@ -39,7 +43,9 @@ def test_burst_detector_can_accept_spectrogram(grid_data):
     xr = pytest.importorskip("xarray")
     from cogpy.spectral.specx import spectrogramx
 
-    spec = spectrogramx(grid_data, nperseg=256, noverlap=128, bandwidth=4.0, axis="time")
+    spec = spectrogramx(
+        grid_data, nperseg=256, noverlap=128, bandwidth=4.0, axis="time"
+    )
     assert isinstance(spec, xr.DataArray)
 
     det = BurstDetector()
@@ -62,7 +68,9 @@ def test_burst_detector_detect_explicit(grid_data):
     pytest.importorskip("ghostipy")
     from cogpy.spectral.specx import spectrogramx
 
-    spec = spectrogramx(grid_data, nperseg=256, noverlap=128, bandwidth=4.0, axis="time")
+    spec = spectrogramx(
+        grid_data, nperseg=256, noverlap=128, bandwidth=4.0, axis="time"
+    )
     det = BurstDetector(h_quantile=0.9)
     cat = det.detect(spec)
 
@@ -87,4 +95,3 @@ def test_burst_detector_transform_info():
     assert info["required"] is True
     assert info["implicit"] is True
     assert info["explicit"] is True
-

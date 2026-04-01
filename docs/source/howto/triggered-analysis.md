@@ -163,3 +163,8 @@ alpha = fit_scaling(epochs.values, template.values)
 event_samples = np.round(stim_times * fs).astype(int)
 sig_clean = subtract_template(sig, event_samples, template.values, scaling=alpha)
 ```
+
+## See also
+
+- {doc}`compose-artifact-analysis` — full composition patterns for artifact removal
+- {doc}`/api/brainstates` — epoch extraction and interval operations

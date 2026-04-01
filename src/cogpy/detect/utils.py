@@ -44,7 +44,9 @@ def hilbert_envelope(data: xr.DataArray, *, time_dim: str = "time") -> xr.DataAr
     from scipy.signal import hilbert
 
     if time_dim not in data.dims:
-        raise ValueError(f"Expected time_dim={time_dim!r} in data.dims={tuple(data.dims)}")
+        raise ValueError(
+            f"Expected time_dim={time_dim!r} in data.dims={tuple(data.dims)}"
+        )
 
     # Ensure numpy-backed array for SciPy.
     values = data.data
@@ -57,7 +59,9 @@ def hilbert_envelope(data: xr.DataArray, *, time_dim: str = "time") -> xr.DataAr
     axis = int(data.get_axis_num(time_dim))
     analytic = hilbert(arr, axis=axis)
     env = np.abs(analytic)
-    return xr.DataArray(env, dims=data.dims, coords=data.coords, attrs=dict(data.attrs), name=data.name)
+    return xr.DataArray(
+        env, dims=data.dims, coords=data.coords, attrs=dict(data.attrs), name=data.name
+    )
 
 
 def zscore_1d(x: np.ndarray) -> np.ndarray:
@@ -88,7 +92,9 @@ def find_true_runs(mask: np.ndarray) -> list[tuple[int, int]]:
     return [(int(s), int(e)) for s, e in zip(starts, ends)]
 
 
-def merge_intervals(intervals: list[tuple[int, int]], *, gap: int) -> list[tuple[int, int]]:
+def merge_intervals(
+    intervals: list[tuple[int, int]], *, gap: int
+) -> list[tuple[int, int]]:
     """Merge 1D intervals whose gap is <= `gap` samples."""
     if not intervals:
         return []
@@ -268,7 +274,14 @@ def bout_duration_summary(bouts: list[dict[str, Any]]) -> dict[str, float]:
         All values are ``0.0`` when *bouts* is empty (``count`` is ``0``).
     """
     if not bouts:
-        return {"count": 0, "mean": 0.0, "median": 0.0, "std": 0.0, "p5": 0.0, "p95": 0.0}
+        return {
+            "count": 0,
+            "mean": 0.0,
+            "median": 0.0,
+            "std": 0.0,
+            "p5": 0.0,
+            "p95": 0.0,
+        }
     durations = np.array([b["duration"] for b in bouts], dtype=float)
     return {
         "count": len(durations),
@@ -278,4 +291,3 @@ def bout_duration_summary(bouts: list[dict[str, Any]]) -> dict[str, float]:
         "p5": float(np.percentile(durations, 5)),
         "p95": float(np.percentile(durations, 95)),
     }
-

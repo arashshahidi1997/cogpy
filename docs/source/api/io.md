@@ -1,6 +1,11 @@
 # `cogpy.io`
 
-File I/O for electrophysiology formats (binary LFP, Zarr, BIDS-iEEG).
+File I/O for electrophysiology formats: binary LFP, Zarr, HDF5, BIDS-iEEG,
+and XML anatomy maps. I/O functions load data into xarray and save results
+back to disk — they never do heavy compute.
+
+**Guide:** {doc}`/howto/load-ecog-data` |
+**Design:** {doc}`/explanation/architecture` (compute vs I/O separation)
 
 ## Submodules
 

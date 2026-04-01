@@ -30,6 +30,7 @@ import numpy as np
 import xarray as xr
 from typing import Dict, Any, Union
 from cogpy.utils.imports import import_optional
+
 da = import_optional("dask.array")
 from dask.diagnostics import ProgressBar
 from . import xml_io

@@ -41,14 +41,18 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
-def _extract_phase(signal: np.ndarray, freq_band: tuple[float, float], fs: float) -> np.ndarray:
+def _extract_phase(
+    signal: np.ndarray, freq_band: tuple[float, float], fs: float
+) -> np.ndarray:
     """Bandpass filter then extract instantaneous phase via Hilbert transform."""
     b, a = butter(3, [freq_band[0] / (fs / 2), freq_band[1] / (fs / 2)], btype="band")
     filtered = filtfilt(b, a, signal)
     return np.angle(hilbert(filtered))
 
 
-def _extract_amplitude(signal: np.ndarray, freq_band: tuple[float, float], fs: float) -> np.ndarray:
+def _extract_amplitude(
+    signal: np.ndarray, freq_band: tuple[float, float], fs: float
+) -> np.ndarray:
     """Bandpass filter then extract amplitude envelope via Hilbert transform."""
     b, a = butter(3, [freq_band[0] / (fs / 2), freq_band[1] / (fs / 2)], btype="band")
     filtered = filtfilt(b, a, signal)
@@ -81,7 +85,7 @@ def _tort_mi(phase: np.ndarray, amplitude: np.ndarray, n_bins: int) -> float:
 def _ozkurt_mi(phase: np.ndarray, amplitude: np.ndarray) -> float:
     """Ozkurt normalized modulation index: |mean(amp * exp(i*phase))| / sqrt(mean(amp^2))."""
     z = np.abs(np.mean(amplitude * np.exp(1j * phase)))
-    norm = np.sqrt(np.mean(amplitude ** 2))
+    norm = np.sqrt(np.mean(amplitude**2))
     if norm == 0:
         return 0.0
     return float(z / norm)
@@ -191,7 +195,7 @@ def preferred_phase(
     n = len(phase_signal)
     R = mvl * n
     # Rayleigh test: p ≈ exp(-R^2 / n) for large n
-    pvalue = float(np.exp(-R**2 / n)) if n > 0 else 1.0
+    pvalue = float(np.exp(-(R**2) / n)) if n > 0 else 1.0
     pvalue = min(pvalue, 1.0)
 
     return {"angle": angle, "mvl": mvl, "pvalue": pvalue}
@@ -276,7 +280,11 @@ def comodulogram(
         phase = _extract_phase(signal, (ph_lo, ph_hi), fs)
 
         for j, fa in enumerate(freq_amp_centers):
-            bw = freq_amp_bw if freq_amp_bw is not None else (4.0 if fa < 30 else fa * 0.2)
+            bw = (
+                freq_amp_bw
+                if freq_amp_bw is not None
+                else (4.0 if fa < 30 else fa * 0.2)
+            )
             am_lo = fa - bw / 2
             am_hi = fa + bw / 2
             amp = _extract_amplitude(signal, (am_lo, am_hi), fs)
@@ -357,25 +365,29 @@ def surrogate_pac(
             n_blocks = n // block_size
             idx = np.arange(n_blocks)
             rng.shuffle(idx)
-            blocks = [phase_signal[i * block_size:(i + 1) * block_size] for i in idx]
-            remainder = phase_signal[n_blocks * block_size:]
+            blocks = [phase_signal[i * block_size : (i + 1) * block_size] for i in idx]
+            remainder = phase_signal[n_blocks * block_size :]
             phase_surr = np.concatenate(blocks + [remainder])
-            surr_mis[k] = modulation_index(phase_surr, amp_signal, n_bins=n_bins, method=method)
+            surr_mis[k] = modulation_index(
+                phase_surr, amp_signal, n_bins=n_bins, method=method
+            )
             continue
         elif surrogate_method == "time_block":
             block_size = max(n // 20, 1)
             n_blocks = n // block_size
             idx = np.arange(n_blocks)
             rng.shuffle(idx)
-            blocks = [amp_signal[i * block_size:(i + 1) * block_size] for i in idx]
-            remainder = amp_signal[n_blocks * block_size:]
+            blocks = [amp_signal[i * block_size : (i + 1) * block_size] for i in idx]
+            remainder = amp_signal[n_blocks * block_size :]
             amp_surr = np.concatenate(blocks + [remainder])
         else:
             raise ValueError(
                 f"Unknown surrogate_method {surrogate_method!r}; "
                 f"choose from 'circular_shift', 'swap_phase', 'time_block'"
             )
-        surr_mis[k] = modulation_index(phase_signal, amp_surr, n_bins=n_bins, method=method)
+        surr_mis[k] = modulation_index(
+            phase_signal, amp_surr, n_bins=n_bins, method=method
+        )
 
     surr_mean = surr_mis.mean()
     surr_std = surr_mis.std()

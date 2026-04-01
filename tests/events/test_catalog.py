@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -63,8 +61,17 @@ def test_eventcatalog_auto_duration():
 
 
 def test_from_hmaxima():
-    peaks_df = pd.DataFrame({"t": [1.0, 2.0, 3.0], "AP": [1, 2, 3], "ML": [4, 5, 6], "amp": [10.0, 20.0, 15.0]})
-    catalog = EventCatalog.from_hmaxima(peaks_df, label="burst_peak", detector="detect_hmaxima")
+    peaks_df = pd.DataFrame(
+        {
+            "t": [1.0, 2.0, 3.0],
+            "AP": [1, 2, 3],
+            "ML": [4, 5, 6],
+            "amp": [10.0, 20.0, 15.0],
+        }
+    )
+    catalog = EventCatalog.from_hmaxima(
+        peaks_df, label="burst_peak", detector="detect_hmaxima"
+    )
 
     assert len(catalog) == 3
     assert "event_id" in catalog.df.columns
@@ -113,7 +120,9 @@ def test_from_burst_dict():
 
 
 def test_to_events():
-    df = pd.DataFrame({"event_id": [0, 1, 2], "t": [1.0, 2.0, 3.0], "label": ["a", "b", "c"]})
+    df = pd.DataFrame(
+        {"event_id": [0, 1, 2], "t": [1.0, 2.0, 3.0], "label": ["a", "b", "c"]}
+    )
     catalog = EventCatalog(df=df)
     events = catalog.to_events()
 
@@ -123,7 +132,9 @@ def test_to_events():
 
 
 def test_to_intervals():
-    df = pd.DataFrame({"event_id": [0, 1], "t": [1.5, 2.5], "t0": [1.0, 2.0], "t1": [2.0, 3.0]})
+    df = pd.DataFrame(
+        {"event_id": [0, 1], "t": [1.5, 2.5], "t0": [1.0, 2.0], "t1": [2.0, 3.0]}
+    )
     catalog = EventCatalog(df=df)
     intervals = catalog.to_intervals()
 
@@ -167,7 +178,9 @@ def test_filter_by_time():
 
 
 def test_filter_by_channel():
-    df = pd.DataFrame({"event_id": [0, 1, 2], "t": [1.0, 2.0, 3.0], "channel": [0, 1, 0]})
+    df = pd.DataFrame(
+        {"event_id": [0, 1, 2], "t": [1.0, 2.0, 3.0], "channel": [0, 1, 0]}
+    )
     catalog = EventCatalog(df=df)
 
     filtered = catalog.filter_by_channel(0)
@@ -178,9 +191,15 @@ def test_filter_by_channel():
 
 
 def test_filter_by_spatial_radius():
-    df = pd.DataFrame({"event_id": [0, 1, 2], "t": [1.0, 2.0, 3.0], "AP": [0.0, 1.0, 5.0], "ML": [0.0, 1.0, 5.0]})
+    df = pd.DataFrame(
+        {
+            "event_id": [0, 1, 2],
+            "t": [1.0, 2.0, 3.0],
+            "AP": [0.0, 1.0, 5.0],
+            "ML": [0.0, 1.0, 5.0],
+        }
+    )
     catalog = EventCatalog(df=df)
 
     filtered = catalog.filter_by_spatial(AP=0.5, ML=0.5, radius=1.0)
     assert len(filtered) == 2
-

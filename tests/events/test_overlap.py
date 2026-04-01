@@ -31,4 +31,3 @@ def test_detect_overlaps_empty_for_non_interval():
     catalog = EventCatalog(df=df, name="p")
     overlaps = detect_overlaps(catalog)
     assert len(overlaps) == 0
-

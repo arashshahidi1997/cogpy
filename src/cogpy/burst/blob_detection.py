@@ -19,6 +19,7 @@ import xarray as xr
 import pandas as pd
 import warnings
 from cogpy.utils.imports import import_optional
+
 import_optional("skimage")
 from skimage.feature import blob_log  # , blob_dog, blob_doh
 from skimage.morphology import extrema

@@ -41,5 +41,7 @@ def test_spectrogram_bursts_bundle_schema(kind):
     from cogpy.datasets.gui_bundles import spectrogram_bursts_bundle
 
     bundle = spectrogram_bursts_bundle(mode="small", seed=0, kind=kind)
-    assert set(["burst_id", "x", "y", "t", "z", "value"]).issubset(set(bundle.bursts.columns))
+    assert set(["burst_id", "x", "y", "t", "z", "value"]).issubset(
+        set(bundle.bursts.columns)
+    )
     assert set(["ml", "ap", "time", "freq"]).issubset(set(bundle.spec.dims))

@@ -56,9 +56,14 @@ def _build_adjacency(ap, ml, adjacency):
         offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     else:  # queen
         offsets = [
-            (-1, -1), (-1, 0), (-1, 1),
-            (0, -1),           (0, 1),
-            (1, -1),  (1, 0),  (1, 1),
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
         ]
 
     for i in range(ap):
@@ -126,23 +131,23 @@ def moran_i(grid: np.ndarray, *, adjacency: str = "queen"):
         return float("nan") if scalar_output else np.full(batch_shape, np.nan)
 
     # Subset to valid electrodes
-    x_v = x[..., valid]              # (..., n_valid)
-    W_v = W[np.ix_(valid, valid)]    # (n_valid, n_valid)
+    x_v = x[..., valid]  # (..., n_valid)
+    W_v = W[np.ix_(valid, valid)]  # (n_valid, n_valid)
 
     Wsum = float(np.sum(W_v))
     if Wsum <= 0:
         return float("nan") if scalar_output else np.full(batch_shape, np.nan)
 
     n_valid = x_v.shape[-1]
-    xmean = np.mean(x_v, axis=-1, keepdims=True)   # (..., 1)
-    xc = x_v - xmean                                # (..., n_valid)
+    xmean = np.mean(x_v, axis=-1, keepdims=True)  # (..., 1)
+    xc = x_v - xmean  # (..., n_valid)
 
-    denom = np.sum(xc ** 2, axis=-1)                # (...)
+    denom = np.sum(xc**2, axis=-1)  # (...)
 
     # Numerator: xc^T @ W @ xc  per batch element
     # W is symmetric, so xc @ W gives the same as (W @ xc^T)^T
-    Wxc = xc @ W_v                                   # (..., n_valid)
-    num = np.sum(xc * Wxc, axis=-1)                  # (...)
+    Wxc = xc @ W_v  # (..., n_valid)
+    num = np.sum(xc * Wxc, axis=-1)  # (...)
 
     result = np.where(
         denom > EPS,
@@ -186,7 +191,9 @@ def csd_power(
     if x.ndim != 3:
         raise ValueError(f"grid_signal must have shape (AP, ML, time), got {x.shape}.")
     if axis not in (-1, 2):
-        raise ValueError(f"axis must refer to the last dimension (time), got axis={axis}.")
+        raise ValueError(
+            f"axis must refer to the last dimension (time), got axis={axis}."
+        )
     if spacing_mm <= 0:
         raise ValueError(f"spacing_mm must be positive, got {spacing_mm}.")
 
@@ -356,9 +363,9 @@ def marginal_energy_outlier(grid, *, robust=True, threshold=3.0):
     if g.ndim < 2:
         raise ValueError(f"grid must have shape (..., AP, ML), got {g.shape}.")
 
-    g_sq = g ** 2
-    row_energy = np.nansum(g_sq, axis=-1)   # (..., AP)
-    col_energy = np.nansum(g_sq, axis=-2)   # (..., ML)
+    g_sq = g**2
+    row_energy = np.nansum(g_sq, axis=-1)  # (..., AP)
+    col_energy = np.nansum(g_sq, axis=-2)  # (..., ML)
 
     def _zscore(x):
         # z-score along the last axis (the row/col dimension)
@@ -481,7 +488,7 @@ def spatial_noise_concentration(grid, *, k=3):
     n = g.shape[-2] * g.shape[-1]
     k = min(int(k), n)
 
-    energy = g ** 2
+    energy = g**2
     flat = energy.reshape(batch_shape + (n,))
 
     # Partition to find top-k without full sort

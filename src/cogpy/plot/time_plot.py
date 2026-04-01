@@ -1,4 +1,5 @@
 from cogpy.utils.imports import import_optional
+
 import_optional("plotly")
 from plotly.graph_objs import Layout, Scatter
 from plotly.graph_objs.layout import YAxis, Annotation

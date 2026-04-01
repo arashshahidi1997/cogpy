@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 
 from cogpy.utils.imports import import_optional
+
 hv = import_optional("holoviews")
 
 
@@ -49,7 +50,11 @@ def loading_spatial_layout(
         peak_ap = ldx_df.loc[ifac, "AP"]
         peak_ml = ldx_df.loc[ifac, "ML"]
 
-        clim = (-float(np.abs(slc).max()), float(np.abs(slc).max())) if symmetric else (None, None)
+        clim = (
+            (-float(np.abs(slc).max()), float(np.abs(slc).max()))
+            if symmetric
+            else (None, None)
+        )
 
         img = hv.Image(
             slc,
@@ -115,7 +120,9 @@ def loading_spectral_profiles(
         ).opts(width=width, height=height, title=f"Factor {ifac}")
 
         vline = hv.VLine(peak_freq).opts(
-            color="red", line_dash="dashed", alpha=0.7,
+            color="red",
+            line_dash="dashed",
+            alpha=0.7,
         )
 
         panels.append(curve * vline)
@@ -226,7 +233,11 @@ def score_traces_holomap(
     frames = {}
     for g in gains:
         frames[g] = score_traces(
-            scx, ldx_df, gain=g, width=width, height=height,
+            scx,
+            ldx_df,
+            gain=g,
+            width=width,
+            height=height,
         )
     return hv.HoloMap(frames, kdims=["Gain"])
 
@@ -262,7 +273,11 @@ def factor_holomap(
         peak_freq = ldx_df.loc[ifac, "freqmax"]
         slc = ldx.sel(factor=ifac, freq=peak_freq, method="nearest")
 
-        clim = (-float(np.abs(slc).max()), float(np.abs(slc).max())) if symmetric else (None, None)
+        clim = (
+            (-float(np.abs(slc).max()), float(np.abs(slc).max()))
+            if symmetric
+            else (None, None)
+        )
 
         img = hv.Image(
             slc,

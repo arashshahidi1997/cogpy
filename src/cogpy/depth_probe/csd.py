@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.ndimage as nd
 from cogpy.utils.imports import import_optional
+
 plt = import_optional("matplotlib.pyplot")
 import_optional("skimage")
 from skimage.morphology import extrema

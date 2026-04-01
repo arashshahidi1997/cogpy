@@ -33,4 +33,3 @@ def get_transform_class(name: str):
     if key not in table:
         raise ValueError(f"Unknown transform: {key}")
     return table[key]
-

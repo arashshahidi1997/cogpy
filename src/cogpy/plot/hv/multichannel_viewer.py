@@ -20,10 +20,12 @@ Usage
     viewer.show_channels([0, 1, 2, 3, 4, 5, 6, 7])
     viewer.panel().servable()
 """
+
 from __future__ import annotations
 
 import numpy as np
 from cogpy.utils.imports import import_optional
+
 hv = import_optional("holoviews")
 pn = import_optional("panel")
 from holoviews import streams
@@ -126,23 +128,25 @@ class MultichannelViewer:
     ):
         assert sig_z.ndim == 2, "sig_z must be (n_ch, n_time)"
         assert sig_z.shape[1] == len(t_vals), "sig_z columns must match t_vals length"
-        assert sig_z.shape[0] == len(ch_labels), "sig_z rows must match ch_labels length"
+        assert sig_z.shape[0] == len(
+            ch_labels
+        ), "sig_z rows must match ch_labels length"
 
-        self._sig_z    = np.ascontiguousarray(sig_z)
-        self._t_vals   = np.asarray(t_vals, dtype=np.float64)
+        self._sig_z = np.ascontiguousarray(sig_z)
+        self._t_vals = np.asarray(t_vals, dtype=np.float64)
         self._ch_labels = list(ch_labels)
-        self._n_ch     = sig_z.shape[0]
+        self._n_ch = sig_z.shape[0]
         self._chain = chain
 
-        self._iw   = initial_window_s
+        self._iw = initial_window_s
         self._minw = min_window_s
         self._maxw = max_window_s
-        self._dpx  = detail_px
-        self._opx  = overview_px
+        self._dpx = detail_px
+        self._opx = overview_px
         self._offs = offset_scale
-        self._w    = width
-        self._dh   = detail_height
-        self._oh   = overview_height
+        self._w = width
+        self._dh = detail_height
+        self._oh = overview_height
         self._tdim = time_dim
         self._title = title
         self._show_channel_labels = bool(show_channel_labels)
@@ -208,9 +212,7 @@ class MultichannelViewer:
         except Exception:  # noqa: BLE001
             pass
 
-        self._range_stream = streams.RangeX(
-            x_range=(self._t0, self._t0 + self._iw)
-        )
+        self._range_stream = streams.RangeX(x_range=(self._t0, self._t0 + self._iw))
 
         # Overview — static mean trace
         mean_sig = self._sig_z.mean(axis=0)
@@ -223,13 +225,15 @@ class MultichannelViewer:
             ylim = (y0 - pad, y1 + pad)
         else:
             ylim = (-1.0, 1.0)
-        self._overview = hv.Curve(
-            (t_ov, y_ov), kdims=self._tdim, vdims="amp"
-        ).opts(
-            width=self._w, height=self._oh,
-            color=BLUE, line_width=0.8,
-            xlabel="", ylabel="",
-            toolbar=None, default_tools=[],
+        self._overview = hv.Curve((t_ov, y_ov), kdims=self._tdim, vdims="amp").opts(
+            width=self._w,
+            height=self._oh,
+            color=BLUE,
+            line_width=0.8,
+            xlabel="",
+            ylabel="",
+            toolbar=None,
+            default_tools=[],
             title="Overview  —  drag to navigate",
             yaxis=None,
             ylim=ylim,
@@ -242,16 +246,21 @@ class MultichannelViewer:
         )
 
         RangeToolLink(
-            self._overview, self._detail_dmap,
+            self._overview,
+            self._detail_dmap,
             axes=["x", "x"],
             boundsx=(self._t0, self._t0 + self._iw),
         )
 
         # Window slider
         self._window_slider = pn.widgets.FloatSlider(
-            name="Window (s)", value=self._iw,
-            start=self._minw, end=self._maxw, step=0.5,
-            sizing_mode="fixed", width=240,
+            name="Window (s)",
+            value=self._iw,
+            start=self._minw,
+            end=self._maxw,
+            step=0.5,
+            sizing_mode="fixed",
+            width=240,
         )
         self._window_slider.param.watch(self._on_window, "value")
 
@@ -272,7 +281,11 @@ class MultichannelViewer:
             pn.Row(
                 self._window_slider,
                 self._framewise_chk,
-                styles={"background": BG_PANEL, "padding": "8px", "border-radius": "6px"},
+                styles={
+                    "background": BG_PANEL,
+                    "padding": "8px",
+                    "border-radius": "6px",
+                },
             ),
             self._detail_dmap,
             self._overview,
@@ -319,9 +332,9 @@ class MultichannelViewer:
             t0 = max(float(x_range[0]), self._t0)
             t1 = min(float(x_range[1]), self._t1)
 
-        i0, i1   = _find_indices(self._t_vals, t0, t1)
-        ch_ixs   = list(self._active_ix)   # snapshot
-        n_vis    = len(ch_ixs)
+        i0, i1 = _find_indices(self._t_vals, t0, t1)
+        ch_ixs = list(self._active_ix)  # snapshot
+        n_vis = len(ch_ixs)
 
         # Always return the same element type (Overlay) so DynamicMap updates are stable.
         if n_vis == 0 or i1 <= i0:
@@ -378,10 +391,11 @@ class MultichannelViewer:
             else:
                 y_win = self._sig_z[ch, i0:i1]
             t_ds, y_ds = _downsample(t_win, y_win, self._dpx)
-            offset     = (n_vis - 1 - rank) * self._offs
+            offset = (n_vis - 1 - rank) * self._offs
             curves[rank] = hv.Curve(
                 (t_ds, y_ds + offset),
-                kdims=self._tdim, vdims="amp",
+                kdims=self._tdim,
+                vdims="amp",
             ).opts(
                 color=_PALETTE[rank % len(_PALETTE)],
                 line_width=1,
@@ -391,9 +405,12 @@ class MultichannelViewer:
 
         traces = hv.NdOverlay(curves, kdims="rank").opts(
             hv.opts.NdOverlay(
-                width=self._w, height=self._dh,
-                show_legend=False, toolbar="above",
-                xlabel=f"{self._tdim} (s)", ylabel="",
+                width=self._w,
+                height=self._dh,
+                show_legend=False,
+                toolbar="above",
+                xlabel=f"{self._tdim} (s)",
+                ylabel="",
                 title=self._title,
                 framewise=bool(self._framewise),
                 shared_axes=False,
@@ -434,7 +451,7 @@ class MultichannelViewer:
     def _on_window(self, event) -> None:
         lo, hi = self._range_stream.x_range or (self._t0, self._t0 + self._iw)
         center = (lo + hi) / 2
-        half   = event.new / 2
+        half = event.new / 2
         new_lo = max(self._t0, center - half)
         new_hi = min(self._t1, center + half)
         self._range_stream.event(x_range=(new_lo, new_hi))
@@ -488,7 +505,9 @@ class MultichannelViewer:
         lo, hi = self._current_t_range
         self._range_stream.event(x_range=(float(lo), float(hi)))
 
-    def attach_time_hair_to_overview(self, hair, *, time_kdim: str | None = None, **attach_kwargs):
+    def attach_time_hair_to_overview(
+        self, hair, *, time_kdim: str | None = None, **attach_kwargs
+    ):
         """Attach tap/click behavior + hair overlay to the overview curve.
 
         This is the recommended way to make clicks in the overview update
