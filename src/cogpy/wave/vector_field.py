@@ -90,11 +90,12 @@ class CriticalPoint:
     location : tuple[int, int]
         Grid indices (AP, ML).
     type : str
-        One of ``"source"``, ``"sink"``, ``"center"``, ``"saddle"``.
+        One of ``"source"``, ``"sink"``, ``"spiral_out"``,
+        ``"spiral_in"``, ``"center"``, ``"saddle"``.
     """
 
     location: tuple[int, int]
-    type: Literal["source", "sink", "center", "saddle"]
+    type: Literal["source", "sink", "spiral_out", "spiral_in", "center", "saddle"]
 
 
 def critical_points(
@@ -140,6 +141,10 @@ def critical_points(
     dv_dx = np.gradient(vv, dx, axis=0)
     dv_dy = np.gradient(vv, dy, axis=1)
 
+    # NOTE: NeuroPattToolbox uses bilinear interpolation within grid cells
+    # for sub-pixel critical-point localisation.  We use a simpler discrete
+    # approach (local minimum of speed) which is adequate for grid-resolution
+    # analysis.
     pts: list[CriticalPoint] = []
     for i in range(1, n_ap - 1):
         for j in range(1, n_ml - 1):
@@ -154,16 +159,27 @@ def critical_points(
             re = eigs.real
             im = eigs.imag
 
-            if np.all(re > 0) and np.allclose(im, 0, atol=1e-8):
-                cp_type = "source"
-            elif np.all(re < 0) and np.allclose(im, 0, atol=1e-8):
-                cp_type = "sink"
-            elif not np.allclose(im, 0, atol=1e-8) and np.allclose(re, 0, atol=1e-6):
-                cp_type = "center"
-            elif re[0] * re[1] < 0:
-                cp_type = "saddle"
+            has_imag = not np.allclose(im, 0, atol=1e-8)
+
+            if not has_imag:
+                # Real eigenvalues.
+                if np.all(re > 0):
+                    cp_type = "source"
+                elif np.all(re < 0):
+                    cp_type = "sink"
+                elif re[0] * re[1] < 0:
+                    cp_type = "saddle"
+                else:
+                    continue
             else:
-                continue
+                # Complex eigenvalues (conjugate pair for real Jacobian).
+                if np.allclose(re, 0, atol=1e-6):
+                    cp_type = "center"
+                elif re[0] > 0:
+                    cp_type = "spiral_out"
+                else:
+                    cp_type = "spiral_in"
+
             pts.append(CriticalPoint(location=(i, j), type=cp_type))
 
     return pts
@@ -229,7 +245,9 @@ def classify_pattern(
     uy = vv / mag
     coherence = np.sqrt(np.mean(ux) ** 2 + np.mean(uy) ** 2)
 
-    # Thresholds (heuristic, similar to NeuroPattToolbox).
+    # Heuristic thresholds loosely modelled on NeuroPattToolbox.
+    # NeuroPatt uses critical-point topology plus spatial clustering;
+    # here we use a simpler metric-ratio scheme for fast screening.
     div_ratio = mean_div / mean_speed
     curl_ratio = mean_curl / mean_speed
 

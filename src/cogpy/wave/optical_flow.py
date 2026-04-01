@@ -54,6 +54,11 @@ def compute_flow(
     .. [1] Townsend & Gong (2018), DOI: 10.1371/journal.pcbi.1006643
     .. [2] Afrashteh et al. (2017), DOI: 10.1016/j.neuroimage.2017.03.034
     """
+    # NeuroPattToolbox uses a custom Lucas-Kanade solver; OFAMM provides
+    # Horn-Schunck and CLG.  We delegate to scikit-image which offers TV-L1
+    # (robust, variational) and ILK (iterative Lucas-Kanade).  Results are
+    # algorithmically comparable; the solver choice mostly affects smoothness
+    # and robustness to noise.
     import_optional("skimage", extra="signal")
     from skimage.registration import optical_flow_tvl1, optical_flow_ilk
 
