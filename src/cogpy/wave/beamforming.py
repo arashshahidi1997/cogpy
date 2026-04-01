@@ -38,8 +38,8 @@ def _steering_vectors(
     ndarray, shape (n_freq, n_sx, n_sy, N)
         Complex steering vectors.
     """
-    # Phase delay: exp(-j 2π f (sx*x + sy*y))
-    # coords (N,2), slowness (n_sx, n_sy, 2)
+    # Steering vector: a_i(f,s) = exp(-j 2π f (sx·x_i + sy·y_i))
+    # following Capon (1969).  coords (N,2), slowness (n_sx, n_sy, 2).
     # dot product -> (n_sx, n_sy, N)
     delay = np.einsum("ijk,lk->ijl", slowness_grid, coords)  # (n_sx, n_sy, N)
     # (n_freq, n_sx, n_sy, N)

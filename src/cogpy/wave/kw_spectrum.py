@@ -53,7 +53,9 @@ def kw_spectrum_3d(
         noverlap = nperseg // 2
     step = nperseg - noverlap
 
-    # Temporal windowing.
+    # Temporal windowing only — spatial axes are not windowed because the
+    # grid typically covers the full array.  For sub-sampled arrays this
+    # may introduce spatial spectral leakage.
     win_t = hann(nperseg, sym=False)
 
     # Accumulate Welch-like average.
@@ -131,8 +133,9 @@ def kw_peaks(
         ky = ky_vals[idx[2]]
         k_mag = np.sqrt(kx**2 + ky**2)
         direction = np.arctan2(ky, kx)
-        omega = 2 * np.pi * abs(f)
-        speed = omega / k_mag if k_mag > 1e-12 else 0.0
+        # fftfreq returns spatial frequency (cycles/unit), so phase
+        # velocity = f / |k_spatial| (both in cycles-per-unit).
+        speed = abs(f) / k_mag if k_mag > 1e-12 else 0.0
         wavelength = 1.0 / k_mag if k_mag > 1e-12 else None
         wavenumber = k_mag if k_mag > 1e-12 else None
 
