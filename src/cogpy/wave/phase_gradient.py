@@ -79,7 +79,13 @@ def phase_gradient(
         Spatial gradient components along AP and ML axes.
     """
     if geometry.is_regular and {"AP", "ML"}.issubset(phase.dims):
-        # Regular grid: finite differences.
+        # Regular grid: 2nd-order centered finite differences on unwrapped
+        # phase.  The MATLAB reference (wm_travelingwaves_code) uses complex
+        # conjugate multiplication — angle(conj(z_i) * z_{i+1}) — which
+        # implicitly wraps to [-π, π].  Both approaches are equivalent for
+        # well-sampled signals where inter-electrode phase change < π; we
+        # prefer np.gradient because hilbert_phase() already unwraps, and
+        # centered differences give a higher-order approximation.
         vals = phase.values  # (time, AP, ML)
         gx = np.gradient(vals, geometry.dx, axis=1)
         gy = np.gradient(vals, geometry.dy, axis=2)
@@ -144,12 +150,14 @@ def pgd(phase: xr.DataArray, geometry: Geometry) -> xr.DataArray:
     gx = dphi_dx.values  # (time, AP, ML)
     gy = dphi_dy.values
 
+    # Normalise each gradient vector to unit length and compute the mean
+    # resultant length across all spatial locations.  This is Eq. (1) in
+    # Zhang et al. (2018): PGD = |mean(û)|, where û = ∇φ / |∇φ|.
     mag = np.sqrt(gx**2 + gy**2)
     mag = np.where(mag == 0, 1.0, mag)
     ux = gx / mag
     uy = gy / mag
 
-    # Resultant length across spatial dims.
     spatial_axes = tuple(range(1, ux.ndim))
     n = np.prod([ux.shape[a] for a in spatial_axes])
     mean_x = np.sum(ux, axis=spatial_axes) / n
