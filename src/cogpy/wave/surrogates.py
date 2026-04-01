@@ -53,11 +53,22 @@ def phase_randomize(
 
     ax = data.dims.index(axis)
     vals = data.values
+    n = vals.shape[ax]
     F = np.fft.rfft(vals, axis=ax)
     amp = np.abs(F)
     rand_phase = rng.uniform(0, 2 * np.pi, size=amp.shape)
     F_rand = amp * np.exp(1j * rand_phase)
-    n = vals.shape[ax]
+
+    # DC and Nyquist bins must stay real for irfft to preserve their
+    # power (applying a random phase would scale them by cos(θ)).
+    slices_dc = [slice(None)] * F_rand.ndim
+    slices_dc[ax] = 0
+    F_rand[tuple(slices_dc)] = F[tuple(slices_dc)].real
+    if n % 2 == 0:
+        slices_nyq = [slice(None)] * F_rand.ndim
+        slices_nyq[ax] = -1
+        F_rand[tuple(slices_nyq)] = F[tuple(slices_nyq)].real
+
     surr = np.fft.irfft(F_rand, n=n, axis=ax)
     return xr.DataArray(surr, dims=data.dims, coords=data.coords)
 
