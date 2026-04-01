@@ -4,7 +4,12 @@ Computes a stabilised instantaneous phase for wideband signals by
 centering the analytic representation and correcting negative-frequency
 contamination.
 
-Ported from mullerlab/generalized-phase [1]_.
+Adapted from mullerlab/generalized-phase [1]_.  Our implementation
+uses a simplified frequency-domain approach (centre + re-zero negatives)
+rather than the time-domain IF-epoch detection with PCHIP interpolation
+used in the original MATLAB code.  This is adequate for well-sampled
+signals; for noisy recordings with strong negative-frequency epochs,
+the full MATLAB pipeline may be more robust.
 
 References
 ----------
@@ -63,20 +68,24 @@ def generalized_phase(
     mean_imag = np.mean(analytic.imag, axis=ax, keepdims=True)
     analytic = analytic - mean_real - 1j * mean_imag
 
-    # Step 3: correct negative-frequency contamination.
-    # Force the analytic signal to have non-negative instantaneous frequency
-    # by reflecting any negative-frequency energy.
+    # Step 3: re-enforce one-sided spectrum after centering.
+    # Centering (Step 2) only modifies the DC bin, so negative frequencies
+    # should still be ≈0 from the initial hilbert().  We re-zero them as a
+    # guard but do NOT re-double positive frequencies — they were already
+    # doubled by scipy.signal.hilbert.
+    #
+    # Note: the MATLAB mullerlab reference uses a different approach here —
+    # it computes instantaneous frequency (IF) via
+    #   angle(z(t+1) * conj(z(t))) / (2π·dt),
+    # detects epochs where IF < 0, and fills them with PCHIP interpolation.
+    # Our frequency-domain zeroing is a simpler approximation that is
+    # adequate for well-sampled signals but does not correct individual
+    # negative-IF epochs the way the MATLAB code does.
     F = np.fft.fft(analytic, axis=ax)
     n = vals.shape[ax]
-    # Zero negative frequencies (already done by hilbert, but re-enforce
-    # after centering may have reintroduced some).
     slices_neg = [slice(None)] * vals.ndim
     slices_neg[ax] = slice(n // 2 + 1, None)
     F[tuple(slices_neg)] = 0.0
-    # Double positive frequencies (standard analytic signal convention).
-    slices_pos = [slice(None)] * vals.ndim
-    slices_pos[ax] = slice(1, n // 2)
-    F[tuple(slices_pos)] *= 2.0
     analytic = np.fft.ifft(F, axis=ax)
 
     phase = np.unwrap(np.angle(analytic), axis=ax)
