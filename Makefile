@@ -5,7 +5,7 @@ SHELL := /bin/bash
 PYTHON     ?= /storage/share/python/environments/Anaconda3/envs/cogpy/bin/python
 CONDA_ENV  ?= cogpy
 DATALAD    := conda run -n $(CONDA_ENV) datalad
-SPHINX_MAKE := $(MAKE) -C docs
+SPHINX_MAKE := $(MAKE) -C docs SPHINXBUILD="$(PYTHON) -m sphinx"
 DOCS_HTML  := docs/build/html
 DOCS_PORT  ?= 8005
 SAVE_MSG   ?= chore: cogpy update

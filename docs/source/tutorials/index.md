@@ -21,5 +21,6 @@ spectral-analysis
 detection-and-events
 bad-channel-detection
 spatial-measures
+travelling-waves
 factor-analysis
 ```

@@ -23,6 +23,7 @@ to working analysis pipelines. Start here if you are new to cogpy.
 - {doc}`tutorials/install`
 - {doc}`tutorials/quickstart`
 - {doc}`tutorials/spectral-analysis`
+- {doc}`tutorials/travelling-waves`
 - {doc}`tutorials/bad-channel-detection`
 :::
 
