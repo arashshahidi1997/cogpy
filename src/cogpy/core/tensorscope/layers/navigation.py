@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import panel as pn
 
-from cogpy.core.plot.time_player import PlayerWithRealTime
+from cogpy.core.plot.hv.time_player import PlayerWithRealTime
 
 from .base import TensorLayer
 

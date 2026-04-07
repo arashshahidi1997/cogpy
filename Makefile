@@ -7,7 +7,7 @@ CONDA_ENV  ?= cogpy
 DATALAD    := conda run -n $(CONDA_ENV) datalad
 SPHINX_MAKE := $(MAKE) -C docs
 DOCS_HTML  := docs/build/html
-DOCS_PORT  ?= 8000
+DOCS_PORT  ?= 8005
 SAVE_MSG   ?= chore: cogpy update
 ORIGIN_REMOTE ?= origin
 PAGES_REMOTE  ?= gitlab
@@ -91,3 +91,5 @@ deploy:
 website:
 	@echo ">> Docs build directory: $(DOCS_HTML)"
 	@echo ">> Serve locally with: make docs-serve"
+
+-include .projio/projio.mk

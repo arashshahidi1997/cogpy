@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.plot.tensorscope.state import (
+from cogpy.core.tensorscope.state import (
     SelectionState,
     TensorNode,
     TensorRegistry,

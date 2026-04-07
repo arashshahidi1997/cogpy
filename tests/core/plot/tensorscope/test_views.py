@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.plot.tensorscope.state import SelectionState, TensorNode
-from cogpy.core.plot.tensorscope.views import (
+from cogpy.core.tensorscope.state import SelectionState, TensorNode
+from cogpy.core.tensorscope.views import (
     PSDAverageView,
     PSDSpatialView,
     SpatialMapView,

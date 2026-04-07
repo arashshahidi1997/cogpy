@@ -81,6 +81,36 @@ xarray coordinates to the output.
 
 All features broadcast over arbitrary leading batch dimensions.
 
+## Spectrogram normalization
+
+`normalize_spectrogram` provides standard normalization of spectrogram tensors:
+
+```python
+from cogpy.spectral.specx import normalize_spectrogram
+
+wspec = normalize_spectrogram(spec, method="robust_zscore", dim="freq")
+spec_db = normalize_spectrogram(spec, method="db")
+```
+
+| Method | Formula | Use case |
+|--------|---------|----------|
+| `robust_zscore` | `(x - median) / (MAD * 1.4826)` along dim | Frequency-whitened spectrogram for QC |
+| `db` | `10 * log10(x)` | Display / visualization |
+
+## Frequency band reduction
+
+`reduce_tf_bands` collapses a frequency axis into named bands:
+
+```python
+from cogpy.spectral.features import reduce_tf_bands
+
+bands = {"theta": (4, 8), "alpha": (8, 13), "beta": (13, 30), "gamma": (30, 100)}
+ds = reduce_tf_bands(score, bands, method="mean")
+# ds["alpha"]  →  (time_win,) or (...,) with freq removed
+```
+
+Supported reductions: `mean`, `median`, `max`, `sum`.
+
 ## Spectral whitening
 
 For analyses where the `1/f` spectral shape obscures narrowband features,

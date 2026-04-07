@@ -29,13 +29,13 @@ CogPy's role is to provide compute primitives and schema contracts, not to own t
 | Aperiodic/periodic decomposition | Ready | `aperiodic_exponent`, `fooof_periodic` via specparam on `(..., freq)` |
 | Sliding window infrastructure | Ready | `running_blockwise_xr`, `running_reduce_xr` handle windowed transforms with coord propagation |
 | Grid topology helpers | Ready | `grid_adjacency`, `make_footprint`, neighborhood median/MAD |
-| Canonical TF schema coercion | Thin wrapper needed | `coerce_spectrogram4d` exists for orthoslicer form; no coercer for `(time_win, freq, AP, ML)` |
-| Spectrogram normalization/whitening | Thin wrapper needed | Components exist (`zscorex`, `fooof_periodic`, `narrowband_ratio`, dB transform); no reusable `wspec` constructor |
-| xarray spatial-measure wrappers | Thin wrapper needed | NumPy kernels are batch-ready; coord-preserving xarray wrappers missing |
-| TF score → 1D reduction | Thin wrapper needed | Band collapsing and frequency-axis reduction are caller responsibilities today |
-| Grid windowed spectrum validators | New primitive | `DIMS_GRID_WINDOWED_SPECTRUM` constant exists; validator/coercer not implemented |
-| Occupancy/duration summaries | New primitive | `Intervals.total_duration()` exists but no named helper for occupancy fraction or duration distribution |
-| `ftest_line_scan` batch support | New primitive | Currently 1D-only; TF-space needs `(..., time)` batched input |
+| Canonical TF schema coercion | **Implemented** | `coerce_grid_windowed_spectrum` / `validate_grid_windowed_spectrum` in `datasets/schemas.py` |
+| Spectrogram normalization/whitening | **Implemented** | `normalize_spectrogram(method="robust_zscore"|"db")` in `spectral/specx.py` |
+| xarray spatial-measure wrappers | **Implemented** | `spatial_summary_xr()` in `measures/spatial.py` — preserves coords, returns `xr.Dataset` |
+| TF score → 1D reduction | **Implemented** | `reduce_tf_bands()` in `spectral/features.py` — per-band frequency collapse |
+| Grid windowed spectrum validators | **Implemented** | `validate_grid_windowed_spectrum` / `coerce_grid_windowed_spectrum` in `datasets/schemas.py` |
+| Occupancy/duration summaries | **Implemented** | `bout_occupancy()` and `bout_duration_summary()` in `detect/utils.py` |
+| `ftest_line_scan` batch support | **Implemented** | Accepts `(..., time)` batched input, returns `(..., freq)` outputs |
 
 ---
 
@@ -85,9 +85,9 @@ Local spatial normalization via `local_robust_zscore_grid` and `neighborhood_med
 
 ---
 
-## What needs thin wrappers/helpers
+## What needs thin wrappers/helpers — NOW IMPLEMENTED
 
-These are small, stateless functions (5–30 lines each) that eliminate repeated script glue. They do not introduce new algorithms or change the architecture.
+All wrappers below have been implemented. This section documents the rationale and design decisions for each.
 
 ### 1. TF schema coercer: `coerce_grid_windowed_spectrum`
 
@@ -179,9 +179,9 @@ def reduce_tf_bands(
 
 ---
 
-## What requires real new primitives
+## What requires real new primitives — NOW IMPLEMENTED
 
-These involve genuinely new computation or significant extensions to existing functions.
+All primitives below have been implemented. This section documents the rationale and design decisions for each.
 
 ### 1. `ftest_line_scan` batch support
 
@@ -423,78 +423,52 @@ The uppercase `AP/ML` vs lowercase `ml/ap` split is established: uppercase for c
 
 ---
 
-## Implementation order
+## Implementation order — ALL PHASES COMPLETE
 
-### Phase 0: Schema foundation
+All six phases have been implemented and tested (125 tests passing).
 
-**`coerce_grid_windowed_spectrum`** in `schemas.py`.
+| Phase | Deliverable | Location | Status |
+|-------|------------|----------|--------|
+| 0 | `coerce_grid_windowed_spectrum` | `src/cogpy/datasets/schemas.py` | Done |
+| 1 | `normalize_spectrogram` | `src/cogpy/core/spectral/specx.py` | Done |
+| 2 | `spatial_summary_xr` | `src/cogpy/core/measures/spatial.py` | Done |
+| 3 | `reduce_tf_bands` | `src/cogpy/core/spectral/features.py` | Done |
+| 4 | `bout_occupancy`, `bout_duration_summary` | `src/cogpy/core/detect/utils.py` | Done |
+| 5 | `ftest_line_scan` batch | `src/cogpy/core/spectral/features.py` | Done |
 
-This is the smallest change with the highest leverage. Every subsequent step depends on having a canonical labeled TF tensor. Without it, every downstream function re-implements the same rename + transpose + validation logic.
+### End-to-end composition example
 
-Effort: low (follows existing coercer pattern).
+With all phases implemented, the full TF-space workflow composes in ~20 lines of pipeline script:
 
-### Phase 1: Spectrogram normalization
+```python
+from cogpy.core.spectral.specx import spectrogramx, normalize_spectrogram
+from cogpy.core.spectral.features import reduce_tf_bands, ftest_line_scan
+from cogpy.core.measures.spatial import spatial_summary_xr
+from cogpy.core.detect.utils import score_to_bouts, bout_occupancy, bout_duration_summary
+from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
 
-**`normalize_spectrogram`** with `"robust_zscore"` and `"db"` methods.
+# 1. Compute and coerce spectrogram
+spec = spectrogramx(sigx, bandwidth=4.0, nperseg=512)
+spec = coerce_grid_windowed_spectrum(spec)     # → (time_win, AP, ML, freq)
 
-This creates the reusable `spec → wspec` boundary identified as the largest gap in the 01-inventory and 03-composition reviews. Only two methods initially — both compose directly from existing primitives (`zscorex` and `np.log10`).
+# 2. Normalize to whitened spectrogram
+wspec = normalize_spectrogram(spec, method="robust_zscore", dim="freq")
 
-Effort: low.
+# 3. Compute spatial summaries over each (time_win, freq) slice
+ds = spatial_summary_xr(wspec, measures=("moran_i", "gradient_anisotropy", "spatial_kurtosis"))
 
-Dependencies: Phase 0 (to accept coerced input).
+# 4. Collapse to per-band time traces
+bands = {"gamma": (30, 80), "high_gamma": (80, 200)}
+band_scores = reduce_tf_bands(ds["moran_i"], bands)
 
-### Phase 2: xarray spatial wrappers
+# 5. Extract events and summaries
+bouts = score_to_bouts(band_scores["gamma"].values, band_scores.time_win.values, low=2.0, high=3.0)
+occ = bout_occupancy(bouts, total_duration=float(spec.time_win[-1] - spec.time_win[0]))
+summary = bout_duration_summary(bouts)
 
-**`spatial_summary_xr`** wrapping existing NumPy kernels.
-
-This eliminates the `.values.transpose(...)` → compute → manual re-wrap pattern documented in tutorials and howtos. The NumPy kernels are unchanged; only a label-preserving `xr.apply_ufunc` or equivalent wrapper is added.
-
-Effort: low-medium (the dispatch over measure names and `apply_ufunc` setup require some care).
-
-Dependencies: Phase 0 (canonical dim order simplifies axis inference).
-
-### Phase 3: Band reduction
-
-**`reduce_tf_bands`** for collapsing `(time_win, freq)` to per-band `(time_win,)`.
-
-This is the bridge between spatial summary tensors and 1D event extraction. Without it, every script implements its own frequency-axis reduction.
-
-Effort: low.
-
-Dependencies: none (operates on any DataArray with a freq dim).
-
-### Phase 4: Event helpers
-
-**`bout_occupancy`** and **`bout_duration_summary`**.
-
-Trivial arithmetic, but naming them prevents repeated inline computation and standardizes the summary format across pipelines.
-
-Effort: trivial.
-
-Dependencies: none (operates on bout dicts from `score_to_bouts`).
-
-### Phase 5: Batched F-test
-
-**`ftest_line_scan` batch extension** to accept `(..., time)`.
-
-This is the largest single change. It unlocks spatially and temporally resolved line-noise maps — a core deliverable of TF-space noise characterization. Deferred to Phase 5 because the other phases are independently useful and lower risk.
-
-Effort: medium.
-
-Dependencies: none (modifies existing function in place).
-
-### Summary timeline
-
-| Phase | Deliverable | Effort | Unlocks |
-|-------|------------|--------|---------|
-| 0 | `coerce_grid_windowed_spectrum` | Low | Canonical TF tensor for all downstream |
-| 1 | `normalize_spectrogram` | Low | `spec → wspec` composition boundary |
-| 2 | `spatial_summary_xr` | Low-medium | Labeled `(time_win, freq)` spatial summaries |
-| 3 | `reduce_tf_bands` | Low | Per-band time traces for event extraction |
-| 4 | `bout_occupancy`, `bout_duration_summary` | Trivial | Standardized event summaries |
-| 5 | `ftest_line_scan` batch | Medium | Spatially resolved line-noise maps |
-
-Phases 0–4 together provide the minimum support for the full TF-space workflow (spectrogram → wspec → spatial summaries → band reduction → events). Phase 5 adds the line-noise characterization capability that requires genuinely new vectorization work.
+# 6. Batched F-test for line-noise maps (optional)
+fstat, freqs, sig_mask = ftest_line_scan(sigx_windows, fs)  # (..., time) → (..., freq)
+```
 
 ---
 

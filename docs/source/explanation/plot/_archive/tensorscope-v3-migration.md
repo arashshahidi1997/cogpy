@@ -43,7 +43,7 @@ app.add_psd_tensor("psd", source="signal")
 Views are now discovered from tensor dimensions:
 
 ```python
-from cogpy.core.plot.tensorscope.views import get_available_views
+from cogpy.core.tensorscope.views import get_available_views
 
 views = get_available_views(tensor_node)
 ```

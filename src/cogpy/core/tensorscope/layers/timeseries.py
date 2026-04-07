@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from cogpy.core.plot.multichannel_viewer import MultichannelViewer
+from cogpy.core.plot.hv.multichannel_viewer import MultichannelViewer
 from cogpy.core.tensorscope.schema import flatten_grid_to_channels
 
 from .base import TensorLayer

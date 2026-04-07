@@ -85,3 +85,22 @@ intervals = events.to_intervals()  # DataFrame with t0, t1, duration
 print(events.detector)   # which detector produced these events
 print(events.pipeline)   # full pipeline provenance
 ```
+
+## Score-to-bout workflow with summaries
+
+For custom QC scores (e.g., spatial abnormality traces), convert to bouts
+and compute summary statistics:
+
+```python
+from cogpy.detect.utils import score_to_bouts, bout_occupancy, bout_duration_summary
+
+# 1D score trace (e.g., from reduce_tf_bands + spatial measure)
+bouts = score_to_bouts(score, times, low=2.0, high=3.0, min_duration=0.1)
+
+# What fraction of the recording is affected?
+occ = bout_occupancy(bouts, total_duration=times[-1] - times[0])
+
+# Duration distribution
+summary = bout_duration_summary(bouts)
+# {"count": 12, "mean": 0.45, "median": 0.32, "std": 0.21, "p5": 0.11, "p95": 0.92}
+```

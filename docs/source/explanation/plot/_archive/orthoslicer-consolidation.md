@@ -60,13 +60,13 @@ Move from “one big orthoslicer” to composable layers:
 ### Existing orthoslicer code (short-term)
 
 ```python
-from cogpy.core.plot.orthoslicer_rangercopy import OrthoSlicerRanger
+from cogpy.core.plot.hv.orthoslicer import OrthoSlicerRanger
 ```
 
 ### New development (now)
 
 ```python
-from cogpy.core.plot.tensorscope import TensorScopeApp
+from cogpy.core.tensorscope import TensorScopeApp
 app = TensorScopeApp(data).add_layer("timeseries").add_layer("spatial_map")
 ```
 

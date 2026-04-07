@@ -70,6 +70,10 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 | `core/events/` | EventCatalog data structure |
 | `core/spectral/` | Spectral analysis (multitaper, whitening, etc.) |
 | `core/measures/` | Spatial (`moran_i`, `gradient_anisotropy`) and temporal measures |
+| `core/plot/hv/` | Interactive HoloViews/Panel visualization (`grid_movie`, `multichannel_view`, `add_time_hair`, `TopoMap`, `OrthoSlicerRanger`) |
+| `core/plot/` | Static matplotlib/plotly helpers (`decomposition`, `specgram_plot`, `time_plot`) |
+| `core/plot/_legacy/` | Deprecated viz modules (retained for reference) |
+| `core/tensorscope/` | Legacy TensorScope Panel app (migrated to standalone React+TS) |
 | `io/ecog_io.py` | ECoG-specific file I/O |
 | `io/ieeg_io.py` | iEEG BIDS I/O |
 | `cli/` | Thin CLI wrappers (keep minimal) |
@@ -83,18 +87,32 @@ Primary data structure is `xarray.DataArray` with standardized dimensions define
 - Legacy modules (`channel_feature`, `channel_feature_functions`, `detect_bads`) emit `DeprecationWarning` on import; use `badchannel` instead
 - **Filtering:** prefer `cogpy.preprocess.filtering` (new canonical path); `cogpy.preprocess.filtx` is a backward-compat shim
 
+### Visualization (`core/plot/`)
+
+- **`core/plot/hv/`** — All interactive HoloViews/Panel components. Key files:
+  - `xarray_hv.py` — `grid_movie`, `grid_movie_with_time_curve`, `multichannel_view`, `add_time_hair`, `selected_channel_curve`
+  - `time_player.py` — `TimeHair`, `AxisHair`, `PlayerWithRealTime`
+  - `topomap.py` — AP×ML heatmap viewer
+  - `multichannel_viewer.py` — stacked-trace viewer for `(time, ch)` signals
+  - `orthoslicer.py` — interactive orthoslicer with linked time-window
+  - `processing_chain.py` — filter pipeline UI (CMR, bandpass, notch, z-score)
+  - `ecog_viewer.py` — `ChannelGridSelector` + full ECoG viewer app
+- **`core/plot/`** root — Static matplotlib/plotly helpers (`decomposition.py`, `specgram_plot.py`, `time_plot.py`)
+- **`core/plot/_legacy/`** — Deprecated modules retained for reference
+
 ### TensorScope Migration
 
 TensorScope was originally a Panel/HoloViews app inside `cogpy.core.plot.tensorscope`.
-It has migrated to a standalone React + TypeScript project. The cogpy subpackage and
-its spec docs (`docs/source/explanation/plot/tensorscope-*.md`) are retained as
+It has been moved to `cogpy.core.tensorscope` and migrated to a standalone React +
+TypeScript project. The cogpy subpackage and its archived spec docs
+(`docs/source/explanation/plot/_archive/tensorscope-*.md`) are retained as
 historical reference. New visualization work targets the standalone frontend using
 cogpy's public API as backend.
 
 ### CLI Entry Points
 
 - `cogpy-preproc` — Preprocessing pipeline (`cogpy.cli.preprocess:main`)
-- `tensorscope` — Legacy CLI (`cogpy.core.plot.tensorscope.cli:main`)
+- `tensorscope` — Legacy CLI (`cogpy.core.tensorscope.cli:main`)
 
 ## Conventions
 

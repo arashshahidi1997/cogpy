@@ -10,6 +10,7 @@ any Python loops.
 ```python
 import numpy as np
 from cogpy.spectral.specx import spectrogramx
+from cogpy.datasets.schemas import coerce_grid_windowed_spectrum
 from cogpy.measures.spatial import (
     gradient_anisotropy,
     moran_i,
@@ -20,19 +21,27 @@ from cogpy.measures.spatial import (
 ## Compute the spectrogram
 
 ```python
-# sig: xarray.DataArray with dims (time, AP, ML)
-spec = spectrogramx(sig, window_size=512, window_step=128, NW=4.0)
-# spec dims: (AP, ML, time_win, freq)
+# sig: xarray.DataArray with dims (time, ML, AP)
+spec = spectrogramx(sig, nperseg=512, noverlap=384, bandwidth=4.0)
+# spec dims: (ML, AP, freq, time)
 ```
 
-## Transpose to batch convention
+## Coerce to compute-pipeline schema
 
-Spatial measures expect `(..., AP, ML)` — AP and ML must be the last two
-axes:
+Use `coerce_grid_windowed_spectrum` to transpose and rename in one step
+(handles `time` → `time_win` and any dim order):
 
 ```python
-# Transpose: (AP, ML, time_win, freq) → (time_win, freq, AP, ML)
-data = spec.values.transpose(2, 3, 0, 1)
+spec = coerce_grid_windowed_spectrum(spec)
+# spec dims: (time_win, AP, ML, freq)
+```
+
+Spatial measures expect `(..., AP, ML)` — AP and ML must be the last two
+axes. Extract the numpy array with `(time_win, freq)` as batch dims:
+
+```python
+# Transpose: (time_win, AP, ML, freq) → (time_win, freq, AP, ML)
+data = spec.values.transpose(0, 3, 1, 2)
 print(data.shape)  # e.g., (300, 257, 16, 16)
 ```
 

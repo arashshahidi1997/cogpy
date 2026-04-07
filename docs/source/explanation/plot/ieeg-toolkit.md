@@ -85,11 +85,11 @@ pn.Row(w.panel(), viewer.panel()).servable()
 
 ```python
 import panel as pn
-from cogpy.core.plot.xarray_hv import normalize_coords_to_index
+from cogpy.core.plot.hv.xarray_hv import normalize_coords_to_index
 from cogpy.datasets.tensor import example_ieeg
-from cogpy.core.plot.channel_grid import ChannelGrid
-from cogpy.core.plot.channel_grid_widget import ChannelGridWidget
-from cogpy.core.plot.ieeg_viewer import ieeg_viewer
+from cogpy.core.plot.hv.channel_grid import ChannelGrid
+from cogpy.core.plot.hv.channel_grid_widget import ChannelGridWidget
+from cogpy.core.plot.hv.ieeg_viewer import ieeg_viewer
 
 pn.extension("bokeh")
 
@@ -117,7 +117,7 @@ These are thin “glue” apps intended for GUI development and manual testing.
 
 ```python
 import panel as pn
-from cogpy.core.plot.ieeg_toolkit_app import ieeg_toolkit_app
+from cogpy.core.plot.hv.ieeg_toolkit import ieeg_toolkit_app
 
 pn.extension("bokeh")
 ieeg_toolkit_app(mode="small", seed=0).servable()
@@ -127,7 +127,7 @@ ieeg_toolkit_app(mode="small", seed=0).servable()
 
 ```python
 import panel as pn
-from cogpy.core.plot.spectrogram_bursts_app import spectrogram_bursts_app
+from cogpy.core.plot._legacy.spectrogram_bursts_app import spectrogram_bursts_app
 
 pn.extension()
 spectrogram_bursts_app(mode="small", seed=0, kind="toy").servable()
@@ -155,8 +155,8 @@ import numpy as np
 from PIL import Image
 
 from cogpy.datasets.schemas import AtlasImageOverlay
-from cogpy.core.plot.channel_grid import ChannelGrid
-from cogpy.core.plot.channel_grid_widget import ChannelGridWidget
+from cogpy.core.plot.hv.channel_grid import ChannelGrid
+from cogpy.core.plot.hv.channel_grid_widget import ChannelGridWidget
 
 atlas = np.array(Image.open(\"docs/assets/atlas/dorsal-cortex.png\").convert(\"RGBA\"), dtype=np.uint8)
 overlay = AtlasImageOverlay(

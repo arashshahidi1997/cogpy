@@ -56,15 +56,41 @@ flat ECoG — this matches common neuroscience conventions (channels as rows).
 Use `cogpy.core.base.get_fs(sig)` to retrieve it regardless of storage
 method, and `ensure_fs(sig, fs=1000.0)` to guarantee it is set.
 
-## Spectrogram schema
+## Spectrogram schemas
+
+Two spectrogram schemas serve different roles:
+
+### `GridWindowedSpectrum` — compute pipeline form
 
 ```
-spec.dims  →  ("AP", "ML", "time_win", "freq")  — or flat: ("ch", "time_win", "freq")
-spec.freq  →  [0.0, 1.95, 3.91, ...]  (Hz, strictly increasing)
+spec.dims  →  ("time_win", "AP", "ML", "freq")
 ```
 
-Time-frequency spectrograms add a windowed time axis (`time_win`) and a
-frequency axis (`freq`).
+Uppercase spatial dims match the `(..., AP, ML)` batch convention expected by
+spatial measures. Use `coerce_grid_windowed_spectrum(da)` to convert
+`spectrogramx()` output into this form (handles renames and transposes).
+
+### `GridSpectrogram4D` — orthoslicer/GUI form
+
+```
+spec.dims  →  ("ml", "ap", "time", "freq")
+```
+
+Lowercase spatial dims, optimized for slice-based visualization.
+
+### Flat form
+
+```
+spec.dims  →  ("ch", "time_win", "freq")
+```
+
+### Normalization
+
+`normalize_spectrogram(spec, method=...)` produces a whitened or
+dB-transformed spectrogram with the same dims:
+
+- `"robust_zscore"` — `(x - median) / MAD` along `freq`
+- `"db"` — `10 * log10(x)`
 
 ## Batch dimension convention
 

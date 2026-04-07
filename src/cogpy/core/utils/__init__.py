@@ -18,6 +18,7 @@ __getattr__, __dir__, __all__ = attach(
         "time_series",
         "wrappers",
         "xarr",
+        "manifold",
     ],
 )
 

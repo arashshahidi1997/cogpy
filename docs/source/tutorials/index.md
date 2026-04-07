@@ -8,7 +8,9 @@ Each tutorial builds on the previous one.
 
 quickstart
 spectral-analysis
+factor-analysis
 bad-channel-detection
 spatial-measures
 bids_reader_tutorial
+bids_reader_tutorial2
 ```

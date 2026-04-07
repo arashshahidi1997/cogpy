@@ -410,3 +410,87 @@ class TestSpatialNoiseConcentration:
     def test_rejects_1d(self):
         with pytest.raises(ValueError, match="AP, ML"):
             spatial_noise_concentration(np.ones((4,)))
+
+
+# ---------------------------------------------------------------------------
+# spatial_summary_xr — xarray wrapper
+# ---------------------------------------------------------------------------
+
+class TestSpatialSummaryXr:
+    def test_basic_output(self):
+        """Returns xr.Dataset with one variable per measure."""
+        import xarray as xr
+        from cogpy.core.measures.spatial import spatial_summary_xr
+
+        rng = np.random.default_rng(42)
+        da = xr.DataArray(
+            rng.normal(0, 1, (5, 8, 6)),
+            dims=("time_win", "AP", "ML"),
+            coords={
+                "time_win": np.arange(5) * 0.5,
+                "AP": np.arange(8),
+                "ML": np.arange(6),
+            },
+        )
+        ds = spatial_summary_xr(da, measures=("moran_i", "gradient_anisotropy", "spatial_kurtosis"))
+        assert isinstance(ds, xr.Dataset)
+        assert set(ds.data_vars) == {"moran_i", "gradient_anisotropy", "spatial_kurtosis"}
+        for var in ds.data_vars:
+            assert ds[var].dims == ("time_win",)
+            assert ds[var].shape == (5,)
+        assert "time_win" in ds.coords
+
+    def test_4d_tf_space(self):
+        """(time_win, freq, AP, ML) → (time_win, freq) output."""
+        import xarray as xr
+        from cogpy.core.measures.spatial import spatial_summary_xr
+
+        rng = np.random.default_rng(7)
+        da = xr.DataArray(
+            rng.normal(0, 1, (3, 4, 8, 6)),
+            dims=("time_win", "freq", "AP", "ML"),
+            coords={
+                "time_win": np.arange(3) * 0.5,
+                "freq": np.linspace(1, 200, 4),
+                "AP": np.arange(8),
+                "ML": np.arange(6),
+            },
+        )
+        ds = spatial_summary_xr(da, measures=("moran_i", "spatial_noise_concentration"))
+        for var in ds.data_vars:
+            assert ds[var].dims == ("time_win", "freq")
+            assert ds[var].shape == (3, 4)
+        assert "time_win" in ds.coords
+        assert "freq" in ds.coords
+
+    def test_directional_moran(self):
+        """moran_ap and moran_ml work as measure names."""
+        import xarray as xr
+        from cogpy.core.measures.spatial import spatial_summary_xr
+
+        g = _row_striped_grid()
+        da = xr.DataArray(g, dims=("AP", "ML"))
+        ds = spatial_summary_xr(da, measures=("moran_ap", "moran_ml"))
+        # Row-striped: ml_only should have higher I than ap_only
+        assert float(ds["moran_ml"]) > float(ds["moran_ap"])
+
+    def test_unknown_measure_raises(self):
+        """Unknown measure name raises ValueError."""
+        import xarray as xr
+        from cogpy.core.measures.spatial import spatial_summary_xr
+
+        da = xr.DataArray(np.ones((4, 4)), dims=("AP", "ML"))
+        with pytest.raises(ValueError, match="Unknown measure"):
+            spatial_summary_xr(da, measures=("nonexistent",))
+
+    def test_matches_numpy(self):
+        """xarray wrapper matches direct numpy call."""
+        import xarray as xr
+        from cogpy.core.measures.spatial import spatial_summary_xr
+
+        rng = np.random.default_rng(42)
+        arr = rng.normal(0, 1, (5, 8, 6))
+        da = xr.DataArray(arr, dims=("time_win", "AP", "ML"))
+        ds = spatial_summary_xr(da, measures=("gradient_anisotropy",))
+        expected = gradient_anisotropy(arr)
+        np.testing.assert_allclose(ds["gradient_anisotropy"].values, expected)

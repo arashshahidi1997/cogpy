@@ -14,7 +14,7 @@ from typing import Any
 import param
 import xarray as xr
 
-from ..plot.processing_chain import ProcessingChain
+from ..plot.hv.processing_chain import ProcessingChain
 from .schema import flatten_grid_to_channels, validate_and_normalize_grid
 
 __all__ = ["SignalObject", "SignalRegistry"]

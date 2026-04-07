@@ -39,6 +39,34 @@ docs/build/
 docs/source/api/generated/
 
 # ---------------------------
+# Type checking / linting caches
+# ---------------------------
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------
+# IDE
+# ---------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------------
+# Environment
+# ---------------------------
+.env
+venv/
+.venv/
+
+# ---------------------------
 # OS
 # ---------------------------
 .DS_Store
+
+# >>> projio >>>
+.projio.mkdocs.yml
+.projio/servers.json
+.projio/site/
+site/
+# <<< projio <<<

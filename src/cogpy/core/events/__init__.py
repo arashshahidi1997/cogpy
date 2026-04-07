@@ -7,6 +7,7 @@ Provides `EventCatalog`, a lightweight bridge between:
 """
 
 from .catalog import EventCatalog
+from . import match
 
-__all__ = ["EventCatalog"]
+__all__ = ["EventCatalog", "match"]
 

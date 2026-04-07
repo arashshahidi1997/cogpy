@@ -7,9 +7,11 @@ __getattr__, __dir__, __all__ = attach(
     submodules=[
         "temporal",
         "spatial",
+        "comparison",
     ],
 )
 
 if TYPE_CHECKING:
     from . import temporal
     from . import spatial
+    from . import comparison

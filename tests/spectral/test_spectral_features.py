@@ -202,10 +202,26 @@ class TestFtestLineScan:
         assert sig_mask.shape == freqs.shape
         assert sig_mask.dtype == bool
 
-    def test_rejects_multidim(self):
-        """Non-1D input raises ValueError."""
-        with pytest.raises(ValueError, match="1D"):
-            ftest_line_scan(np.ones((10, 10)), 1000.0)
+    def test_batch_dims(self):
+        """Batch dims are supported: (..., time) → (..., freq)."""
+        signal, fs = _synth_signal()
+        # Stack two copies as a (2, time) batch
+        batch = np.stack([signal, signal])
+        fstat, freqs, sig_mask = ftest_line_scan(batch, fs)
+        assert fstat.shape == (2, freqs.shape[0])
+        assert sig_mask.shape == (2, freqs.shape[0])
+        # Results should be identical for identical signals
+        np.testing.assert_allclose(fstat[0], fstat[1], rtol=1e-10)
+
+    def test_batch_3d(self):
+        """3D batch: (AP, ML, time) → (AP, ML, freq)."""
+        rng = np.random.default_rng(99)
+        fs = 1000.0
+        N = 512
+        batch = rng.standard_normal((3, 4, N))
+        fstat, freqs, sig_mask = ftest_line_scan(batch, fs)
+        assert fstat.shape == (3, 4, freqs.shape[0])
+        assert sig_mask.shape == (3, 4, freqs.shape[0])
 
     def test_multiple_lines(self):
         """Two injected lines → both detected."""

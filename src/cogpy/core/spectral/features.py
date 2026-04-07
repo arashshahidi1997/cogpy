@@ -381,16 +381,17 @@ def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
 
     Parameters
     ----------
-    signal : (time,) — 1D signal window
+    signal : (..., time) — signal window(s).  Arbitrary leading batch dims
+        are supported; the last axis is treated as time.
     fs : float — sampling rate Hz
     NW : float — time-bandwidth product (default 4.0)
     p_threshold : float — significance level for boolean mask (default 0.05)
 
     Returns
     -------
-    fstat : (freq,) — F-statistic at each frequency bin
+    fstat : (..., freq) — F-statistic at each frequency bin
     freqs : (freq,) — frequency axis in Hz
-    sig_mask : (freq,) — boolean, True where F exceeds critical value
+    sig_mask : (..., freq) — boolean, True where F exceeds critical value
 
     Notes
     -----
@@ -398,36 +399,49 @@ def ftest_line_scan(signal, fs, *, NW=4.0, p_threshold=0.05):
         mu_hat(f) = sum_k(lambda_k * H_k(0) * Y_k(f)) / sum_k(lambda_k * H_k(0)^2)
     where H_k(0) is the DC value of the k-th DPSS taper and lambda_k is its
     eigenvalue. Under H0, F ~ F(2, 2K-2).
+
+    DPSS tapers and eigenvalues are shared across batch elements (same N,
+    NW, K), so the tapered FFT is computed as a single batched matrix
+    multiply.
     """
     from scipy.signal.windows import dpss
     from scipy.stats import f as f_dist
 
-    from .multitaper import multitaper_fft
-
     signal = np.asarray(signal, dtype=np.float64)
-    if signal.ndim != 1:
-        raise ValueError(f"signal must be 1D, got shape {signal.shape}")
+    if signal.ndim < 1:
+        raise ValueError(f"signal must have at least 1 dimension, got shape {signal.shape}")
 
-    N = signal.shape[0]
+    N = signal.shape[-1]
     NW = float(NW)
     K = int(2 * NW - 1)
+    batch_shape = signal.shape[:-1]
 
     # Get DPSS tapers and eigenvalues for weighting
     tapers, eigenvalues = dpss(N, NW, Kmax=K, return_ratios=True)
+    # tapers: (K, N), eigenvalues: (K,)
     # H_k(0) = sum of k-th taper (DC response)
     H0 = np.sum(tapers, axis=1)  # (K,)
 
-    mtfft = multitaper_fft(signal, NW=NW, K_max=K)  # (K, freq)
-    freqs = np.fft.rfftfreq(N, d=1.0 / fs)
+    # Batched tapered FFT: (..., time) @ (N, K) → (..., K, nfft)
+    # Detrend: subtract mean along time axis
+    signal = signal - np.mean(signal, axis=-1, keepdims=True)
+    # tapered: (..., K, N) via broadcast
+    tapered = signal[..., np.newaxis, :] * tapers  # (..., K, N)
+    nfft = N
+    mtfft = np.fft.rfft(tapered, n=nfft, axis=-1)  # (..., K, freq)
+    freqs = np.fft.rfftfreq(N, d=1.0 / float(fs))
 
     # Eigenvalue-weighted line amplitude estimate (Thomson 1982)
     weights = eigenvalues * H0  # (K,)
     w_norm = np.sum(eigenvalues * H0 ** 2)  # scalar
     # mu_hat(f) = sum_k(w_k * Y_k(f)) / w_norm
-    mu_hat = np.sum(weights[:, None] * mtfft, axis=0) / (w_norm + EPS)  # (freq,)
+    # weights[:, None] broadcasts over freq; sum over K axis
+    mu_hat = np.sum(
+        weights[..., :, np.newaxis] * mtfft, axis=-2
+    ) / (w_norm + EPS)  # (..., freq)
 
     # Total power per frequency
-    S = np.mean(np.abs(mtfft) ** 2, axis=0)  # (freq,)
+    S = np.mean(np.abs(mtfft) ** 2, axis=-2)  # (..., freq)
     mu2 = np.abs(mu_hat) ** 2
 
     # Residual (broadband) power

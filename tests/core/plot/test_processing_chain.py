@@ -9,7 +9,7 @@ import xarray as xr
 pytest.importorskip("panel")
 pytest.importorskip("param")
 
-from cogpy.plot.processing_chain import ProcessingChain
+from cogpy.core.plot.hv.processing_chain import ProcessingChain
 
 
 def _example_grid(*, fs: float = 1000.0, n_time: int = 3000) -> xr.DataArray:

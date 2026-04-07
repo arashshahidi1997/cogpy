@@ -34,7 +34,11 @@ napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
 templates_path = ["_templates"]
-exclude_patterns: list[str] = []
+exclude_patterns: list[str] = [
+    "explanation/plot/_archive/**",
+    "tutorials/_deprecated/**",
+    "readme.md",
+]
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
@@ -51,6 +55,7 @@ html_js_files = [
     "https://cdn.bokeh.org/bokeh/release/bokeh-tables-3.3.2.min.js",
 ]
 nb_execution_mode = "cache"
+nb_execution_timeout = 300  # allow up to 5 min for heavy cells (e.g. erpPCA varimax)
 myst_enable_extensions = [
     "colon_fence",
     "dollarmath",
