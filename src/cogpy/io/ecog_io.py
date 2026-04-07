@@ -28,11 +28,13 @@ Example:
 from pathlib import Path
 import numpy as np
 import xarray as xr
-import dask.array as da
 from typing import Dict, Any, Union
+from cogpy.utils.imports import import_optional
+
+da = import_optional("dask.array")
+from dask.diagnostics import ProgressBar
 from . import xml_io
 from .save_utils import save_options
-from dask.diagnostics import ProgressBar
 from xarray import open_zarr as from_zarr
 
 
@@ -186,7 +188,7 @@ def zarr_to_dat(zarr_file: str, dat_file: str):
 # neuropixels
 import numpy as np
 from pathlib import Path
-from ..core.utils import xarr as xut
+from ..utils import xarr as xut
 
 
 def load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=True):
@@ -218,15 +220,3 @@ def separate_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, DATA_DIR):
     ecog_flat_dat.to_zarr(ecog_file)
     npix_dat.to_zarr(npix_file)
     print(f"Data saved to {ecog_file} and {npix_file}")
-
-
-def test_ecog_npix():
-    # home_dir = '/home/arash/Documents/Science/Research/Projects/SWD/PyRatECoG/data'
-    SRC_DATA_DIR = Path("/storage2/ramon/data/NYU/TDM/B17593O19-DH1/B17593O19-DH1-Rec4")
-    XML_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpixHighFs.xml"
-    DATA_FILE = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.CombinedNpix.lfp"
-    DATA_DIR = Path(
-        "/storage2/arash/codes/LargeScale-Ephys/PyRatECoG/data/ecog_db/arash_db/ECoG_Npix"
-    )
-    FS = 639.5833
-    xml_ecog_file = SRC_DATA_DIR / "B17593O19-DH1-Rec4.AC.xml"

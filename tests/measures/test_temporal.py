@@ -1,14 +1,15 @@
-"""Tests for cogpy.core.measures.temporal — temporal signal measures."""
+"""Tests for cogpy.measures.temporal — temporal signal measures."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.measures.temporal import temporal_stability
+from cogpy.measures.temporal import temporal_stability
 
 
 # ---------------------------------------------------------------------------
 # temporal_stability
 # ---------------------------------------------------------------------------
+
 
 class TestTemporalStability:
     def test_constant_signal(self):

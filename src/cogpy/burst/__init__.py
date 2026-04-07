@@ -1,13 +1,16 @@
-"""Burst detection and analysis.
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.burst` provides tools for detecting and analyzing neural spectral burst patterns
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "blob_detection",
+        "burst_merge",
+        "burst_phase",
+        "burst_wave",
+        "utils",
+    ],
+)
 
-    from cogpy.burst.detect import blob_detection
-
-"""
-
-# Auto-generated shim: exposes cogpy.core.burst as cogpy.burst
-from cogpy.core import burst as _impl
-from cogpy.core.burst import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import blob_detection, burst_merge, burst_phase, burst_wave, utils

@@ -78,7 +78,9 @@ DIMS_INTERVALS_TABLE = ("t_start", "t_end")
 DIMS_PERIEVENT = ("event", "channel", "time")
 
 
-def validate_ieeg_grid(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
+def validate_ieeg_grid(
+    da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()
+) -> xr.DataArray:
     """
     Validate IEEGGridTimeSeries schema.
 
@@ -136,7 +138,9 @@ def validate_ieeg_grid_windowed(
     return da
 
 
-def validate_multichannel(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
+def validate_multichannel(
+    da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()
+) -> xr.DataArray:
     """
     Validate MultichannelTimeSeries schema.
 
@@ -183,7 +187,9 @@ def validate_multichannel_windowed(
     return da
 
 
-def validate_spectrogram4d(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
+def validate_spectrogram4d(
+    da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()
+) -> xr.DataArray:
     """
     Validate GridSpectrogram4D schema (orthoslicer-friendly).
 
@@ -216,7 +222,9 @@ def validate_burst_peaks(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def validate_ieeg_time_channel(da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()) -> xr.DataArray:
+def validate_ieeg_time_channel(
+    da: xr.DataArray, *, required_attrs: tuple[str, ...] = ()
+) -> xr.DataArray:
     """
     Validate an iEEG time×channel view intended for stacked-trace viewers.
 
@@ -247,7 +255,12 @@ def validate_ieeg_time_channel(da: xr.DataArray, *, required_attrs: tuple[str, .
         raise ValueError("IEEGTimeChannel coordinate 'channel' must be 1D when present")
 
     # Recommended form: AP and ML present as per-channel coords after reset_index.
-    if "AP" in da.coords and "ML" in da.coords and da["AP"].dims == ("channel",) and da["ML"].dims == ("channel",):
+    if (
+        "AP" in da.coords
+        and "ML" in da.coords
+        and da["AP"].dims == ("channel",)
+        and da["ML"].dims == ("channel",)
+    ):
         return da
 
     # Allowed fallback: MultiIndex channel.
@@ -315,7 +328,9 @@ def coerce_ieeg_grid(
         if time_coords is not None:
             t = np.asarray(time_coords, dtype=float)
             if t.shape != (n_time,):
-                raise ValueError(f"time_coords must have shape ({n_time},), got {t.shape}")
+                raise ValueError(
+                    f"time_coords must have shape ({n_time},), got {t.shape}"
+                )
         else:
             fs_use = da.attrs.get("fs", None)
             if fs_use is not None:
@@ -378,7 +393,9 @@ def coerce_ieeg_grid_windowed(
         if win_coords is not None:
             w = np.asarray(win_coords, dtype=float)
             if w.shape != (n_win,):
-                raise ValueError(f"win_coords must have shape ({n_win},), got {w.shape}")
+                raise ValueError(
+                    f"win_coords must have shape ({n_win},), got {w.shape}"
+                )
         else:
             w = np.arange(n_win, dtype=float)
         da = da.assign_coords(**{win_dim: w})
@@ -437,7 +454,9 @@ def coerce_multichannel(
         if time_coords is not None:
             t = np.asarray(time_coords, dtype=float)
             if t.shape != (n_time,):
-                raise ValueError(f"time_coords must have shape ({n_time},), got {t.shape}")
+                raise ValueError(
+                    f"time_coords must have shape ({n_time},), got {t.shape}"
+                )
         else:
             fs_use = da.attrs.get("fs", None)
             if fs_use is not None:
@@ -450,7 +469,9 @@ def coerce_multichannel(
         if channel_coords is not None:
             ch = np.asarray(channel_coords)
             if ch.shape != (n_ch,):
-                raise ValueError(f"channel_coords must have shape ({n_ch},), got {ch.shape}")
+                raise ValueError(
+                    f"channel_coords must have shape ({n_ch},), got {ch.shape}"
+                )
         else:
             ch = np.arange(n_ch)
         da = da.assign_coords(channel=ch)
@@ -489,7 +510,9 @@ def coerce_multichannel_windowed(
         if win_coords is not None:
             w = np.asarray(win_coords, dtype=float)
             if w.shape != (n_win,):
-                raise ValueError(f"win_coords must have shape ({n_win},), got {w.shape}")
+                raise ValueError(
+                    f"win_coords must have shape ({n_win},), got {w.shape}"
+                )
         else:
             w = np.arange(n_win, dtype=float)
         da = da.assign_coords(**{win_dim: w})
@@ -498,7 +521,9 @@ def coerce_multichannel_windowed(
         if channel_coords is not None:
             ch = np.asarray(channel_coords)
             if ch.shape != (n_ch,):
-                raise ValueError(f"channel_coords must have shape ({n_ch},), got {ch.shape}")
+                raise ValueError(
+                    f"channel_coords must have shape ({n_ch},), got {ch.shape}"
+                )
         else:
             ch = np.arange(n_ch)
         da = da.assign_coords(channel=ch)
@@ -585,7 +610,9 @@ def coerce_grid_windowed_spectrum(da: xr.DataArray) -> xr.DataArray:
     return validate_grid_windowed_spectrum(da)
 
 
-def coerce_ieeg_time_channel(da: xr.DataArray, *, fs: float | None = None) -> xr.DataArray:
+def coerce_ieeg_time_channel(
+    da: xr.DataArray, *, fs: float | None = None
+) -> xr.DataArray:
     """
     Best-effort coercion to IEEGTimeChannel schema.
 
@@ -684,7 +711,7 @@ class Intervals:
     Notes
     -----
     Intervals are open-ended on the right: [t0, t1).
-    Consistent with cogpy.core.brainstates.intervals convention.
+    Consistent with cogpy.brainstates.intervals convention.
     """
 
     starts: np.ndarray
@@ -737,7 +764,9 @@ class Intervals:
         """
         arr = np.asarray(arr, dtype=float)
         if arr.ndim != 2 or arr.shape[1] != 2:
-            raise ValueError(f"Intervals.from_array expects (n, 2) array, got {arr.shape}")
+            raise ValueError(
+                f"Intervals.from_array expects (n, 2) array, got {arr.shape}"
+            )
         return cls(arr[:, 0], arr[:, 1], name=name)
 
     @classmethod
@@ -785,7 +814,9 @@ class Intervals:
         try:
             import mne
         except ImportError:
-            raise ImportError("mne is required for Intervals.to_mne_annotations(). Install via: pip install mne")
+            raise ImportError(
+                "mne is required for Intervals.to_mne_annotations(). Install via: pip install mne"
+            )
         durations = self.ends - self.starts
         return mne.Annotations(
             onset=self.starts,
@@ -826,7 +857,9 @@ class Events:
             raise ValueError("Events.times must be 1D")
         if not np.all(np.isfinite(self.times)):
             raise ValueError("Events.times must be finite")
-        if self.labels is None or (hasattr(self.labels, "__len__") and len(self.labels) == 0):
+        if self.labels is None or (
+            hasattr(self.labels, "__len__") and len(self.labels) == 0
+        ):
             self.labels = np.array([""] * len(self.times), dtype=str)
         else:
             self.labels = np.asarray(self.labels, dtype=str)
@@ -880,7 +913,9 @@ class Events:
         try:
             import pynapple as nap
         except ImportError:
-            raise ImportError("pynapple is required for Events.to_pynapple(). Install via: pip install pynapple")
+            raise ImportError(
+                "pynapple is required for Events.to_pynapple(). Install via: pip install pynapple"
+            )
         return nap.Ts(t=self.times)
 
     def restrict(self, intervals: "Intervals") -> "Events":
@@ -941,7 +976,7 @@ class EventCatalog:
         )
 
     def to_event_stream(self, *, style=None):
-        from cogpy.core.tensorscope.events import EventStream
+        from cogpy.events import EventStream
 
         return EventStream(
             name=self.family,
@@ -1036,9 +1071,13 @@ class EventCatalog:
                 mem_df = memberships
             else:
                 try:
-                    mem_df = pd.DataFrame(list(memberships), columns=["event_id", "channel"])
+                    mem_df = pd.DataFrame(
+                        list(memberships), columns=["event_id", "channel"]
+                    )
                 except Exception as e:  # noqa: BLE001
-                    raise ValueError(f"Invalid memberships; expected DataFrame or list of (event_id, channel): {e}") from e
+                    raise ValueError(
+                        f"Invalid memberships; expected DataFrame or list of (event_id, channel): {e}"
+                    ) from e
 
         meta_out = dict(meta or {})
         params = meta_out.get("params", {})
@@ -1062,7 +1101,9 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
     allowed = {"burst", "ripple", "spindle", "wave", "generic"}
 
     if str(getattr(catalog, "family", "")) not in allowed:
-        raise ValueError(f"EventCatalog.family must be one of {sorted(allowed)}, got {getattr(catalog, 'family', None)!r}")
+        raise ValueError(
+            f"EventCatalog.family must be one of {sorted(allowed)}, got {getattr(catalog, 'family', None)!r}"
+        )
 
     table = getattr(catalog, "table", None)
     if not isinstance(table, pd.DataFrame):
@@ -1071,7 +1112,9 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
     required_cols = {"event_id", "t", "t0", "t1", "duration", "label", "score"}
     missing = required_cols - set(table.columns)
     if missing:
-        raise ValueError(f"EventCatalog.table missing required columns: {sorted(missing)}")
+        raise ValueError(
+            f"EventCatalog.table missing required columns: {sorted(missing)}"
+        )
 
     # event_id uniqueness (compare as strings).
     ids = table["event_id"].astype(str)
@@ -1080,14 +1123,20 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
 
     # Numeric columns must be finite.
     for col in ("t0", "t1", "t", "duration", "score"):
-        vals = pd.to_numeric(table[col], errors="coerce").to_numpy(dtype=float, copy=False)
+        vals = pd.to_numeric(table[col], errors="coerce").to_numpy(
+            dtype=float, copy=False
+        )
         if not np.all(np.isfinite(vals)):
-            raise ValueError(f"EventCatalog.table column {col!r} must be finite (no NaN/inf)")
+            raise ValueError(
+                f"EventCatalog.table column {col!r} must be finite (no NaN/inf)"
+            )
 
     t0 = pd.to_numeric(table["t0"], errors="coerce").to_numpy(dtype=float, copy=False)
     t1 = pd.to_numeric(table["t1"], errors="coerce").to_numpy(dtype=float, copy=False)
     t = pd.to_numeric(table["t"], errors="coerce").to_numpy(dtype=float, copy=False)
-    duration = pd.to_numeric(table["duration"], errors="coerce").to_numpy(dtype=float, copy=False)
+    duration = pd.to_numeric(table["duration"], errors="coerce").to_numpy(
+        dtype=float, copy=False
+    )
 
     if not np.all(t1 > t0):
         raise ValueError("EventCatalog.table must satisfy t1 > t0 for all events")
@@ -1096,7 +1145,9 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
         raise ValueError("EventCatalog.table must satisfy t0 <= t <= t1 for all events")
 
     if not np.all(np.abs(duration - (t1 - t0)) < 1e-6):
-        raise ValueError("EventCatalog.table must satisfy abs(duration - (t1 - t0)) < 1e-6 for all events")
+        raise ValueError(
+            "EventCatalog.table must satisfy abs(duration - (t1 - t0)) < 1e-6 for all events"
+        )
 
     meta = getattr(catalog, "meta", None)
     if not isinstance(meta, dict):
@@ -1105,7 +1156,9 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
     required_meta = {"detector", "params", "fs", "n_events", "cogpy_version"}
     missing_meta = required_meta - set(meta.keys())
     if missing_meta:
-        raise ValueError(f"EventCatalog.meta missing required keys: {sorted(missing_meta)}")
+        raise ValueError(
+            f"EventCatalog.meta missing required keys: {sorted(missing_meta)}"
+        )
 
     if not isinstance(meta.get("params"), dict):
         raise ValueError("EventCatalog.meta['params'] must be a dict")
@@ -1115,21 +1168,29 @@ def validate_event_catalog(catalog: EventCatalog) -> None:
     except Exception as e:  # noqa: BLE001
         raise ValueError(f"EventCatalog.meta['n_events'] must be an int: {e}") from e
     if n_events != len(table):
-        raise ValueError("EventCatalog.meta['n_events'] must match len(EventCatalog.table)")
+        raise ValueError(
+            "EventCatalog.meta['n_events'] must match len(EventCatalog.table)"
+        )
 
     memberships = getattr(catalog, "memberships", None)
     if memberships is not None:
         if not isinstance(memberships, pd.DataFrame):
-            raise ValueError("EventCatalog.memberships must be a pandas DataFrame when provided")
+            raise ValueError(
+                "EventCatalog.memberships must be a pandas DataFrame when provided"
+            )
         need = {"event_id", "channel"}
         missing_m = need - set(memberships.columns)
         if missing_m:
-            raise ValueError(f"EventCatalog.memberships missing required columns: {sorted(missing_m)}")
+            raise ValueError(
+                f"EventCatalog.memberships missing required columns: {sorted(missing_m)}"
+            )
         mem_ids = memberships["event_id"].astype(str).unique()
         table_id_set = set(ids.to_numpy())
         bad = [eid for eid in mem_ids if eid not in table_id_set]
         if bad:
-            raise ValueError("EventCatalog.memberships contains event_id values not present in table['event_id']")
+            raise ValueError(
+                "EventCatalog.memberships contains event_id values not present in table['event_id']"
+            )
 
 
 def coerce_event_catalog(
@@ -1151,7 +1212,9 @@ def coerce_event_catalog(
 
         df = obj.copy()
         if "duration" not in df.columns:
-            df["duration"] = pd.to_numeric(df["t1"], errors="coerce") - pd.to_numeric(df["t0"], errors="coerce")
+            df["duration"] = pd.to_numeric(df["t1"], errors="coerce") - pd.to_numeric(
+                df["t0"], errors="coerce"
+            )
         if "label" not in df.columns:
             df["label"] = "event"
 
@@ -1159,7 +1222,9 @@ def coerce_event_catalog(
         meta_out["n_events"] = int(len(df))
         meta_out.setdefault("cogpy_version", "unknown")
 
-        cat = EventCatalog(family=str(family), table=df, meta=meta_out, memberships=memberships)
+        cat = EventCatalog(
+            family=str(family), table=df, meta=meta_out, memberships=memberships
+        )
         validate_event_catalog(cat)
         return cat
 
@@ -1168,7 +1233,9 @@ def coerce_event_catalog(
             raise ValueError("meta (dict) is required when coercing from a list[dict]")
         return EventCatalog.from_burst_dict(obj, meta=meta, memberships=memberships)
 
-    raise ValueError(f"Unsupported input type for coerce_event_catalog: {type(obj).__name__}")
+    raise ValueError(
+        f"Unsupported input type for coerce_event_catalog: {type(obj).__name__}"
+    )
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
@@ -1176,10 +1243,14 @@ def coerce_event_catalog(
 
 def _check_type(obj, expected, entity: str) -> None:
     if not isinstance(obj, expected):
-        raise TypeError(f"{entity} must be {expected.__name__}, got {type(obj).__name__}")
+        raise TypeError(
+            f"{entity} must be {expected.__name__}, got {type(obj).__name__}"
+        )
 
 
-def _check_dims(da: xr.DataArray, expected: tuple[str, ...], entity: str, hint: str | None = None) -> None:
+def _check_dims(
+    da: xr.DataArray, expected: tuple[str, ...], entity: str, hint: str | None = None
+) -> None:
     got = tuple(da.dims)
     if got != tuple(expected):
         msg = f"{entity} must have dims {tuple(expected)}, got {got}."
@@ -1211,7 +1282,9 @@ def _warn_missing_attr(da: xr.DataArray, attr: str, entity: str) -> None:
         warnings.warn(f"{entity}: recommended attr {attr!r} is missing", stacklevel=3)
 
 
-def _check_required_attrs(da: xr.DataArray, required: tuple[str, ...], entity: str) -> None:
+def _check_required_attrs(
+    da: xr.DataArray, required: tuple[str, ...], entity: str
+) -> None:
     missing = [k for k in required if k not in da.attrs]
     if missing:
         raise ValueError(f"{entity} missing required attrs: {missing}")
@@ -1221,7 +1294,14 @@ def _maybe_extract_fs(attrs: dict) -> float | None:
     """
     Best-effort extraction of sampling rate from common attribute layouts.
     """
-    candidates = ("fs", "Fs", "sampling_rate", "SamplingRate", "sampling_frequency", "SamplingFrequency")
+    candidates = (
+        "fs",
+        "Fs",
+        "sampling_rate",
+        "SamplingRate",
+        "sampling_frequency",
+        "SamplingFrequency",
+    )
     for k in candidates:
         if k in attrs:
             try:

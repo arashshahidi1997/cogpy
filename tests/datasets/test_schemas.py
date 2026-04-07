@@ -3,7 +3,13 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from cogpy.datasets.schemas import EventCatalog, Events, Intervals, coerce_event_catalog, validate_event_catalog
+from cogpy.datasets.schemas import (
+    EventCatalog,
+    Events,
+    Intervals,
+    coerce_event_catalog,
+    validate_event_catalog,
+)
 
 
 def test_validate_ieeg_grid_hint_on_wrong_dim_order():
@@ -38,7 +44,16 @@ def test_coerce_ieeg_grid_transposes_and_injects_fs():
 def test_validate_burst_peaks_columns():
     from cogpy.datasets.schemas import validate_burst_peaks
 
-    df = pd.DataFrame({"burst_id": [0], "x": [0.0], "y": [0.0], "t": [0.0], "z": [1.0], "value": [2.0]})
+    df = pd.DataFrame(
+        {
+            "burst_id": [0],
+            "x": [0.0],
+            "y": [0.0],
+            "t": [0.0],
+            "z": [1.0],
+            "value": [2.0],
+        }
+    )
     validate_burst_peaks(df)
 
     with pytest.raises(ValueError):
@@ -112,7 +127,9 @@ def test_event_catalog_required_columns():
     )  # must not raise
 
 
-@pytest.mark.parametrize("col", ["event_id", "t", "t0", "t1", "duration", "label", "score"])
+@pytest.mark.parametrize(
+    "col", ["event_id", "t", "t0", "t1", "duration", "label", "score"]
+)
 def test_event_catalog_missing_column(col):
     df = _make_table()
     df = df.drop(columns=[col])
@@ -314,6 +331,7 @@ def test_coerce_from_burst_dict():
 # GridWindowedSpectrum validate / coerce
 # ---------------------------------------------------------------------------
 
+
 class TestGridWindowedSpectrum:
     """Tests for validate_grid_windowed_spectrum and coerce_grid_windowed_spectrum."""
 
@@ -391,4 +409,3 @@ class TestGridWindowedSpectrum:
         da = xr.DataArray(np.zeros((3, 4)), dims=("x", "y"))
         with pytest.raises(ValueError, match="GridWindowedSpectrum"):
             coerce_grid_windowed_spectrum(da)
-

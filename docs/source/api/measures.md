@@ -1,6 +1,11 @@
 # `cogpy.measures`
 
-Spatial and temporal measures for ECoG grid analysis.
+Spatial, temporal, and comparison measures for ECoG grid analysis.
+Spatial measures (`moran_i`, `gradient_anisotropy`) accept `(..., AP, ML)`
+batch dimensions; temporal measures accept `(..., time)`.
+
+**Guide:** {doc}`/howto/batch-spatial-analysis` |
+**Tutorial:** {doc}`/tutorials/spatial-measures`
 
 ## Submodules
 
@@ -8,6 +13,7 @@ Spatial and temporal measures for ECoG grid analysis.
 .. autosummary::
    :recursive:
 
+   cogpy.measures.comparison
    cogpy.measures.spatial
    cogpy.measures.temporal
 ```

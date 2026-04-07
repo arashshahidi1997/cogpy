@@ -1,4 +1,7 @@
 site_name: cogpy
 docs_dir: docs
+exclude_docs: |
+  reference/example-snakemake-pipeline
+  reference/feature-registry
 theme:
   name: material

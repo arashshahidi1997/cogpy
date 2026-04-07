@@ -18,20 +18,23 @@ Example:
 """
 
 from typing import Union
-import xarray as xr
-import dask.array as da
 import numpy as np
+import xarray as xr
+from cogpy.utils.imports import import_optional
+
+da = import_optional("dask.array")
 from pathlib import Path
 from .ieeg_sidecars import load_ieeg_metadata
 
+
 def from_file(
-    dat_file: Union[str, Path], 
-    meta_file: Union[str, Path] = None, 
-    grid: bool = False, 
+    dat_file: Union[str, Path],
+    meta_file: Union[str, Path] = None,
+    grid: bool = False,
     as_float: bool = False,
     matlab_column_major: bool = True,
 ) -> xr.DataArray:
-    
+
     dat_file = Path(dat_file)
     # If meta_file is None, we look for sidecars next to the dat_file.
     # If meta_file is provided (json or lfp), we look for sidecars relative to it.
@@ -40,15 +43,21 @@ def from_file(
     if metadata.dtype is None:
         # If channels.tsv wasn't found relative to the meta_source,
         # we might want a fail-safe or a default.
-        raise ValueError(f"Dtype missing. No channels.tsv found for {meta_file or dat_file}")
+        raise ValueError(
+            f"Dtype missing. No channels.tsv found for {meta_file or dat_file}"
+        )
 
-    print(f"Loading data from {dat_file} with dtype={metadata.dtype} and fs={metadata.fs} Hz...")
+    print(
+        f"Loading data from {dat_file} with dtype={metadata.dtype} and fs={metadata.fs} Hz..."
+    )
     memmap_array = np.memmap(dat_file, dtype=metadata.dtype, mode="r")
 
     if grid:
         # Ensure we have the dimensions needed for reshaping
         if not (metadata.nrow and metadata.ncol):
-            raise ValueError("Grid reshape requested but RowCount/ColumnCount missing from metadata.")
+            raise ValueError(
+                "Grid reshape requested but RowCount/ColumnCount missing from metadata."
+            )
 
         n_ap = int(metadata.nrow)
         n_ml = int(metadata.ncol)
@@ -66,19 +75,23 @@ def from_file(
         # channel index = ml * n_ap + ap  -> (time, ML, AP)
         arr = arr_tc.reshape((n_time, n_ml, n_ap))
         dask_array = da.from_array(arr, chunks="auto")  # Let dask optimize chunks
-        
+
         time_coords = np.arange(n_time) / metadata.fs
-        
+
         # Use metadata coordinates if they exist, otherwise fallback to indices
-        ml_coords = metadata.ml_coords if metadata.ml_coords is not None else np.arange(n_ml)
-        ap_coords = metadata.ap_coords if metadata.ap_coords is not None else np.arange(n_ap)
+        ml_coords = (
+            metadata.ml_coords if metadata.ml_coords is not None else np.arange(n_ml)
+        )
+        ap_coords = (
+            metadata.ap_coords if metadata.ap_coords is not None else np.arange(n_ap)
+        )
 
         data_array = xr.DataArray(
             dask_array,
             dims=("time", "ML", "AP"),
             coords={"time": time_coords, "ML": ml_coords, "AP": ap_coords},
         )
-    
+
     else:
         # Linear channel representation
         n_ch = int(metadata.nch)
@@ -89,7 +102,7 @@ def from_file(
         n_time = int(memmap_array.size // n_ch)
         arr = memmap_array.reshape((n_time, n_ch))
         dask_array = da.from_array(arr, chunks="auto")
-        
+
         time_coords = np.arange(n_time) / metadata.fs
         data_array = xr.DataArray(
             dask_array,
@@ -103,4 +116,3 @@ def from_file(
 
     data_array.attrs["fs"] = metadata.fs
     return data_array.astype(float) if as_float else data_array
-

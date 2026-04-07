@@ -3,14 +3,26 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cogpy"
-version = "0.1.0"
-description = ""
+name = "ecogpy"
+version = "0.2.0"
+description = "Atomic, composable primitives for ECoG / iEEG signal processing"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
   {name = "Arash Shahidi", email = "A.Shahidi@campus.lmu.de"}
+]
+keywords = ["ecog", "ieeg", "electrophysiology", "signal-processing", "neuroscience"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
 # Keep runtime deps minimal; move heavy/optional items to extras below
@@ -22,13 +34,14 @@ dependencies = [
   "lazy_loader",
   "xarray",
   "tqdm",
-  "numba",
   "dill",
   "kneed",
-  "jinja2",
-  "pyts",
-  "quantities",
+  "statsmodels",
 ]
+
+[project.urls]
+Repository = "https://github.com/arashshahidi1997/cogpy"
+Documentation = "https://arashshahidi1997.github.io/cogpy/"
 
 # Optional “feature” installs
 [project.optional-dependencies]
@@ -67,19 +80,18 @@ signal = [
 ]
 # The "all" extra includes all the others
 all = [
-  "cogpy[viz]",
-  "cogpy[notebook]",
-  "cogpy[io]",
-  "cogpy[perf]",
-  "cogpy[signal]",
+  "ecogpy[viz]",
+  "ecogpy[notebook]",
+  "ecogpy[io]",
+  "ecogpy[perf]",
+  "ecogpy[signal]",
 ]
 
 [project.scripts]
 cogpy-preproc = "cogpy.cli.preprocess:main"
-tensorscope = "cogpy.core.tensorscope.cli:main"
 
 [tool.setuptools.package-data]
-cogpy = ["workflows/**"]  # ship all workflow files
+cogpy = ["workflows/**", "datasets/cached_data/*"]  # ship workflows + sample data
 
 [tool.setuptools]
 # by default, find_packages() is assumed.

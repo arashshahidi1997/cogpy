@@ -1,6 +1,6 @@
 # TensorScope Implementation Plan (v1.0)
 
-This document is a **phased, implementation-oriented plan** for building **TensorScope**, aligned with the design principles in `tensorscope-spec.md` and grounded in the existing `cogpy.core.plot` infrastructure (ChannelGrid/Widget, ProcessingChain, MultichannelViewer, TopoMap, TimeHair, etc.).
+This document is a **phased, implementation-oriented plan** for building **TensorScope**, aligned with the design principles in `tensorscope-spec.md` and grounded in the existing `cogpy.plot` infrastructure (ChannelGrid/Widget, ProcessingChain, MultichannelViewer, TopoMap, TimeHair, etc.).
 
 > Note: the principles doc is named `tensorscope-spec.md`. All references in this plan match.
 
@@ -146,7 +146,7 @@ The extension model is intentionally simple (spec §1.2, §3.3):
 
 ## 3. Component Inventory
 
-This inventory is based on the existing `cogpy.core.plot` scan and the `ieeg-toolkit-spec.md`/`tensorscope-spec.md` principles.
+This inventory is based on the existing `cogpy.plot` scan and the `ieeg-toolkit-spec.md`/`tensorscope-spec.md` principles.
 
 ### A. Reuse As-Is
 
@@ -258,10 +258,10 @@ tests/core/plot/tensorscope/
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] `panel serve examples/tensorscope/hello_tensorscope.py` launches without errors
-- [ ] Package imports successfully: `from cogpy.core.tensorscope import TensorScopeApp`
+- [ ] Package imports successfully: `from cogpy.tensorscope import TensorScopeApp`
 
 ---
 
@@ -294,7 +294,7 @@ tests/core/plot/tensorscope/
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] Round-trip serialization test passes with realistic state
 - [ ] Schema validator catches `(time, ML, AP)` and rejects it
@@ -337,7 +337,7 @@ tests/core/plot/tensorscope/
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] Demo app with real iEEG data runs end-to-end
 - [ ] Memory leak test passes (100 layer create/destroy cycles)
@@ -404,7 +404,7 @@ Pause before major app shell work to verify core layers are production-ready.
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] Load/save session preserves state (cursor, selection, processing, layout)
 - [ ] At least 2 layout presets work correctly
@@ -442,7 +442,7 @@ Pause before major app shell work to verify core layers are production-ready.
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] Event navigation works: click table row → cursor jumps to event time
 - [ ] Event overlays render without triggering full recomputation
@@ -478,7 +478,7 @@ Pause before major app shell work to verify core layers are production-ready.
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] At least 2 modalities work: GridLFP + one other (events or spectrogram)
 - [ ] Switching active modality updates views without crash
@@ -512,7 +512,7 @@ Pause before major app shell work to verify core layers are production-ready.
 - [ ] All deliverables completed and committed
 - [ ] All new tests passing (unit + integration for this phase)
 - [ ] Code review completed (see §7.5 checklist)
-- [ ] No regressions in existing cogpy.core.plot tests
+- [ ] No regressions in existing cogpy.plot tests
 - [ ] Documentation updated (API docs + relevant guides)
 - [ ] Performance benchmarks established (latency vs window size vs channels)
 - [ ] No performance regressions vs Phase 2 baseline
@@ -574,7 +574,7 @@ class TensorScopeState(param.Parameterized):
 ```
 
 **Dependencies**
-- Delegates: `TimeHair` (`cogpy.core.plot.time_player`), `ChannelGrid`, `ProcessingChain`.
+- Delegates: `TimeHair` (`cogpy.plot.time_player`), `ChannelGrid`, `ProcessingChain`.
 - Uses: `DataRegistry`, `EventRegistry`, `TimeWindowCtrl`.
 
 **Design constraints**
@@ -750,7 +750,7 @@ class GridLFPModality:
 ```
 
 **Dependencies**
-- `xarray`, existing helpers in `cogpy.core.plot.xarray_hv` and `grid_indexing`.
+- `xarray`, existing helpers in `cogpy.plot.xarray_hv` and `grid_indexing`.
 
 **Design constraints**
 - Do not bake UI dependencies into modality adapters (spec §1.1).
@@ -906,7 +906,7 @@ Phase 0–3 (incremental).
 
 ### 6.2 Backward compatibility
 - Do **not** break `ieeg_viewer(...)` initially.
-- Introduce TensorScope modules in a new namespace: `cogpy.core.tensorscope`.
+- Introduce TensorScope modules in a new namespace: `cogpy.tensorscope`.
 - For any needed changes in existing components (e.g. `MultichannelViewer` public API), keep the old behavior and add new properties/methods.
 
 ### 6.3 Deprecation timeline
@@ -1142,7 +1142,7 @@ Before starting Phase 0 implementation, verify:
 - [ ] Panel 1.8.8+ installed and tested
 - [ ] HoloViews + Bokeh compatible versions verified
 - [ ] cogpy development environment working
-- [ ] Can run existing `cogpy.core.plot` tests successfully
+- [ ] Can run existing `cogpy.plot` tests successfully
 
 **Repository ready:**
 - [ ] Create feature branch: `feature/tensorscope-foundation`

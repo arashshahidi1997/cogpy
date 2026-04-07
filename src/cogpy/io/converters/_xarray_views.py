@@ -27,7 +27,11 @@ def as_ieeg_time_channel(da: xr.DataArray) -> xr.DataArray:
       - legacy time×ch: ("time","ch")
       - multichannel: ("channel","time") (permutation allowed)
     """
-    from cogpy.datasets.schemas import coerce_ieeg_grid, coerce_ieeg_time_channel, coerce_multichannel
+    from cogpy.datasets.schemas import (
+        coerce_ieeg_grid,
+        coerce_ieeg_time_channel,
+        coerce_multichannel,
+    )
 
     if not isinstance(da, xr.DataArray):
         raise TypeError("da must be an xarray.DataArray")
@@ -91,13 +95,17 @@ def extract_time_channel_view(
 
     x_tc = np.asarray(da2.data)
     if x_tc.ndim != 2:
-        raise ValueError(f"Expected 2D time×channel data, got array with shape {x_tc.shape}")
+        raise ValueError(
+            f"Expected 2D time×channel data, got array with shape {x_tc.shape}"
+        )
 
     n_time = int(da2.sizes["time"])
     if "time" in da2.coords:
         time_s = np.asarray(da2["time"].values, dtype=float)
         if time_s.shape != (n_time,):
-            raise ValueError(f"Unexpected time coord shape {time_s.shape}; expected ({n_time},)")
+            raise ValueError(
+                f"Unexpected time coord shape {time_s.shape}; expected ({n_time},)"
+            )
     else:
         time_s = np.arange(n_time, dtype=float)
 
@@ -136,7 +144,9 @@ def extract_time_channel_view(
 
 def _infer_fs_from_time(time_s: np.ndarray) -> float:
     if time_s.shape[0] < 2:
-        raise ValueError("Cannot infer fs from time coordinate with length < 2; provide da.attrs['fs'].")
+        raise ValueError(
+            "Cannot infer fs from time coordinate with length < 2; provide da.attrs['fs']."
+        )
     dt = np.diff(time_s)
     if not np.all(np.isfinite(dt)):
         raise ValueError("Cannot infer fs from non-finite time coordinate.")
@@ -144,12 +154,21 @@ def _infer_fs_from_time(time_s: np.ndarray) -> float:
     if dt0 <= 0:
         raise ValueError("Cannot infer fs: time coordinate is not strictly increasing.")
     if not np.allclose(dt, dt0, rtol=1e-5, atol=1e-12):
-        raise ValueError("Cannot infer fs: time coordinate is not uniformly spaced; provide da.attrs['fs'].")
+        raise ValueError(
+            "Cannot infer fs: time coordinate is not uniformly spaced; provide da.attrs['fs']."
+        )
     return 1.0 / dt0
 
 
 def _maybe_extract_fs(attrs: dict) -> float | None:
-    candidates = ("fs", "Fs", "sampling_rate", "SamplingRate", "sampling_frequency", "SamplingFrequency")
+    candidates = (
+        "fs",
+        "Fs",
+        "sampling_rate",
+        "SamplingRate",
+        "sampling_frequency",
+        "SamplingFrequency",
+    )
     for k in candidates:
         if k in attrs:
             try:
@@ -166,4 +185,3 @@ def _maybe_extract_fs(attrs: dict) -> float | None:
                     except (TypeError, ValueError):
                         continue
     return None
-

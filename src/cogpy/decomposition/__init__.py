@@ -1,5 +1,18 @@
-# Auto-generated shim: exposes cogpy.core.decomposition as cogpy.decomposition
-from cogpy.core import decomposition as _impl
-from cogpy.core.decomposition import *
+"""Dimensionality reduction and signal decomposition."""
 
-__all__ = getattr(_impl, "__all__", [])
+from lazy_loader import attach
+from typing import TYPE_CHECKING
+
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "pca",
+        "spatspec",
+        "scores",
+        "match",
+        "embed",
+    ],
+)
+
+if TYPE_CHECKING:
+    from . import pca, spatspec, scores, match, embed

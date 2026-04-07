@@ -1,27 +1,61 @@
 # No image: we're using a shell executor, so jobs run directly on the host
 stages:
+  - test
+  - build
   - deploy
+
+variables:
+  CONDA_ENV: /storage/share/python/environments/Anaconda3/envs/cogpy
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+.setup: &setup
+  before_script:
+    - export PATH="$CONDA_ENV/bin:$PATH"
+
+test:
+  stage: test
+  <<: *setup
+  script:
+    - python -m pytest tests/ -q --tb=short
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+lint:
+  stage: test
+  <<: *setup
+  script:
+    - python -m ruff check src/
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+build:
+  stage: build
+  <<: *setup
+  script:
+    - python -m build
+    - ls -lh dist/
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
 
 pages:
   stage: deploy
   rules:
-    # only build on the default branch (master/main)
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
     - |
       set -euo pipefail
       cd "$CI_PROJECT_DIR"
-
-      # Use the shared cogpy environment where Sphinx and its deps are already installed
-      CONDA_ENV="/storage/share/python/environments/Anaconda3/envs/cogpy"
       export PATH="$CONDA_ENV/bin:$PATH"
-
-      # Build and collect the docs
       make -C docs html
       rm -rf public
       mkdir -p public
       cp -a docs/build/html/. public/
-
   artifacts:
     paths:
       - public

@@ -18,4 +18,3 @@ def test_to_mne_constructs_rawarray():
     assert raw.n_times == 10
     assert len(raw.ch_names) == 3
     assert raw.info["sfreq"] == 1000.0
-

@@ -1,0 +1,11 @@
+{
+  "citekey": "xu_2023_InteractingSpiral",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for xu_2023_InteractingSpiral: /storage2/arash/projects/cogpy/bib/articles/xu_2023_InteractingSpiral/xu_2023_InteractingSpiral.pdf\n",
+  "finished": "2026-03-28T08:47:26.008103+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084725Z_6be9c20a",
+  "pid": 24396,
+  "result": null,
+  "started": "2026-03-28T08:47:25.847868+00:00",
+  "status": "failed"
+}

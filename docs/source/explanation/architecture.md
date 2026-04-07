@@ -19,7 +19,9 @@ orchestration outside the package whenever possible.
    package's internal xarray-centered representations.
 3. **Stable enough internal conventions** that external pipelines and frontends
    can compose `cogpy` outputs without per-project glue everywhere.
-4. **Backend-facing utilities** for notebooks and frontends such as TensorScope.
+4. **Backend-facing utilities** for notebooks and visualization frontends (e.g.
+   [TensorScope](https://github.com/arashshahidi1997/tensorscope), a separate
+   React + TypeScript application).
 
 ## What `cogpy` Is And Is Not
 
@@ -41,7 +43,7 @@ orchestration outside the package whenever possible.
 
 The intended split is:
 
-- `cogpy.core` = reusable in-memory compute primitives
+- `cogpy.*` (top-level subpackages) = reusable in-memory compute primitives
 - `cogpy.io` = load/save, sidecars, and file-format translation
 - external projects such as PixECoG = orchestration, dataset-specific configs,
   large-scale execution, and derivative layout
@@ -66,8 +68,8 @@ The intended layering is:
 
 - `cogpy.io`: read files, translate to internal representations, validate or
   coerce schemas, save results, update sidecars
-- `cogpy.core`: transform in-memory arrays, compute measures, detect events,
-  build reusable compute abstractions
+- `cogpy.*` (compute subpackages): transform in-memory arrays, compute measures,
+  detect events, build reusable compute abstractions
 - external pipelines: choose inputs, parameter sets, derivative paths,
   scheduling, caching, and execution order
 - external frontends: own UI state, interaction design, visualization layout,
@@ -77,7 +79,7 @@ This means external project pipelines should usually be **thin orchestrators**
 around stable `cogpy` APIs. A Snakemake rule or project script should mostly:
 
 1. load via `cogpy.io`
-2. call one or more `cogpy.core` functions or lightweight composition helpers
+2. call one or more `cogpy` compute functions or lightweight composition helpers
 3. validate/coerce outputs where needed
 4. save via `cogpy.io`
 
@@ -125,7 +127,7 @@ the full schema story is still evolving. In particular, dim naming and case are
 not yet perfectly uniform across all modules, so new code should favor existing
 canonical validators rather than inventing new one-off conventions.
 
-## Conceptual Layers Inside `cogpy.core`
+## Conceptual Layers Inside `cogpy`
 
 The package should remain conceptually clear even when the exact package layout
 evolves. The main roles are:
@@ -178,7 +180,7 @@ different output types, and different downstream uses.
 
 This is also the right place for thin convenience wrappers that combine compute
 with required file bookkeeping. For example, updating sidecars after resampling
-belongs in IO, not in `cogpy.core`.
+belongs in IO, not in compute subpackages.
 
 ## Structured Outputs
 
@@ -267,27 +269,28 @@ Legacy modules may remain as compatibility shims, but new code should prefer the
 more explicit modules that preserve schema clarity and keep compute separate
 from orchestration.
 
-## TensorScope And Frontend Boundary
+## Frontend Boundary
 
-TensorScope remains the clearest frontend boundary example.
+[TensorScope](https://github.com/arashshahidi1997/tensorscope) is the primary
+visualization frontend. It is a **standalone React + TypeScript application**
+in its own repository — it is not part of cogpy.
 
-`cogpy` should act as the **compute and data backend** for TensorScope-like
+`cogpy` acts as the **compute and data backend** for TensorScope and similar
 tools:
 
 - provide stable tensor representations
 - provide transforms, measures, and detector outputs that can be visualized
 - provide event-like outputs that a frontend can overlay or inspect
 
-TensorScope itself should own:
+TensorScope itself owns:
 
 - UI state
 - interaction logic
 - layout and rendering
 - frontend-specific persistence and application behavior
 
-Archived TensorScope docs remain useful for backend requirements, but they do
-not change the architectural boundary: visualization frontends live outside
-`cogpy`, even when they depend heavily on it.
+Archived TensorScope design docs remain in `explanation/plot/_archive/` for
+historical reference on backend requirements.
 
 ## Open Questions
 

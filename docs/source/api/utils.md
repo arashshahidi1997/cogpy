@@ -1,6 +1,8 @@
 # `cogpy.utils`
 
-Assorted helper utilities used across `cogpy`.
+Shared helper utilities: array reshaping, grid neighborhood computation,
+sliding-window operations, statistical helpers, xarray utilities, and
+time-series tools used across cogpy subpackages.
 
 ## Submodules
 

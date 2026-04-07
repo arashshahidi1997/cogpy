@@ -97,3 +97,9 @@ nb = narrowband_ratio(psd, freqs, flank_hz=5.0)  # (AP, ML, freq)
 peak_mask = nb > 10  # strong narrowband peaks
 # ... correlate with spatial outlier patterns
 ```
+
+## See also
+
+- {doc}`/tutorials/spatial-measures` — tutorial on spatial grid characterization
+- {doc}`/explanation/data-model` — the grid schema (`AP`, `ML` dimensions)
+- {doc}`/api/measures` — full API reference

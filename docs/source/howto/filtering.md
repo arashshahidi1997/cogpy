@@ -71,3 +71,9 @@ from cogpy.measures.spatial import csd_power
 csd = csd_power(sig.values, spacing_mm=1.0)
 # Border electrodes are NaN; interior uses 5-point finite-difference stencil
 ```
+
+## See also
+
+- {doc}`/tutorials/spectral-analysis` — tutorial on spectral analysis after filtering
+- {doc}`/explanation/preprocessing-pipeline` — design of the preprocessing stack
+- {doc}`/api/preprocess` — full API reference

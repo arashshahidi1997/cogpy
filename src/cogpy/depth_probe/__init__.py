@@ -1,13 +1,13 @@
-"""Linear Probes and Depth Electrodes analysis tools.
+from lazy_loader import attach
+from typing import TYPE_CHECKING
 
-This module :mod:`cogpy.depth_probe` provides tools for analyzing linear probes and depth electrodes
+__getattr__, __dir__, __all__ = attach(
+    __name__,
+    submodules=[
+        "csd",
+        "linear_signal",
+    ],
+)
 
-    from cogpy.depth_probe import csd
-
-"""
-
-# Auto-generated shim: exposes cogpy.core.depth_probe as cogpy.depth_probe
-from cogpy.core import depth_probe as _impl
-from cogpy.core.depth_probe import *
-
-__all__ = getattr(_impl, "__all__", [])
+if TYPE_CHECKING:
+    from . import csd, linear_signal

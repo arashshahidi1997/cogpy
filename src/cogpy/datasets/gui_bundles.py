@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from cogpy.core.plot.hv.grid_indexing import to_apml_view
+from cogpy.plot.hv.grid_indexing import to_apml_view
 
 from .entities import example_ieeg_grid
 from .schemas import validate_ieeg_grid
@@ -62,7 +62,9 @@ def ieeg_grid_bundle(
         try:
             import dask.array as da  # type: ignore
         except Exception as e:  # noqa: BLE001
-            raise ImportError("large_backend='dask' requested but dask is not installed") from e
+            raise ImportError(
+                "large_backend='dask' requested but dask is not installed"
+            ) from e
 
         arr = da.from_array(sig_grid.data, chunks=(50_000, -1, -1))
         sig_grid = sig_grid.copy(data=arr)
@@ -71,7 +73,9 @@ def ieeg_grid_bundle(
     n_ap = int(sig_apml.sizes["AP"])
     n_ml = int(sig_apml.sizes["ML"])
 
-    sig_tc = sig_apml.stack(channel=("AP", "ML")).reset_index("channel")  # ("time","channel"), with AP/ML coords
+    sig_tc = sig_apml.stack(channel=("AP", "ML")).reset_index(
+        "channel"
+    )  # ("time","channel"), with AP/ML coords
     sig_tc = sig_tc.transpose("time", "channel")
     sig_tc.name = "ieeg_tc"
     sig_tc.attrs.update(sig_grid.attrs)
@@ -120,15 +124,23 @@ def spectrogram_bursts_bundle(
 
         spec = example_spectrogram4d(mode=mode, seed=seed)
         bursts = example_bursts_table(spec)
-        return SpectrogramGuiBundle(spec=spec, bursts=bursts, meta={"mode": mode, "seed": int(seed), "kind": kind})
+        return SpectrogramGuiBundle(
+            spec=spec,
+            bursts=bursts,
+            meta={"mode": mode, "seed": int(seed), "kind": kind},
+        )
 
     if kind == "ar_grid":
         from .tensor import AROscillatorGrid
 
         if mode == "small":
-            grid = AROscillatorGrid.make(duration=4.0, fs=1250.0, nap=10, nml=10, n_bursts=8, seed=seed)
+            grid = AROscillatorGrid.make(
+                duration=4.0, fs=1250.0, nap=10, nml=10, n_bursts=8, seed=seed
+            )
         elif mode == "large":
-            grid = AROscillatorGrid.make(duration=8.0, fs=1250.0, nap=16, nml=16, n_bursts=20, seed=seed)
+            grid = AROscillatorGrid.make(
+                duration=8.0, fs=1250.0, nap=16, nml=16, n_bursts=20, seed=seed
+            )
         else:
             raise ValueError(f"mode must be 'small' or 'large', got {mode!r}")
 

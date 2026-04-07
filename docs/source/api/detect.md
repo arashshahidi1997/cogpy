@@ -1,6 +1,14 @@
-# `cogpy.core.detect`
+# `cogpy.detect`
 
 Event detection framework: detectors, transforms, and pipelines.
+
+Detectors wrap existing detection functions behind a unified interface that
+returns `EventCatalog`. Pre-built pipelines chain transforms (spectrogram,
+filtering, envelope) with a detector for reproducible, serializable workflows.
+
+**Guide:** {doc}`/howto/event-detection` |
+**Tutorial:** {doc}`/tutorials/detection-and-events` |
+**Design:** {doc}`/explanation/detection-framework`
 
 ## Submodules
 
@@ -8,17 +16,17 @@ Event detection framework: detectors, transforms, and pipelines.
 .. autosummary::
    :recursive:
 
-   cogpy.core.detect.base
-   cogpy.core.detect.burst
-   cogpy.core.detect.threshold
-   cogpy.core.detect.ripple
-   cogpy.core.detect.pipeline
-   cogpy.core.detect.pipelines
-   cogpy.core.detect.transforms
+   cogpy.detect.base
+   cogpy.detect.burst
+   cogpy.detect.threshold
+   cogpy.detect.ripple
+   cogpy.detect.pipeline
+   cogpy.detect.pipelines
+   cogpy.detect.transforms
 ```
 
 ```{eval-rst}
-.. automodule:: cogpy.core.detect
+.. automodule:: cogpy.detect
    :members:
    :undoc-members:
    :show-inheritance:

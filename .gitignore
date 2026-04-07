@@ -37,6 +37,7 @@ htmlcov/
 # ---------------------------
 docs/build/
 docs/source/api/generated/
+docs/jupyter_execute/
 
 # ---------------------------
 # Type checking / linting caches
@@ -63,9 +64,13 @@ venv/
 # OS
 # ---------------------------
 .DS_Store
+.nfs*
 
 # >>> projio >>>
+.claude/settings.json
+.mcp.json
 .projio.mkdocs.yml
+.projio/indexio/index/
 .projio/servers.json
 .projio/site/
 site/

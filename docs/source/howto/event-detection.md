@@ -104,3 +104,9 @@ occ = bout_occupancy(bouts, total_duration=times[-1] - times[0])
 summary = bout_duration_summary(bouts)
 # {"count": 12, "mean": 0.45, "median": 0.32, "std": 0.21, "p5": 0.11, "p95": 0.92}
 ```
+
+## See also
+
+- {doc}`/tutorials/detection-and-events` — step-by-step tutorial on event detection
+- {doc}`/explanation/detection-framework` — design of the detector abstraction
+- {doc}`/api/detect` — full API reference

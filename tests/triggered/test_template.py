@@ -1,10 +1,10 @@
-"""Tests for cogpy.core.triggered.template — template estimation & subtraction."""
+"""Tests for cogpy.triggered.template — template estimation & subtraction."""
 
 import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.triggered.template import (
+from cogpy.triggered.template import (
     estimate_template,
     fit_scaling,
     subtract_template,
@@ -26,6 +26,7 @@ def template_waveform():
 # ---------------------------------------------------------------------------
 # estimate_template
 # ---------------------------------------------------------------------------
+
 
 class TestEstimateTemplate:
     def test_mean_ndarray(self, rng, template_waveform):
@@ -82,6 +83,7 @@ class TestEstimateTemplate:
 # fit_scaling
 # ---------------------------------------------------------------------------
 
+
 class TestFitScaling:
     def test_uniform_scaling(self, template_waveform):
         """Epochs that are exactly 2x template → alpha = 2."""
@@ -120,6 +122,7 @@ class TestFitScaling:
 # ---------------------------------------------------------------------------
 # subtract_template
 # ---------------------------------------------------------------------------
+
 
 class TestSubtractTemplate:
     def test_perfect_subtraction(self, template_waveform):

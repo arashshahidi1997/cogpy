@@ -22,7 +22,7 @@ Filtering is supported via simple bandpass/highpass/lowpass transforms applied p
 
 **File:** `cogpy/core/spectral/psd_utils.py`
 
-- `compute_psd_window(...)` wraps `cogpy.core.spectral.specx.psdx` on a time slice.
+- `compute_psd_window(...)` wraps `cogpy.spectral.specx.psdx` on a time slice.
 - `psd_to_db(...)` helper.
 - `stack_spatial_dims(...)` stacks `(AP, ML)` → `channel`.
 

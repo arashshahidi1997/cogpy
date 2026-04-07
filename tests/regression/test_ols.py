@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.regression.ols — OLS fit/predict/residual."""
+"""Tests for cogpy.regression.ols — OLS fit/predict/residual."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.regression.ols import ols_fit, ols_predict, ols_residual
+from cogpy.regression.ols import ols_fit, ols_predict, ols_residual
 
 
 @pytest.fixture

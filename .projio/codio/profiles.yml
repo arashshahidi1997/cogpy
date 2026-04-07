@@ -1,0 +1,387 @@
+profiles:
+  neurodsp:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - dsp
+    - neural-timeseries
+    - filtering
+    - spectral-analysis
+    - burst-detection
+    - oscillations
+    status: active
+  fooof:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - ecog
+    - eeg
+    - electrophysiology
+    - lfp
+    - local-field-potential
+    - meg
+    - neuroscience
+    - oscillations
+    - power-spectral-density
+    - spectral-parameterization
+    status: active
+  antropy:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - complexity
+    - eeg
+    - entropy
+    - feature-extraction
+    - fractal-dimension
+    - numba
+    - signal-processing
+    status: active
+  nolds:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - nonlinear-dynamics
+    - complexity
+    - lyapunov
+    - hurst-exponent
+    - correlation-dimension
+    status: active
+  multitaper_toolbox:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - eeg
+    - multitaper
+    - spectral-estimation
+    status: active
+  ghostipy:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - spectral-analysis
+    - filtering
+    - wavelet
+    status: active
+  pactools:
+    priority: tier1
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - cross-frequency-coupling
+    - pac
+    - phase-amplitude
+    - dar
+    status: active
+  tensorpac:
+    priority: tier1
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - phase-amplitude-coupling
+    - pac
+    - oscillations
+    - tensor
+    - parallel-computing
+    status: active
+  python_meegkit:
+    priority: tier1
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - artifact-rejection
+    - denoising
+    - dss
+    - cca
+    - robust-referencing
+    - eeg-processing
+    - meg-processing
+    status: active
+  emd:
+    priority: tier1
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - empirical-mode-decomposition
+    - hilbert-huang
+    - instantaneous-frequency
+    status: active
+  elephant:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - electrophysiology
+    - neurophysiology
+    - spike-train-analysis
+    - lfp-analysis
+    - statistics
+    status: active
+  yasa:
+    priority: tier1
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - event-detection
+    - spindle-detection
+    - slow-oscillation
+    - spectral-analysis
+    - peak-detection
+    - signal-processing
+    status: active
+  mne_features:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - feature-extraction
+    - time-series-features
+    - eeg-features
+    status: active
+  mne_connectivity:
+    priority: tier1
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - connectivity
+    - coherence
+    - granger-causality
+    - spectral-connectivity
+    status: active
+  holoviews:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - holoviews
+    - holoviz
+    - plotting
+    status: active
+  panel:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - dashboards
+    - dataapp
+    - dataviz
+    - gui
+    - holoviz
+    - panel
+    status: active
+  param:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - parameters
+    - declarative
+    - oop
+    status: active
+  mne_python:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - ecog
+    - eeg
+    - meg
+    - neuroimaging
+    - electrophysiology
+    status: active
+  datashader:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: direct
+    capabilities:
+    - rasterization
+    - large-data-viz
+    - holoviz
+    status: active
+  napari:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: direct
+    capabilities:
+    - image-viewer
+    - numpy
+    - visualization
+    status: candidate
+  networkx:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: direct
+    capabilities:
+    - graph-algorithms
+    - graph-analysis
+    - complex-networks
+    status: candidate
+  scikit_image:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: direct
+    capabilities:
+    - image-processing
+    - computer-vision
+    status: candidate
+  pyedflib:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - edf
+    - bdf
+    - edf-files
+    - io
+    status: active
+  nitime:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - timeseries-analysis
+    - neuroscience
+    - coherence
+    status: candidate
+    notes: superseded by MNE and neurodsp; reference only for legacy algorithm ports
+  nwb_jupyter_widgets:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - nwb
+    - jupyter
+    - visualization
+    status: candidate
+    notes: niche NWB viewer; demote unless cogpy adds NWB browsing
+  spikeinterface:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - electrophysiology
+    - spike-sorting
+    status: candidate
+  braindecode:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: wrap
+    capabilities:
+    - deep-learning
+    - ecog
+    - eeg
+    - pytorch
+    status: candidate
+  bokeh:
+    priority: tier2
+    runtime_import: pip_only
+    decision_default: direct
+    capabilities:
+    - interactive-plots
+    - visualization
+    - javascript
+    status: active
+  buzcode:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - matlab
+    - buzsakilab
+    - hippocampus
+    - lfp
+    status: candidate
+  cellexplorer:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - cell-metrics
+    - classification
+    - extracellular-recordings
+    - matlab
+    status: candidate
+  fieldtrip:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - ecog
+    - eeg
+    - ieeg
+    - matlab
+    - time-frequency
+    - connectivity
+    - beamformer
+    status: candidate
+  hippocookbook:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - hippocampus
+    - cookbook
+    - analysis-recipes
+    status: candidate
+  examples:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - holoviz
+    - data-visualization
+    - neuroscience
+    status: candidate
+  neuro:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - bokeh
+    - holoviz
+    - neuroscience
+    status: candidate
+  allensdk:
+    priority: tier3
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - bioinformatics
+    - brain-atlas
+    - electrophysiology
+    status: candidate
+  ofamm:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  generalized_phase:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  neuropatttoolbox:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    capabilities:
+    - neuroimaging-analysis
+    - neuroscience-methods
+    - optical-flow
+    status: candidate
+  wm_travelingwaves_code:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate
+  travelling_waves_or_sequentially_activated_discrete_modules:
+    priority: tier2
+    runtime_import: reference_only
+    decision_default: new
+    status: candidate

@@ -1,4 +1,5 @@
 """BIDS-style sidecar management: JSON metadata, channel/electrode TSVs, and symlink propagation."""
+
 from __future__ import annotations
 
 import json
@@ -7,7 +8,9 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-def read_json_metadata(path: str | Path, *, required_keys: tuple[str, ...] = ()) -> dict[str, Any]:
+def read_json_metadata(
+    path: str | Path, *, required_keys: tuple[str, ...] = ()
+) -> dict[str, Any]:
     """Read a JSON sidecar file and optionally validate required keys.
 
     Parameters

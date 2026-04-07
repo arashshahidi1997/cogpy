@@ -15,7 +15,7 @@ if SRC not in sys.path:
 project = "cogpy"
 author = "Arash Shahidi"
 copyright = f"{datetime.now():%Y}, cogpy"
-release = "0.1.0"
+release = "0.2.0"
 
 extensions = [
     "myst_nb",

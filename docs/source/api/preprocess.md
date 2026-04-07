@@ -1,6 +1,12 @@
 # `cogpy.preprocess`
 
-Signal preprocessing pipeline utilities.
+Signal preprocessing: bandpass/notch filtering, spatial smoothing, common
+median reference, z-score normalization, bad-channel detection, interpolation,
+line-noise removal, and resampling.
+
+**Guide:** {doc}`/howto/filtering` |
+**Tutorial:** {doc}`/tutorials/bad-channel-detection` |
+**Design:** {doc}`/explanation/preprocessing-pipeline`
 
 ## Submodules
 
@@ -8,10 +14,11 @@ Signal preprocessing pipeline utilities.
 .. autosummary::
    :recursive:
 
-   cogpy.preprocess.filtering
-   cogpy.preprocess.linenoise
-   cogpy.preprocess.interpolate
    cogpy.preprocess.badchannel
+   cogpy.preprocess.filtering
+   cogpy.preprocess.interpolate
+   cogpy.preprocess.linenoise
+   cogpy.preprocess.resample
 ```
 
 ```{eval-rst}

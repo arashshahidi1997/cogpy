@@ -1,16 +1,26 @@
 # Tutorials
 
-Step-by-step lessons that introduce cogpy's core workflows.
-Each tutorial builds on the previous one.
+Step-by-step lessons that introduce cogpy's core workflows. Start with
+**Install** and **Quickstart**, then pick any topic that fits your work.
 
 ```{toctree}
 :maxdepth: 1
 
+install
 quickstart
+```
+
+## Topic tutorials
+
+These are self-contained — pick the ones relevant to your analysis.
+
+```{toctree}
+:maxdepth: 1
+
 spectral-analysis
-factor-analysis
+detection-and-events
 bad-channel-detection
 spatial-measures
-bids_reader_tutorial
-bids_reader_tutorial2
+travelling-waves
+factor-analysis
 ```

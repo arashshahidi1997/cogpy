@@ -15,4 +15,3 @@ def require(module: str, *, extra: str, pip_name: str | None = None):
             f"Missing optional dependency {module!r}. Install with `pip install cogpy[{extra}]` "
             f"(which will install {name!r})."
         ) from e
-

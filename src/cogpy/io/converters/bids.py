@@ -45,4 +45,3 @@ def zarr_to_dat(zarr_path: str, dat_path: str) -> None:
     dst = Path(dat_path)
     dst.parent.mkdir(parents=True, exist_ok=True)
     ecog_io.save_dat(arr_flat.compute(), str(dst), extension=dst.suffix, dtype=np.int16)
-

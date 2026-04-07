@@ -18,4 +18,3 @@ def scale_to_volts(x: np.ndarray, unit: Unit) -> tuple[np.ndarray, bool]:
     if unit == "V":
         return x, False
     raise ValueError("unit must be 'V', 'uV', or 'µV'")
-

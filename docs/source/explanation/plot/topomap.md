@@ -10,7 +10,7 @@ Typical inputs include RMS, bad-channel scores, correlation-to-seed, or time-win
 ```python
 import panel as pn
 import numpy as np
-from cogpy.core.plot.hv.topomap import TopoMap
+from cogpy.plot.hv.topomap import TopoMap
 
 pn.extension("bokeh")
 
@@ -30,7 +30,7 @@ t.panel().servable()
 
 ```python
 import panel as pn
-from cogpy.core.plot.hv.topomap import TopoMap
+from cogpy.plot.hv.topomap import TopoMap
 
 pn.extension("bokeh")
 

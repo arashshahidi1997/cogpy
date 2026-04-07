@@ -1,0 +1,11 @@
+{
+  "citekey": "lubenov_2009_HippocampalTheta",
+  "error": "Traceback (most recent call last):\n  File \"<string>\", line 20, in <module>\n  File \"/storage2/arash/projects/projio/packages/biblio/src/biblio/docling.py\", line 52, in run_docling_for_key\n    raise FileNotFoundError(f\"PDF not found for {key}: {pdf_path}\")\nFileNotFoundError: PDF not found for lubenov_2009_HippocampalTheta: /storage2/arash/projects/cogpy/bib/articles/lubenov_2009_HippocampalTheta/lubenov_2009_HippocampalTheta.pdf\n",
+  "finished": "2026-03-28T08:47:22.449224+00:00",
+  "force": false,
+  "job_id": "docling_bg_20260328T084722Z_4593f730",
+  "pid": 24317,
+  "result": null,
+  "started": "2026-03-28T08:47:22.290005+00:00",
+  "status": "failed"
+}

@@ -27,8 +27,8 @@ The pipeline steps are:
 
 ## Writing a custom Snakefile
 
-A custom pipeline composes `cogpy.io` (load/save) with `cogpy.core`
-(compute):
+A custom pipeline composes `cogpy.io` (load/save) with `cogpy` compute
+subpackages:
 
 ```python
 # scripts/my_step.py
@@ -38,7 +38,7 @@ from cogpy.preprocess.filtering import bandpassx, notchesx
 # Load
 sig = ecog_io.from_file(snakemake.input[0])
 
-# Compute (cogpy.core — no file I/O here)
+# Compute (no file I/O here)
 sig = notchesx(sig, freqs=[60.0, 120.0, 180.0])
 sig = bandpassx(sig, wl=0.5, wh=300.0, order=4, axis="time")
 
@@ -56,7 +56,7 @@ rule filter_and_denoise:
 
 ## Design principles
 
-- **Rules are thin orchestrators.** Heavy logic belongs in `cogpy.core`.
+- **Rules are thin orchestrators.** Heavy logic belongs in `cogpy` compute subpackages.
 - **Use `cogpy.io` for all file operations.** Do not read/write files directly
   in core functions.
 - **Sidecar management** (updating JSON metadata after resampling, etc.)

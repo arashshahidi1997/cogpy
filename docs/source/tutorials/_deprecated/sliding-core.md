@@ -2,11 +2,11 @@
 title: Sliding Core Utilities
 ---
 
-# Sliding windows with `cogpy.core.utils.sliding_core`
+# Sliding windows with `cogpy.utils.sliding_core`
 
 This short tutorial shows how to transform NumPy arrays into sliding window
 views and how to compute streaming features without copying any data. The
-helpers in `cogpy.core.utils.sliding_core` operate directly on ndarray memory,
+helpers in `cogpy.utils.sliding_core` operate directly on ndarray memory,
 which makes them fast building blocks for preprocessing pipelines.
 
 ## Imports and synthetic data
@@ -17,7 +17,7 @@ quickly inside the documentation build.
 ```{code-cell} python
 import numpy as np
 
-from cogpy.core.utils.sliding_core import (
+from cogpy.utils.sliding_core import (
     running_blockwise,
     running_reduce,
     sliding_window,

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "id": "kxjguerq",
+      "name": "travelling-waves",
+      "parent": null,
+      "citekeys": [
+        "hanssen_1997_MultidimensionalMultitaper",
+        "rubino_2006_PropagatingWaves",
+        "zhang_2018_ThetaAlpha",
+        "lubenov_2009_HippocampalTheta",
+        "bhattacharya_2022_TravelingWaves",
+        "davis_2020_SpontaneousTravelling",
+        "afrashteh_2017_OpticalFlow",
+        "townsend_2018_DetectionAnalysis",
+        "xu_2023_InteractingSpiral",
+        "xu_2025_SpatiotemporalDynamics",
+        "lilienkamp_2021_DetectingSpiral",
+        "capon_1969_HighResolution",
+        "thomson_1982_SpectrumEstimation",
+        "patten_2012_HumanCortical",
+        "alexander_2019_LargeScale",
+        "alamia_2025_DisentanglingNeural"
+      ]
+    }
+  ]
+}

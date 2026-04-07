@@ -135,7 +135,9 @@ def test_events_to_intervals():
 def test_events_restrict():
     from cogpy.datasets.schemas import Events, Intervals
 
-    ev = Events(times=[0.5, 2.0, 4.0, 8.5], labels=["a", "b", "c", "d"], name="spindles")
+    ev = Events(
+        times=[0.5, 2.0, 4.0, 8.5], labels=["a", "b", "c", "d"], name="spindles"
+    )
     iv = Intervals(starts=[1.0, 8.0], ends=[3.0, 9.0], name="keep")
     ev2 = ev.restrict(iv)
     assert np.allclose(ev2.times, [2.0, 8.5])
@@ -159,4 +161,3 @@ def test_events_len_repr():
     assert "Events(" in s0
     assert "name='empty'" in s0
     assert "n=0" in s0
-

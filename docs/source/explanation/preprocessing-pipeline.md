@@ -130,7 +130,7 @@ The pipeline is packaged as a Snakemake workflow in
 `cogpy.workflows.preprocess`. Key design choices:
 
 - **Rules are thin orchestrators.** Each rule loads data via `cogpy.io`,
-  calls `cogpy.core` functions, and saves via `cogpy.io`. No compute
+  calls `cogpy` compute functions, and saves via `cogpy.io`. No compute
   logic lives in the Snakefile.
 
 - **Zarr as interchange format.** Every stage reads and writes Zarr,
@@ -158,7 +158,7 @@ the requested rule.
 
 ## Legacy modules
 
-The canonical bad-channel pipeline lives in `cogpy.core.preprocess.badchannel`.
+The canonical bad-channel pipeline lives in `cogpy.preprocess.badchannel`.
 Three older modules are retained for backward compatibility but are deprecated:
 
 | Legacy module | Replacement |

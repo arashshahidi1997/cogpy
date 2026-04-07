@@ -1,9 +1,9 @@
-"""Tests for cogpy.core.detect.utils — detection utilities."""
+"""Tests for cogpy.detect.utils — detection utilities."""
 
 import numpy as np
 import pytest
 
-from cogpy.core.detect.utils import (
+from cogpy.detect.utils import (
     dual_threshold_events_1d,
     merge_intervals,
     score_to_bouts,
@@ -14,15 +14,18 @@ from cogpy.core.detect.utils import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _ramp_score(n=100, fs=10.0):
     """Score that ramps up, plateaus, ramps down — one clear bout."""
     times = np.arange(n) / fs
     score = np.zeros(n)
     # Bout from sample 20..60
-    score[20:60] = np.concatenate([
-        np.linspace(0, 5, 20),   # ramp up
-        np.linspace(5, 0, 20),   # ramp down
-    ])
+    score[20:60] = np.concatenate(
+        [
+            np.linspace(0, 5, 20),  # ramp up
+            np.linspace(5, 0, 20),  # ramp down
+        ]
+    )
     return score, times
 
 
@@ -39,13 +42,14 @@ def _two_bouts_score(n=200, fs=10.0, gap_samples=10):
     if end2 <= n:
         score[start2:end2] = 3.0
         mid2 = start2 + 8
-        score[mid2:mid2 + 4] = 6.0
+        score[mid2 : mid2 + 4] = 6.0
     return score, times
 
 
 # ---------------------------------------------------------------------------
 # score_to_bouts
 # ---------------------------------------------------------------------------
+
 
 class TestScoreToBouts:
     def test_single_bout(self):
@@ -84,9 +88,7 @@ class TestScoreToBouts:
         # Without merging: should find 2 events
         events_no_merge = score_to_bouts(score, times, low=2.0, high=5.0)
         # With merging at gap > 0.5s: should find 1 event
-        events_merged = score_to_bouts(
-            score, times, low=2.0, high=5.0, merge_gap=1.0
-        )
+        events_merged = score_to_bouts(score, times, low=2.0, high=5.0, merge_gap=1.0)
         assert len(events_no_merge) >= 2
         assert len(events_merged) == 1
 
@@ -115,6 +117,7 @@ class TestScoreToBouts:
 # merge_intervals (smoke tests for existing function)
 # ---------------------------------------------------------------------------
 
+
 class TestMergeIntervals:
     def test_no_merge(self):
         intervals = [(0, 5), (10, 15)]
@@ -135,26 +138,27 @@ class TestMergeIntervals:
 # bout_occupancy / bout_duration_summary
 # ---------------------------------------------------------------------------
 
+
 class TestBoutOccupancy:
     def test_basic(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         bouts = [{"duration": 1.0}, {"duration": 2.0}]
         assert bout_occupancy(bouts, 10.0) == pytest.approx(0.3)
 
     def test_empty(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         assert bout_occupancy([], 10.0) == 0.0
 
     def test_full_occupancy_clamped(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         bouts = [{"duration": 15.0}]
         assert bout_occupancy(bouts, 10.0) == pytest.approx(1.0)
 
     def test_zero_total_raises(self):
-        from cogpy.core.detect.utils import bout_occupancy
+        from cogpy.detect.utils import bout_occupancy
 
         with pytest.raises(ValueError):
             bout_occupancy([], 0.0)
@@ -162,7 +166,7 @@ class TestBoutOccupancy:
 
 class TestBoutDurationSummary:
     def test_basic_stats(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         bouts = [{"duration": 1.0}, {"duration": 2.0}, {"duration": 3.0}]
         s = bout_duration_summary(bouts)
@@ -172,14 +176,14 @@ class TestBoutDurationSummary:
         assert set(s.keys()) == {"count", "mean", "median", "std", "p5", "p95"}
 
     def test_empty(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         s = bout_duration_summary([])
         assert s["count"] == 0
         assert s["mean"] == 0.0
 
     def test_single_bout(self):
-        from cogpy.core.detect.utils import bout_duration_summary
+        from cogpy.detect.utils import bout_duration_summary
 
         s = bout_duration_summary([{"duration": 5.0}])
         assert s["count"] == 1

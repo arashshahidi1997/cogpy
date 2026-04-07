@@ -1,10 +1,10 @@
-"""Tests for cogpy.core.triggered.stats — triggered statistics."""
+"""Tests for cogpy.triggered.stats — triggered statistics."""
 
 import numpy as np
 import pytest
 import xarray as xr
 
-from cogpy.core.triggered.stats import (
+from cogpy.triggered.stats import (
     triggered_average,
     triggered_std,
     triggered_median,
@@ -41,6 +41,7 @@ def epochs_xr(epochs_np):
 # triggered_average
 # ---------------------------------------------------------------------------
 
+
 class TestTriggeredAverage:
     def test_ndarray(self, epochs_np):
         avg = triggered_average(epochs_np)
@@ -71,6 +72,7 @@ class TestTriggeredAverage:
 # triggered_std
 # ---------------------------------------------------------------------------
 
+
 class TestTriggeredStd:
     def test_ndarray(self, epochs_np):
         std = triggered_std(epochs_np)
@@ -94,6 +96,7 @@ class TestTriggeredStd:
 # triggered_median
 # ---------------------------------------------------------------------------
 
+
 class TestTriggeredMedian:
     def test_ndarray(self, epochs_np):
         med = triggered_median(epochs_np)
@@ -114,6 +117,7 @@ class TestTriggeredMedian:
 # ---------------------------------------------------------------------------
 # triggered_snr
 # ---------------------------------------------------------------------------
+
 
 class TestTriggeredSnr:
     def test_high_snr_consistent_signal(self):

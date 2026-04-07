@@ -1,43 +1,15 @@
 """Top-level API for cogpy.
 
-    cogpy is a Python package for ecog data analysis. Submodules such as
-    :mod:`cogpy.brainstates`, :mod:`cogpy.preprocess`, and :mod:`cogpy.spectral`
-    expose the primary functionality and are documented in the API reference.
+cogpy is a Python package for ecog data analysis. Submodules such as
+:mod:`cogpy.brainstates`, :mod:`cogpy.preprocess`, and :mod:`cogpy.spectral`
+expose the primary functionality and are documented in the API reference.
 """
 
-from typing import TYPE_CHECKING
-import sys
-import importlib
+from importlib.metadata import version as _version, PackageNotFoundError
 
-_SUBPKGS = (
-    "brainstates",
-    "burst",
-    "decomposition",
-    "depth_probe",
-    "model",
-    "plot",
-    "preprocess",
-    "spectral",
-    "utils",
-    "wave",
-)
+try:
+    __version__ = _version("cogpy")
+except PackageNotFoundError:
+    __version__ = "0.0.0.dev0"
 
-# Make `import cogpy.<name>` resolve to `cogpy.core.<name>`
-for _name in _SUBPKGS:
-    sys.modules[__name__ + "." + _name] = importlib.import_module(
-        f".core.{_name}", __name__
-    )
-
-if TYPE_CHECKING:
-    from .core import (
-        brainstates,
-        burst,
-        decomposition,
-        depth_probe,
-        model,
-        plot,
-        preprocess,
-        spectral,
-        utils,
-        wave,
-    )
+__all__ = ["__version__"]

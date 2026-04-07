@@ -7,7 +7,7 @@ from holoviews.operation import gridmatrix
 
 hv.extension("matplotlib")
 from scipy.spatial.distance import cdist
-from cogpy.core.utils.stats import robust_zscore
+from cogpy.utils.stats import robust_zscore
 
 
 def compute_quantile_features(features, qmin=0.75, qmax=0.95, nq=5):

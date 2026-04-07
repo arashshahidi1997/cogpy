@@ -51,7 +51,7 @@ tapers = smoother spectrum but lower frequency resolution.
 
 ## Two API levels
 
-### numpy level (`cogpy.core.spectral`)
+### numpy level (`cogpy.spectral`)
 
 Pure functions on numpy arrays. No xarray dependency.
 
@@ -60,7 +60,7 @@ from cogpy.spectral.psd import psd_multitaper
 from cogpy.spectral.multitaper import multitaper_fft
 ```
 
-### xarray level (`cogpy.core.spectral.specx`)
+### xarray level (`cogpy.spectral.specx`)
 
 Dimension-aware wrappers that preserve coordinates:
 
@@ -122,3 +122,17 @@ from cogpy.spectral.whitening import whiten_ar
 
 This fits an autoregressive model and divides out the predicted spectrum,
 flattening the broadband background while preserving narrowband peaks.
+
+## Possible future additions
+
+The following methods are not currently implemented but may be added:
+
+- **Singular Spectrum Analysis (SSA)** — a non-parametric decomposition that
+  embeds a 1-D signal into a Hankel (trajectory) matrix and applies SVD to
+  separate oscillatory components from noise. Useful for extracting
+  narrowband oscillations without specifying frequency bands a priori.
+  Reference: Golyandina & Zhigljavsky, *Singular Spectrum Analysis for Time
+  Series* (Springer, 2013). An incomplete prototype existed in
+  `cogpy.spectral.ssa` (removed in v0.1.0) based on the `pyts`
+  implementation; a future version would use pure numpy/scipy and conform to
+  the xarray conventions above.

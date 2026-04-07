@@ -1,6 +1,11 @@
 # `cogpy.brainstates`
 
-API documentation for the `cogpy.brainstates` module.
+Interval-based brain state classification (sleep stages, behavioral states)
+and perievent epoch extraction. Pairs with `cogpy.regression` for
+state-conditioned analysis.
+
+**Guide:** {doc}`/howto/brainstates-and-regression` |
+**Guide:** {doc}`/howto/triggered-analysis`
 
 ## Submodules
 

@@ -11,7 +11,7 @@ Usage:
         main(input_lowpass, output_feature, slider_kwargs=dict(window_size=512, window_step=64), zscore=True)
 """
 
-from cogpy.core.preprocess.channel_feature import ChannelFeatures, save_features
+from cogpy.preprocess.channel_feature import ChannelFeatures, save_features
 import xarray as xr
 from cogpy.io import ecog_io
 
