@@ -48,6 +48,13 @@ papers:
     tags:
     - travelling-waves
     - cogpy-survey
+  rohe_2023_VintageFactor:
+    status: unread
+    tags:
+    - factor-analysis
+    - ica
+    - pca
+    - methodology
   rubino_2006_PropagatingWaves:
     status: unread
     tags:

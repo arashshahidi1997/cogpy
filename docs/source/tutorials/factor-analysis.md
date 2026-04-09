@@ -32,6 +32,21 @@ The pipeline is:
 
 Each factor captures a recurring spatio-spectral pattern.
 
+:::{tip}
+**Why varimax?**  Rohe & Zeng (2023) show that varimax-rotated PCA
+is, under mild conditions, equivalent to ICA: when the latent factors
+are non-Gaussian (leptokurtic, κ > 3), varimax recovers statistically
+identifiable independent components — the same goal ICA pursues, but
+via the classical eigendecomposition + rotation route rather than
+higher-order tensor methods.  This makes erpPCA both computationally
+simple and theoretically grounded.
+
+*K. Rohe and M. Zeng, "Vintage factor analysis with Varimax performs
+statistical inference," J. R. Stat. Soc. B, vol. 85, no. 4,
+pp. 1037–1060, 2023.*
+[DOI: 10.1093/jrsssb/qkad029](https://doi.org/10.1093/jrsssb/qkad029)
+:::
+
 ```{code-cell} python
 import numpy as np
 import xarray as xr
