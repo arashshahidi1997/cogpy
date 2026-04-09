@@ -468,7 +468,10 @@ class AROscillatorGrid:
             burst_time_sigma_s = float(burst_seconds) / 6.0
 
         # add bursts
-        from emd.simulate import ar_oscillator
+        from cogpy.utils.imports import import_optional
+
+        emd_sim = import_optional("emd.simulate")
+        ar_oscillator = emd_sim.ar_oscillator
 
         n_burst = int(round(float(burst_seconds) * float(fs)))
         n_burst = max(8, n_burst)

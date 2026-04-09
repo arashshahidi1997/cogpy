@@ -331,6 +331,11 @@ def perievent_epochs(
         - attrs from xsig preserved, plus:
             pre, post, fs added to attrs
 
+    See Also
+    --------
+    cogpy.triggered.template.estimate_template : Estimate template from stacked epochs.
+    cogpy.triggered.template.subtract_template : Subtract template at event locations.
+
     Notes
     -----
     Events near the start or end of the recording where the full

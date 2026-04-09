@@ -1,4 +1,9 @@
-"""Parse and write XML metadata for OpenEphys-style recordings."""
+"""Parse and write XML metadata for OpenEphys-style recordings.
+
+.. note:: **Lab-internal module.** Assumes OpenEphys XML metadata files
+   as used in the Bhatt Lab recording setup.  Not part of the stable
+   public API.
+"""
 
 from pathlib import Path
 from cogpy.utils.imports import import_optional

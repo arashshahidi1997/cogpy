@@ -28,6 +28,7 @@ from cogpy.utils.imports import import_optional
 
 hv = import_optional("holoviews")
 pn = import_optional("panel")
+tsdownsample = import_optional("tsdownsample")
 from holoviews import streams
 from holoviews.plotting.links import RangeToolLink
 from tsdownsample import MinMaxLTTBDownsampler

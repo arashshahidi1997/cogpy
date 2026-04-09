@@ -1,8 +1,12 @@
-"""
-Event detection framework (v2.6.1).
+"""Event detection framework.
 
-Provides a unified detector interface and concrete detectors that return
-`cogpy.events.EventCatalog`.
+Provides a unified ``EventDetector`` interface and composable
+``DetectionPipeline`` that return :class:`cogpy.events.EventCatalog`.
+
+Detectors: ``BurstDetector``, ``RippleDetector``, ``SpindleDetector``,
+``SlowWaveDetector``, ``ThresholdDetector``.
+Built-in pipelines: ``BURST_PIPELINE``, ``RIPPLE_PIPELINE``,
+``FAST_RIPPLE_PIPELINE``, ``GAMMA_BURST_PIPELINE``.
 """
 
 from .base import EventDetector

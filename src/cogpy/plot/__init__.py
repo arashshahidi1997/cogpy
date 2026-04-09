@@ -1,8 +1,12 @@
 """Visualization components for neural signal exploration.
 
-Interactive HoloViews/Panel components live under :mod:`cogpy.plot.hv`.
-Static matplotlib/plotly helpers remain in this top-level package.
-Deprecated modules are in :mod:`cogpy.plot._legacy`.
+Submodules
+----------
+hv : Interactive HoloViews/Panel components (grid_movie, multichannel_view,
+    TopoMap, OrthoSlicerRanger, ChannelGridSelector).
+decomposition : Static matplotlib plots for PCA / ICA decompositions.
+specgram_plot : Spectrogram and time–frequency image helpers.
+time_plot : Time-series trace plotting utilities.
 """
 
 from lazy_loader import attach as _attach

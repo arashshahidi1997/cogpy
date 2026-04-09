@@ -39,6 +39,21 @@ class ThresholdDetector(EventDetector):
         Merge events separated by <= merge_gap seconds.
     filter_order
         Bandpass filter order (only used if bandpass is set).
+
+    See Also
+    --------
+    BurstDetector : Burst detection via h-maxima on spectrograms.
+    cogpy.detect.utils.score_to_bouts : Convert continuous scores to event bouts.
+
+    Examples
+    --------
+    >>> import numpy as np, xarray as xr
+    >>> t = np.linspace(0, 1, 1000)
+    >>> sig = xr.DataArray(np.sin(2 * np.pi * 5 * t), dims="time", coords={"time": t})
+    >>> det = ThresholdDetector(threshold=0.8, direction="positive")
+    >>> catalog = det.detect(sig)
+    >>> len(catalog.df) > 0
+    True
     """
 
     def __init__(

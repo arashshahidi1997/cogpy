@@ -1,18 +1,20 @@
-"""
-Module: ieeg_io
-Status: WIP
-tag: pixecog
-Last Updated: 2025-11-21
-Author: Arash Shahidi, A.Shahidi@campus.lmu.de
+"""BIDS iEEG reader for intracranial EEG ``.dat`` files.
 
-Summary:
-    Utilities for reading intracranial EEG data in BIDS IEEG format.
+.. note:: **Lab-internal module.** Assumes the Bhatt Lab BIDS-iEEG
+   directory layout and sidecar conventions.  Not part of the stable
+   public API — external users should prefer :mod:`cogpy.io.converters`.
 
-    Functions:
-    load_ieeg_metadata: Load metadata from BIDS sidecar files.
-    from_file: Create xarray.DataArray from .dat file.
+Functions
+---------
+load_ieeg_metadata
+    Load metadata from BIDS sidecar files.
+from_file
+    Create an ``xarray.DataArray`` from a ``.dat`` file.
 
-Example:
+Example
+-------
+::
+
     from cogpy.io import ieeg_io
     da = ieeg_io.from_file('sub-01_ses-01_task-free_ieeg.lfp')
 """

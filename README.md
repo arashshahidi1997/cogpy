@@ -35,6 +35,9 @@ pip install ecogpy[all]          # all optional dependencies
 pip install -e .                # editable dev install
 ```
 
+> **Note:** The PyPI package is `ecogpy` (because `cogpy` was taken), but the
+> import name is `cogpy`: `import cogpy`.
+
 ## Quick start
 
 ```python

@@ -170,6 +170,20 @@ def spectrogramx(
     Multitaper spectrogram (time-frequency representation).
 
     Wraps ``mtm_spectrogram`` from ``cogpy.spectral.multitaper`` (Ghostipy backend).
+
+    See Also
+    --------
+    cogpy.spectral.psd.psd_welch : Welch PSD estimate (no time axis).
+    cogpy.spectral.psd.psd_multitaper : Multitaper PSD estimate (no time axis).
+    cogpy.spectral.features.band_power : Integrate PSD over a frequency band.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()
+    >>> spec = spectrogramx(sigx, axis="time", nperseg=256)
+    >>> "freq" in spec.dims and "time" in spec.dims
+    True
     """
     if not isinstance(sigx, xr.DataArray):
         raise TypeError("Expected xr.DataArray")

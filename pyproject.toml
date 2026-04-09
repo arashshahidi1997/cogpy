@@ -37,6 +37,8 @@ dependencies = [
   "dill",
   "kneed",
   "statsmodels",
+  "tabulate",
+  "pyyaml",
 ]
 
 [project.urls]
@@ -47,27 +49,29 @@ Documentation = "https://arashshahidi1997.github.io/cogpy/"
 [project.optional-dependencies]
 viz = [
   "matplotlib",
-  "seaborn",
   "plotly",
   "holoviews",
   "panel",
-  "hvplot",
   "param",
-  "ipympl",
+  "bokeh",
+  "datashader",
+  "tsdownsample",
 ]
 notebook = [
   "ipykernel",
   "ipywidgets",
+  "ipython",
 ]
 io = [
   "h5py",
-  "tables",
   "zarr",
-  "openpyxl",
   "xmltodict",
 ]
 interop-mne = [
   "mne",
+]
+interop-nap = [
+  "pynapple",
 ]
 perf = [
   "dask[distributed]",
@@ -77,6 +81,7 @@ signal = [
   "ghostipy",
   "scikit-image",
   "emd",
+  "specparam",
 ]
 # The "all" extra includes all the others
 all = [

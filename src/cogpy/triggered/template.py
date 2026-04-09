@@ -43,6 +43,19 @@ def estimate_template(
     -------
     xr.DataArray or ndarray
         Template with shape ``(..., n_lag)`` — one fewer axis than input.
+
+    See Also
+    --------
+    subtract_template : Subtract estimated template from continuous signal.
+    cogpy.brainstates.intervals.perievent_epochs : Extract signal epochs time-locked to events.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> epochs = np.random.randn(50, 100)  # 50 events, 100 time-lag samples
+    >>> tmpl = estimate_template(epochs, method="mean")
+    >>> tmpl.shape
+    (100,)
     """
     method = str(method)
 
@@ -148,6 +161,11 @@ def subtract_template(
     -------
     cleaned : same type and shape as *signal*
         Signal with template subtracted at each event.
+
+    See Also
+    --------
+    estimate_template : Estimate a template waveform from stacked epochs.
+    cogpy.brainstates.intervals.perievent_epochs : Extract signal epochs time-locked to events.
 
     Notes
     -----

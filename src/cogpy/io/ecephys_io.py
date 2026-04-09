@@ -1,18 +1,20 @@
-"""
-Module: ecephys_io
-Status: WIP
-tag: pixecog
-Last Updated: 2025-11-21
-Author: Arash Shahidi, A.Shahidi@campus.lmu.de
+"""BIDS ECEPHYS reader for electrophysiology ``.dat`` files.
 
-Summary:
-    Utilities for reading electrophysiology data in BIDS ECEPHYS format.
+.. note:: **Lab-internal module.** Assumes the Bhatt Lab BIDS-ECEPHYS
+   directory layout and sidecar conventions.  Not part of the stable
+   public API — external users should prefer :mod:`cogpy.io.converters`.
 
-Functions:
-    load_ecephys_metadata: Load metadata from BIDS sidecar files.
-    from_file: Create xarray.DataArray from .dat file.
+Functions
+---------
+load_ecephys_metadata
+    Load metadata from BIDS sidecar files.
+from_file
+    Create an ``xarray.DataArray`` from a ``.dat`` file.
 
-Example:
+Example
+-------
+::
+
     from cogpy.io import ecephys_io
     da = ecephys_io.from_file('sub-01_ses-01_task-free_ecephys.lfp')
 """

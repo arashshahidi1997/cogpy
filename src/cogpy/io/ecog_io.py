@@ -1,28 +1,26 @@
-"""
-Module: ecog_io
-Status: WIP
-Last Updated: 2025-08-26
-Author: Arash Shahidi, A.Shahidi@campus.lmu.de
+"""ECoG file I/O: load, save, and convert grid ECoG recordings.
 
-Summary:
+.. note:: **Lab-internal module.** Assumes the binary ``.dat`` + XML
+   metadata layout used in the Bhatt Lab.  Not part of the stable public
+   API — external users should prefer :mod:`cogpy.io.converters`.
 
+Provides helpers that read raw binary (``.dat``) and Zarr files into
+``xarray.DataArray`` objects with standardised ``(AP, ML, time)`` dimensions
+and an ``fs`` attribute.  Large files are loaded as dask-backed arrays so
+they stay out of RAM until needed.
 
-Functions:
+Matrix convention note
+----------------------
+Python (C-order / row-major) stacks as ``(AP, ML)``::
 
-Classes:
+    sigx_flat = sigx.stack(ch=("AP", "ML"))   # time, ch=(AP, ML)
 
-Constants:
+MATLAB (F-order / column-major) stacks as ``(ML, AP)``::
 
-Note:
-        Matrix conventions in Python & Matlab:
-        # Row Major channel index (C-order, Python convention)
-        # sigx_flat = sigx.stack(ch=('AP','ML')) # time, ch=(AP, ML)
+    sigx_flat = sigx.stack(ch=("ML", "AP"))   # time, ch=(ML, AP)
 
-        # Column Major (F-order, MATLAB convention) channel index
-        # sigx_flat = sigx.stack(ch=('ML','AP')) # time, ch=(ML, AP)
-
-
-Example:
+Functions that accept external arrays (e.g. :func:`from_arr`) let you
+specify axis indices so both conventions are handled.
 """
 
 from pathlib import Path
@@ -121,6 +119,7 @@ def from_file(
 
 
 def assert_ecog(sigx: xr.DataArray) -> None:
+    """Validate that *sigx* has the expected ECoG schema (dims + fs)."""
     assert "fs" in sigx.attrs, "Sampling frequency 'fs' not found in sigx attributes."
     assert (
         "AP" in sigx.dims and "ML" in sigx.dims and "time" in sigx.dims
@@ -130,19 +129,29 @@ def assert_ecog(sigx: xr.DataArray) -> None:
 def save_dat(
     arr: np.ndarray, dat_file: str, extension=".dat", dtype=np.int16, **save_kwargs
 ):
-    """
-    arr: array (samples, channels)
-    dat_file: target file
-    operation: default '.copy'
-    overwrite: default False
+    """Save a NumPy array to a flat binary ``.dat`` file.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        Array with shape ``(samples, channels)`` (flattened before writing).
+    dat_file : str
+        Destination file path.
+    extension : str, optional
+        File extension, by default ``".dat"``.
+    dtype : numpy dtype, optional
+        Data type for the output file, by default ``np.int16``.
+    **save_kwargs
+        Forwarded to :func:`~cogpy.io.save_utils.save_options`
+        (e.g. ``overwrite=True``).
     """
     dat_out = save_options(dat_file, extension, **save_kwargs)
     arr.reshape(-1).tofile(dat_out)
     print(f"signal saved to \n {dat_out}")
 
 
-# OpenEphys
 def oephys_load(directory, nsamples=30000):
+    """Load the first *nsamples* from an Open Ephys recording directory."""
     from open_ephys.analysis import Session
 
     session = Session(directory)
@@ -153,8 +162,8 @@ def oephys_load(directory, nsamples=30000):
     return data, time_vec, fs
 
 
-# Output
 def da_to_zarr(output_file, sigx, **kwargs):
+    """Write a DataArray to Zarr with a dask progress bar."""
     with ProgressBar():
         name = getattr(sigx, "name")
         sigx.to_dataset(name=name).to_zarr(
@@ -163,11 +172,13 @@ def da_to_zarr(output_file, sigx, **kwargs):
 
 
 def ds_to_zarr(output_file, ds, **kwargs):
+    """Write a Dataset to Zarr with a dask progress bar."""
     with ProgressBar():
         ds.to_zarr(output_file, mode="w", zarr_format=2, **kwargs)
 
 
 def to_zarr(output_file, obj, **kwargs):
+    """Write a DataArray or Dataset to Zarr (dispatches by type)."""
     if isinstance(obj, xr.DataArray):
         da_to_zarr(output_file, obj, **kwargs)
     elif isinstance(obj, xr.Dataset):
@@ -176,8 +187,8 @@ def to_zarr(output_file, obj, **kwargs):
         raise TypeError("obj must be either an xarray.DataArray or xarray.Dataset.")
 
 
-# conversions
 def zarr_to_dat(zarr_file: str, dat_file: str):
+    """Convert a Zarr ECoG file to flat binary ``.dat``."""
     sigx = from_zarr(zarr_file)["sigx"]
     assert_ecog(sigx)
     arr = sigx.transpose("time", "AP", "ML").data
@@ -185,13 +196,13 @@ def zarr_to_dat(zarr_file: str, dat_file: str):
     save_dat(arr, dat_file, extension=".dat", dtype=np.int16, overwrite=True)
 
 
-# neuropixels
 import numpy as np
 from pathlib import Path
 from ..utils import xarr as xut
 
 
 def load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=True):
+    """Load a combined ECoG + Neuropixels binary and split into two arrays."""
     data = np.fromfile(DATA_FILE, dtype=np.int16)
 
     # load xml
@@ -209,6 +220,7 @@ def load_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, reshape=True):
 
 
 def separate_ecog_npix(DATA_FILE, XML_FILE, xml_ecog_file, DATA_DIR):
+    """Split a combined ECoG + Neuropixels file and save each to Zarr."""
     print("Loading data...")
     ecog_flat_dat, npix_dat, fs = load_ecog_npix(
         DATA_FILE, XML_FILE, xml_ecog_file, reshape=False

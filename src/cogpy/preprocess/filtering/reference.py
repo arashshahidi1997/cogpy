@@ -18,6 +18,19 @@ def cmrx(
 
     This matches NeuroScope2's "median filter" preprocessing:
         ephys.traces = ephys.traces - median(ephys.traces, 2)
+
+    See Also
+    --------
+    cogpy.preprocess.filtering.normalization.zscorex : Z-score normalization.
+    cogpy.preprocess.filtering.spatial.gaussian_spatialx : Spatial Gaussian lowpass.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()  # (AP, ML, time)
+    >>> ref = cmrx(sigx)  # subtracts median over (AP, ML) at each time point
+    >>> ref.shape == sigx.shape
+    True
     """
     if channel_dims is None:
         if "AP" in sigx.dims and "ML" in sigx.dims:
