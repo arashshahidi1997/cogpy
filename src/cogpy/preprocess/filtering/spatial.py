@@ -18,7 +18,13 @@ def gaussian_spatialx(
     ml_dim: str = "ML",
     mode: str = "reflect",
 ) -> xr.DataArray:
-    """Spatial Gaussian lowpass over (AP, ML), leaving other dims untouched."""
+    """Spatial Gaussian lowpass over (AP, ML), leaving other dims untouched.
+
+    See Also
+    --------
+    cogpy.preprocess.filtering.reference.cmrx : Common median reference removal.
+    cogpy.preprocess.filtering.normalization.zscorex : Z-score normalization.
+    """
     if ap_dim not in sigx.dims or ml_dim not in sigx.dims:
         raise ValueError(
             f"Expected dims '{ap_dim}' and '{ml_dim}' in sigx.dims={tuple(sigx.dims)}"

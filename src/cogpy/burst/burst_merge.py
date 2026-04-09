@@ -1,7 +1,9 @@
 import numpy as np
 from .burst_phase import get_burst_analytic, DEFAULT_TIME_HALFWINDOW
 import pandas as pd
-import networkx as nx
+from cogpy.utils.imports import import_optional
+
+nx = import_optional("networkx")
 
 # Merge bursts
 

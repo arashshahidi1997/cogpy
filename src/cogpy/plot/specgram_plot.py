@@ -7,7 +7,9 @@ widgets = import_optional("ipywidgets")
 import_optional("plotly")
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from IPython.display import display, clear_output
+IPython_display = import_optional("IPython.display")
+display = IPython_display.display
+clear_output = IPython_display.clear_output
 from ..utils.wrappers import ax_plot
 
 

@@ -75,6 +75,12 @@ def psd_welch(
     psd : (..., freq)
     freqs : (freq,)
 
+    See Also
+    --------
+    psd_multitaper : Multitaper PSD estimate (better frequency resolution).
+    cogpy.spectral.specx.spectrogramx : Time-frequency spectrogram.
+    cogpy.spectral.features.band_power : Integrate PSD over a frequency band.
+
     Examples
     --------
     >>> arr = np.random.randn(4, 2000)
@@ -130,11 +136,20 @@ def psd_multitaper(
     psd : (..., freq)
     freqs : (freq,)
 
+    See Also
+    --------
+    psd_welch : Welch PSD estimate (faster, lower frequency resolution).
+    cogpy.spectral.specx.spectrogramx : Time-frequency spectrogram.
+    cogpy.spectral.features.band_power : Integrate PSD over a frequency band.
+
     Examples
     --------
     >>> arr = np.random.randn(4, 2000)
     >>> psd, freqs = psd_multitaper(arr, fs=1000, NW=4)
-    >>> psd.shape  # (4, freq)
+    >>> psd.shape[0]
+    4
+    >>> freqs[0], freqs[-1]  # 0 Hz to Nyquist
+    (0.0, 500.0)
     """
     arr = np.asarray(arr)
     axis = int(axis)

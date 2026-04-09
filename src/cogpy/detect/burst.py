@@ -26,6 +26,20 @@ class BurstDetector(EventDetector):
     Accepts:
     - Spectrogram-like inputs (must include a 'freq' dimension)  -> explicit mode
     - Raw time-series inputs (has 'time' but no 'freq' dimension) -> implicit mode (computes spectrogram)
+
+    See Also
+    --------
+    ThresholdDetector : Simple threshold crossing detector.
+    cogpy.detect.utils.score_to_bouts : Convert continuous scores to event bouts.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()
+    >>> det = BurstDetector(h_quantile=0.9, nperseg=256)
+    >>> catalog = det.detect(sigx.isel(AP=0, ML=0))
+    >>> type(catalog).__name__
+    'EventCatalog'
     """
 
     def __init__(

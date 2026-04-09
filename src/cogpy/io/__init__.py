@@ -1,9 +1,19 @@
-"""I/O subpackage.
+"""I/O subpackage — file readers, writers, and format converters.
 
-Input and output functions for various file formats.
+Generic modules (usable by anyone):
+    converters, save_utils, sidecars
+
+Lab-internal modules (assume specific recording setups and directory
+layouts used in the Bhatt Lab; included for convenience but not part
+of the stable public API):
+    ecog_io, ecephys_io, ieeg_io, ieeg_sidecars,
+    load_meta, xml_io, xml_anat_map
+
+Example
+-------
+::
 
     from cogpy.io import ieeg_io, ecephys_io
-
 """
 
 from lazy_loader import attach

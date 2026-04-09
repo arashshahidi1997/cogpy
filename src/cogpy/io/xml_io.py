@@ -1,3 +1,9 @@
+"""OpenEphys XML metadata parser and writer.
+
+.. note:: **Lab-internal module.** Assumes the OpenEphys XML format
+   used in the Bhatt Lab.  Not part of the stable public API.
+"""
+
 from pathlib import Path
 import numpy as np
 from cogpy.utils.imports import import_optional
@@ -6,9 +12,6 @@ xmltodict = import_optional("xmltodict")
 import pandas as pd
 from typing import Dict, Any
 from .save_utils import save_options
-
-
-# %% Anatomical Remapping
 def read_anat_map(xml_dict: Dict[str, Any]) -> pd.DataFrame:
     """
     columnwise

@@ -1,3 +1,9 @@
+"""BIDS iEEG sidecar readers — JSON metadata, channel TSVs, electrode TSVs.
+
+.. note:: **Lab-internal module.** Assumes the Bhatt Lab BIDS-iEEG
+   sidecar conventions.  Not part of the stable public API.
+"""
+
 import numpy as np
 import pandas as pd
 from typing import Optional, Dict, Any

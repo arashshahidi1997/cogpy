@@ -1,4 +1,10 @@
-"""Waveform detection, extraction, feature analysis, and travelling-wave methods."""
+"""Waveform detection, extraction, feature analysis, and travelling-wave methods.
+
+Waveform analysis: ``detect``, ``features``, ``process``, ``plot``, ``utils``.
+Travelling-wave analysis: ``phase_gradient``, ``optical_flow``, ``vector_field``,
+``generalized_phase``, ``kw_spectrum``, ``beamforming``, ``multitaper_nd``,
+``surrogates``, ``synthetic``.
+"""
 
 from lazy_loader import attach
 from typing import TYPE_CHECKING

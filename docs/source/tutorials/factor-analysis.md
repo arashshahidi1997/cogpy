@@ -14,6 +14,20 @@ mystnb:
 This tutorial demonstrates how to decompose a grid ECoG spectrogram into
 spatio-spectral factors using **varimax-rotated PCA** (erpPCA).
 
+:::{admonition} Setup
+:class: dropdown
+
+**Python 3.10+** required.  Install cogpy with the extras this notebook
+needs (interactive plots + spectral backend + Jupyter kernel):
+
+```bash
+pip install "ecogpy[viz,signal,notebook]"
+```
+
+Or install everything at once: `pip install "ecogpy[all]"`.
+For a development install see {doc}`install`.
+:::
+
 :::{note}
 This is a **method demo** using a short bundled sample recording.
 The sample data is not chosen to highlight any particular oscillatory
@@ -31,6 +45,21 @@ The pipeline is:
 6. Process factor scores (smooth, threshold, detect events)
 
 Each factor captures a recurring spatio-spectral pattern.
+
+:::{tip}
+**Why varimax?**  Rohe & Zeng (2023) show that varimax-rotated PCA
+is, under mild conditions, equivalent to ICA: when the latent factors
+are non-Gaussian (leptokurtic, κ > 3), varimax recovers statistically
+identifiable independent components — the same goal ICA pursues, but
+via the classical eigendecomposition + rotation route rather than
+higher-order tensor methods.  This makes erpPCA both computationally
+simple and theoretically grounded.
+
+*K. Rohe and M. Zeng, "Vintage factor analysis with Varimax performs
+statistical inference," J. R. Stat. Soc. B, vol. 85, no. 4,
+pp. 1037–1060, 2023.*
+[DOI: 10.1093/jrsssb/qkad029](https://doi.org/10.1093/jrsssb/qkad029)
+:::
 
 ```{code-cell} python
 import numpy as np

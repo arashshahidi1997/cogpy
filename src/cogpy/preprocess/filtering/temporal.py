@@ -49,6 +49,19 @@ def butterworth_bandpass_shoulder(
     -------
     xr.DataArray
         Filtered data with same shape and coordinates as input.
+
+    See Also
+    --------
+    bandpassx : Butterworth bandpass with explicit order (simpler interface).
+    notchx : IIR notch filter for line-noise removal.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()
+    >>> filt = butterworth_bandpass_shoulder(sigx, fs=float(sigx.fs), low=4, high=50)
+    >>> filt.shape == sigx.shape
+    True
     """
     assert time_dim in x.dims, f"x must have a '{time_dim}' dimension"
 
@@ -89,6 +102,19 @@ def bandpassx(
     """Butterworth bandpass filter (zero-phase, SOS form).
 
     For shoulder-controlled stopband specs use butterworth_bandpass_shoulder instead.
+
+    See Also
+    --------
+    butterworth_bandpass_shoulder : Bandpass with shoulder-controlled stopband specs.
+    notchx : IIR notch filter for line-noise removal.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()
+    >>> filt = bandpassx(sigx, wl=4.0, wh=50.0, order=4, axis="time")
+    >>> filt.shape == sigx.shape
+    True
     """
     fs = _fs_scalar(sigx)
     wh = min(wh, fs / 2 - 0.1)
@@ -126,7 +152,13 @@ def notchx(
     Q: float = 30.0,
     time_dim: str = "time",
 ) -> xr.DataArray:
-    """Notch filter (IIR notch) applied along ``time_dim`` using zero-phase filtering."""
+    """Notch filter (IIR notch) applied along ``time_dim`` using zero-phase filtering.
+
+    See Also
+    --------
+    bandpassx : Butterworth bandpass filter.
+    butterworth_bandpass_shoulder : Bandpass with shoulder-controlled stopband specs.
+    """
     fs = _fs_scalar(sigx)
     axis = sigx.get_axis_num(time_dim)
     b, a = signal.iirnotch(float(w0), float(Q), fs=fs)

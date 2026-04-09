@@ -107,6 +107,13 @@ def moran_i(grid: np.ndarray, *, adjacency: str = "queen"):
     Returns
     -------
     I : (...) float array (or scalar float for 2D input)
+
+    Examples
+    --------
+    >>> grid = np.random.randn(8, 8)
+    >>> I = moran_i(grid, adjacency="queen")
+    >>> -1 <= I <= 1
+    True
     """
     g = np.asarray(grid, dtype=float)
     if g.ndim < 2:

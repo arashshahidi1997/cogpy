@@ -1,3 +1,9 @@
+"""Anatomical channel remapping from OpenEphys XML metadata.
+
+.. note:: **Lab-internal module.** Assumes the OpenEphys XML anatomy
+   layout used in the Bhatt Lab.  Not part of the stable public API.
+"""
+
 import numpy as np
 import xarray as xr
 import pandas as pd

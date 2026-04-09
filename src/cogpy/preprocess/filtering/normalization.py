@@ -18,6 +18,19 @@ def zscorex(
 
     Intended for display normalization (z-score per window before rendering).
     Not a filter — does not modify frequency content.
+
+    See Also
+    --------
+    cogpy.preprocess.filtering.reference.cmrx : Common median reference removal.
+    cogpy.preprocess.filtering.spatial.gaussian_spatialx : Spatial Gaussian lowpass.
+
+    Examples
+    --------
+    >>> import cogpy
+    >>> sigx = cogpy.datasets.load_sample()
+    >>> z = zscorex(sigx, dim="time")
+    >>> z.shape == sigx.shape
+    True
     """
     if dim not in sigx.dims:
         raise ValueError(

@@ -66,6 +66,12 @@ def band_power(psd, freqs, band):
     ------
     ValueError if band falls entirely outside freqs range.
 
+    See Also
+    --------
+    cogpy.spectral.psd.psd_welch : Welch PSD estimate.
+    cogpy.spectral.psd.psd_multitaper : Multitaper PSD estimate.
+    cogpy.spectral.specx.spectrogramx : Time-frequency spectrogram.
+
     Examples
     --------
     >>> bp = band_power(psd, freqs, band=(4.0, 8.0))

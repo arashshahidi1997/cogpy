@@ -79,6 +79,9 @@ pip install "ecogpy[viz]"      # with visualization deps
 pip install "ecogpy[io]"       # with I/O format support
 ```
 
+> **Note:** The PyPI package is `ecogpy` (because `cogpy` was taken), but the
+> import name is `cogpy`: `import cogpy`.
+
 ## Quick Example
 
 ```python

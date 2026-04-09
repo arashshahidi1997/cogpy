@@ -1,12 +1,11 @@
-"""
-Triggered analysis primitives.
+"""Triggered analysis primitives for event-locked epochs.
 
-Functions for computing statistics on event-locked epochs
-and for template-based signal manipulation.
+Statistics: ``triggered_average``, ``triggered_std``, ``triggered_median``,
+``triggered_snr``.
+Template ops: ``estimate_template``, ``fit_scaling``, ``subtract_template``.
 
-These primitives consume epoch arrays (typically produced by
-``cogpy.brainstates.intervals.perievent_epochs``) and return
-summary statistics, templates, or cleaned signals.
+Consumes epoch arrays (e.g. from ``cogpy.brainstates.intervals.perievent_epochs``)
+and returns summary statistics, templates, or cleaned signals.
 """
 
 from cogpy.triggered.stats import (

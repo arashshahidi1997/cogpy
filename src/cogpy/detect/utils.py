@@ -192,6 +192,11 @@ def score_to_bouts(
     -------
     events : list[dict]
         Each dict has keys ``t0``, ``t1``, ``t``, ``value``, ``duration``.
+
+    See Also
+    --------
+    cogpy.detect.threshold.ThresholdDetector : Threshold crossing detector.
+    cogpy.detect.burst.BurstDetector : Burst detection via h-maxima.
     """
     score = np.asarray(score, dtype=float)
     times = np.asarray(times, dtype=float)
