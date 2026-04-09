@@ -14,6 +14,20 @@ mystnb:
 This tutorial demonstrates how to decompose a grid ECoG spectrogram into
 spatio-spectral factors using **varimax-rotated PCA** (erpPCA).
 
+:::{admonition} Setup
+:class: dropdown
+
+**Python 3.10+** required.  Install cogpy with the extras this notebook
+needs (interactive plots + spectral backend + Jupyter kernel):
+
+```bash
+pip install "ecogpy[viz,signal,notebook]"
+```
+
+Or install everything at once: `pip install "ecogpy[all]"`.
+For a development install see {doc}`install`.
+:::
+
 :::{note}
 This is a **method demo** using a short bundled sample recording.
 The sample data is not chosen to highlight any particular oscillatory
