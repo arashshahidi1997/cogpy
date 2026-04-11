@@ -10,13 +10,20 @@ see {doc}`/tutorials/index`; for practical recipes, see {doc}`/howto/index`.
 brainstates
 burst
 datasets
+decomposition
+depth_probe
 detect
 events
 io
 measures
+model
+plot
 preprocess
+regression
 spectral
+triggered
 utils
+wave
 ```
 
 ## Full Module Tree
