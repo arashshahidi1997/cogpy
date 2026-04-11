@@ -5,3 +5,8 @@ exclude_docs: |
   reference/feature-registry
 theme:
   name: material
+
+plugins:
+  - search
+  - monorepo
+  - ezlinks

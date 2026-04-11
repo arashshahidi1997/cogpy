@@ -454,7 +454,7 @@ print(ss.ldx_df[["freqmax", "is_delta", "is_theta", "is_alpha",
 | HV factor browser | `factor_holomap()` | `cogpy.plot.hv.decomposition` |
 
 For cross-recording factor matching (e.g. aligning factors across
-sessions or subjects), see `cogpy.decomposition.match.match_factors`.
+sessions or subjects), see {doc}`factor-matching`.
 
 (computational-considerations)=
 ## Computational considerations
@@ -511,5 +511,6 @@ well-conditioned. The cost is dominated by the eigendecomposition.
 
 ## Next steps
 
+- {doc}`factor-matching` — match factors across sessions and animals (direct follow-up)
 - {doc}`spectral-analysis` — spectral analysis stack (PSD, spectrograms, features)
 - {doc}`spatial-measures` — spatial grid measures (Moran's I, gradient anisotropy)

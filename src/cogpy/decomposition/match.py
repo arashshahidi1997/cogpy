@@ -30,6 +30,7 @@ def match_factors(
     nfac,
     freq_threshold=3,
     simil_score_threshold=0.7,
+    optimal_ref=True,
 ):
     """Match factors across recordings and return matched + centroid results.
 
@@ -45,6 +46,10 @@ def match_factors(
         Max frequency difference for similarity (Hz).
     simil_score_threshold : float
         Minimum similarity to retain a match.
+    optimal_ref : bool, optional
+        If True (default), automatically select the reference recording
+        whose factors are most similar to all others. If False, use the
+        first recording (index 0) as the reference.
 
     Returns
     -------
@@ -56,7 +61,8 @@ def match_factors(
         ``metadata_csv``: matching metadata.
     """
     match_df, opt_ref = get_fac_match_df(
-        spatspec_series, freq_threshold, nrec, nfac, simil_score_threshold
+        spatspec_series, freq_threshold, nrec, nfac, simil_score_threshold,
+        optimal_ref=optimal_ref,
     )
     match_df_compressed = compress_fac_match_df(match_df, nrec, nfac)
 
@@ -117,8 +123,8 @@ def set_offdiag_elements(a, val):
 
 def get_similx_flat(simil_arr, nrec):
     """Flatten similarity array into a stacked xr.DataArray."""
-    for i in zip(range(nrec), range(nrec)):
-        set_offdiag_elements(simil_arr[2, 2], -2)
+    for i in range(nrec):
+        set_offdiag_elements(simil_arr[i, i], -2)
     simil_arr_flat = np.stack([np.stack(simil_arr[i]) for i in range(nrec)])
     similx = xr.DataArray(simil_arr_flat, dims=["rec0", "rec1", "fac0", "fac1"])
     return similx.stack(r0=("rec0", "fac0"), r1=("rec1", "fac1"))
@@ -191,7 +197,10 @@ def cutoff_lowsimil(match_df, threshold: float = 0.7):
     return match_df[match_df.simil_score > threshold]
 
 
-def get_fac_match_df(ss_series, freq_threshold, nrec, nfac, simil_score_threshold):
+def get_fac_match_df(
+    ss_series, freq_threshold, nrec, nfac, simil_score_threshold,
+    optimal_ref=True,
+):
     simil_arr = get_similarity(ss_series, freq_threshold)
     optimal_remapping, _, _ = get_remapping(simil_arr, nrec)
     match_fac_ref = [
@@ -200,8 +209,11 @@ def get_fac_match_df(ss_series, freq_threshold, nrec, nfac, simil_score_threshol
         )
         for refrec in range(nrec)
     ]
-    opt_ref = optimal_refrec(match_fac_ref, eps=1 - simil_score_threshold)
-    match_df = match_fac_ref[1].copy()
+    if optimal_ref:
+        opt_ref = optimal_refrec(match_fac_ref, eps=1 - simil_score_threshold)
+    else:
+        opt_ref = 0
+    match_df = match_fac_ref[opt_ref].copy()
     match_df = cutoff_lowsimil(match_df, threshold=simil_score_threshold)
     return match_df, opt_ref
 
