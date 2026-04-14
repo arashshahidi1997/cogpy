@@ -3,6 +3,20 @@
 All notable changes to cogpy are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- `cogpy.preprocess.interpolate.interpolate_bads_coords` — coordinate-based bad
+  channel interpolation. Takes explicit `(x, y)` electrode coordinates and uses
+  Delaunay triangulation of good channels to interpolate bad ones. Supports
+  arbitrary non-uniform layouts (ECoG grids with hemispheric gaps, checkerboard
+  arrays, depth probes) without hard-coded device geometry. Vectorized over
+  trailing dimensions.
+- `cogpy.preprocess.interpolate.interpolate_bads_xarray` — xarray wrapper that
+  reads `x`, `y` non-dimension coordinates from a DataArray (e.g. loaded from
+  BIDS `_electrodes.tsv`) and returns a DataArray with interpolated values.
+  Dimension order and metadata preserved.
+
 ## [0.1.0] — 2026-03-19
 
 First release prepared for PyPI.

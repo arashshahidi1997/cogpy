@@ -1,23 +1,29 @@
+"""Spatial interpolation for bad / missing channels.
+
+Two families of functions are provided:
+
+- **Grid-based** (``interpolate_bads``, ``extrapolate_bads``) — assumes a
+  regular 2D ``(AP, ML)`` grid. Fast and simple when electrodes sit on a
+  uniform lattice.
+
+- **Coordinate-based** (``interpolate_bads_coords``, ``interpolate_bads_xarray``)
+  — takes explicit ``(x, y)`` electrode coordinates in physical units. Handles
+  non-uniform layouts such as graphene ECoG arrays with hemispheric gaps,
+  checkerboard 32×16 patterns, and depth probes. The geometry lives in the
+  data (BIDS ``_electrodes.tsv`` coordinates), not in the code.
 """
-Module: interpolate.py
-Status: REVIEW
-Last Updated: 2025-09-13
-Author: Arash Shahidi, A.Shahidi@campus.lmu.de
 
-Summary:
-        Provides functions for interpolating and extrapolating bad or missing data in 2D and 3D arrays, particularly useful for ECoG data processing.
+from __future__ import annotations
 
-Functions:
-        interpolate_bads: Interpolates and optionally extrapolates bad channels in a 3D array based on a 2D mask.
-        nan_mask: Creates a mask indicating the positions of NaN values in a 3D array.
-        extrapolate_bads: Extrapolates to fill in NaN values based on the spatial neighborhood of each bad channel in a grid.
-        _griddata: Helper function to perform grid data interpolation on 2D arrays.
-
-"""
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.interpolate import griddata
+
 from ..utils.grid_neighborhood import build_neighbor_masks, make_footprint
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 
 def _griddata(_arr, nans, method="linear", **kwargs):
@@ -173,6 +179,173 @@ def bad2nan(arr, bad):
     iarr = arr.copy()
     iarr[bad, :] = np.nan
     return iarr
+
+
+def interpolate_bads_coords(
+    arr: np.ndarray,
+    coords: np.ndarray,
+    bad: np.ndarray,
+    method: str = "linear",
+    fill_method: str = "nearest",
+) -> np.ndarray:
+    """Interpolate bad channels using explicit electrode coordinates.
+
+    Unlike :func:`interpolate_bads`, this function does not assume a regular
+    grid. It accepts arbitrary 2D coordinates (``coords``) and interpolates
+    bad channel values using Delaunay triangulation of the good channels.
+    This is the correct behavior for non-uniform electrode layouts such as:
+
+    - Graphene ECoG grids with an anatomical gap between hemispheres
+    - 32×16 checkerboard-interleaved arrays
+    - Linear depth probes with non-square aspect ratios
+    - Mixed-modality recordings where electrodes have heterogeneous spacing
+
+    Parameters
+    ----------
+    arr : ndarray, shape (n_channels, *extra_dims)
+        Signal array with channels along axis 0. Any number of trailing
+        dimensions (time, frequency, etc.) are preserved.
+    coords : ndarray, shape (n_channels, 2)
+        ``(x, y)`` electrode coordinates. Units are arbitrary but must be
+        consistent across channels (e.g. all in mm).
+    bad : ndarray, shape (n_channels,)
+        Boolean mask — ``True`` where a channel is bad and should be
+        interpolated.
+    method : {"linear", "nearest", "cubic"}, default "linear"
+        Interpolation method passed to :func:`scipy.interpolate.griddata`.
+    fill_method : {"nearest", None}, default "nearest"
+        Fallback for bad channels outside the convex hull of good channels
+        (where ``method="linear"`` returns NaN). If ``"nearest"``, a second
+        griddata pass with ``method="nearest"`` fills remaining gaps. If
+        ``None``, NaNs are left in place.
+
+    Returns
+    -------
+    out : ndarray
+        Copy of ``arr`` with rows at ``bad`` positions replaced by
+        interpolated values.
+
+    Notes
+    -----
+    ``scipy.interpolate.griddata`` vectorizes over trailing dimensions of
+    ``values``, so the full signal is interpolated in a single call per
+    method pass — no per-timepoint Python loop.
+
+    See Also
+    --------
+    interpolate_bads : Grid-based version for uniform 2D ``(AP, ML)`` layouts.
+    interpolate_bads_xarray : Wrapper that reads coords from a DataArray.
+    """
+    arr = np.asarray(arr)
+    coords = np.asarray(coords)
+    bad = np.asarray(bad, dtype=bool)
+
+    if arr.shape[0] != coords.shape[0] or arr.shape[0] != bad.shape[0]:
+        raise ValueError(
+            f"arr, coords, and bad must agree on n_channels along axis 0; "
+            f"got arr.shape[0]={arr.shape[0]}, coords.shape[0]={coords.shape[0]}, "
+            f"bad.shape[0]={bad.shape[0]}"
+        )
+    if coords.ndim != 2 or coords.shape[1] != 2:
+        raise ValueError(f"coords must have shape (n_channels, 2); got {coords.shape}")
+
+    if not bad.any():
+        return arr.copy()
+
+    good = ~bad
+    out = arr.copy()
+
+    # Primary interpolation — uses Delaunay triangulation of good points.
+    # scipy.griddata accepts values of shape (n, *) and vectorizes.
+    out[bad] = griddata(
+        coords[good],
+        arr[good],
+        coords[bad],
+        method=method,
+    )
+
+    # Fill bad channels outside the convex hull (linear returns NaN for those).
+    if fill_method is not None:
+        bad_nan = bad.copy()
+        bad_nan &= np.isnan(out).reshape(out.shape[0], -1).any(axis=1)
+        if bad_nan.any():
+            out[bad_nan] = griddata(
+                coords[good],
+                arr[good],
+                coords[bad_nan],
+                method=fill_method,
+            )
+
+    return out
+
+
+def interpolate_bads_xarray(
+    sig: "xr.DataArray",
+    bad: np.ndarray,
+    x_coord: str = "x",
+    y_coord: str = "y",
+    ch_dim: str = "ch",
+    method: str = "linear",
+) -> "xr.DataArray":
+    """Interpolate bad channels in an xarray DataArray using stored coordinates.
+
+    Reads ``(x, y)`` electrode coordinates from non-dimension coordinates
+    attached to ``ch_dim``, calls :func:`interpolate_bads_coords`, and returns
+    a DataArray with the original shape and metadata preserved.
+
+    Parameters
+    ----------
+    sig : xr.DataArray
+        Signal with a channel dimension (``ch_dim``) and ``x``, ``y``
+        non-dimension coordinates along that dimension. Typically loaded
+        from a BIDS ``_ieeg.lfp`` with matching ``_electrodes.tsv``.
+    bad : array-like, shape (n_channels,)
+        Boolean mask along ``ch_dim``.
+    x_coord, y_coord : str, default "x", "y"
+        Names of the x and y coordinate variables along ``ch_dim``.
+    ch_dim : str, default "ch"
+        Name of the channel dimension.
+    method : {"linear", "nearest", "cubic"}, default "linear"
+        Passed to :func:`interpolate_bads_coords`.
+
+    Returns
+    -------
+    out : xr.DataArray
+        Same shape, dims, and coordinates as ``sig`` with bad-channel values
+        replaced by their interpolated counterparts.
+
+    See Also
+    --------
+    interpolate_bads_coords : Plain numpy primitive.
+    """
+    import xarray as xr
+
+    if ch_dim not in sig.dims:
+        raise ValueError(f"sig must have a '{ch_dim}' dimension; got dims={sig.dims}")
+    for name in (x_coord, y_coord):
+        if name not in sig.coords:
+            raise ValueError(f"sig must have a '{name}' coordinate along '{ch_dim}'")
+
+    sig_ch_first = sig.transpose(ch_dim, ...)
+    coords_xy = np.column_stack(
+        [
+            np.asarray(sig_ch_first.coords[x_coord].values),
+            np.asarray(sig_ch_first.coords[y_coord].values),
+        ]
+    )
+    out_arr = interpolate_bads_coords(
+        sig_ch_first.values,
+        coords_xy,
+        np.asarray(bad),
+        method=method,
+    )
+    out = xr.DataArray(
+        out_arr,
+        dims=sig_ch_first.dims,
+        coords=sig_ch_first.coords,
+        attrs=sig.attrs,
+    )
+    return out.transpose(*sig.dims)
 
 
 def infer_nan_mask(arr):
