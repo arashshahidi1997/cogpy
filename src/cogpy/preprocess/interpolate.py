@@ -279,6 +279,66 @@ def interpolate_bads_coords(
     return out
 
 
+def interpolate_bads_1d(
+    arr: np.ndarray,
+    bad: np.ndarray,
+    positions: "np.ndarray | None" = None,
+) -> np.ndarray:
+    """Interpolate bad channels on a linear (1D) probe.
+
+    For depth probes where electrodes lie along a single axis,
+    ``scipy.interpolate.griddata`` fails because points are collinear.
+    This function uses ``np.interp`` along the probe axis instead.
+
+    Parameters
+    ----------
+    arr : ndarray, shape (n_channels, *extra_dims)
+        Signal array with channels along axis 0.
+    bad : ndarray, shape (n_channels,)
+        Boolean mask — ``True`` for bad channels.
+    positions : ndarray, shape (n_channels,), optional
+        1D electrode positions (e.g. depth in mm). If *None*, uses
+        integer channel indices ``[0, 1, ..., n-1]``.
+
+    Returns
+    -------
+    out : ndarray
+        Copy of ``arr`` with bad-channel rows replaced by linearly
+        interpolated values, using nearest-neighbor extrapolation at
+        the endpoints.
+    """
+    arr = np.asarray(arr)
+    bad = np.asarray(bad, dtype=bool)
+
+    if arr.shape[0] != bad.shape[0]:
+        raise ValueError(
+            f"arr and bad must agree on n_channels; "
+            f"got {arr.shape[0]} vs {bad.shape[0]}"
+        )
+    if not bad.any():
+        return arr.copy()
+
+    if positions is None:
+        positions = np.arange(arr.shape[0], dtype=np.float64)
+    positions = np.asarray(positions, dtype=np.float64)
+
+    good = ~bad
+    out = arr.copy()
+
+    trailing = arr.shape[1:]
+    good_pos = positions[good]
+    bad_pos = positions[bad]
+
+    good_vals = arr[good].reshape(int(good.sum()), -1).astype(np.float64)
+    interp_vals = np.empty((int(bad.sum()), good_vals.shape[1]), dtype=np.float64)
+
+    for col in range(good_vals.shape[1]):
+        interp_vals[:, col] = np.interp(bad_pos, good_pos, good_vals[:, col])
+
+    out[bad] = interp_vals.reshape(int(bad.sum()), *trailing).astype(arr.dtype)
+    return out
+
+
 def interpolate_bads_xarray(
     sig: "xr.DataArray",
     bad: np.ndarray,

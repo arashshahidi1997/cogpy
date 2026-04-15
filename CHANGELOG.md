@@ -16,6 +16,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
   reads `x`, `y` non-dimension coordinates from a DataArray (e.g. loaded from
   BIDS `_electrodes.tsv`) and returns a DataArray with interpolated values.
   Dimension order and metadata preserved.
+- `cogpy.preprocess.interpolate.interpolate_bads_1d` — linear (1D) interpolation
+  for depth probes where electrodes lie along a single axis. Uses `np.interp`
+  along the probe axis with nearest-neighbor extrapolation at endpoints. Needed
+  because `scipy.interpolate.griddata` fails on collinear points.
 
 ## [0.1.0] — 2026-03-19
 
