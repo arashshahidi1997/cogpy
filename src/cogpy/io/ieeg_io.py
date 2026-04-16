@@ -106,10 +106,15 @@ def from_file(
         dask_array = da.from_array(arr, chunks="auto")
 
         time_coords = np.arange(n_time) / metadata.fs
+        coords: dict = {"time": time_coords, "ch": np.arange(n_ch)}
+        if metadata.x is not None and len(metadata.x) == n_ch:
+            coords["x"] = ("ch", metadata.x)
+        if metadata.y is not None and len(metadata.y) == n_ch:
+            coords["y"] = ("ch", metadata.y)
         data_array = xr.DataArray(
             dask_array,
             dims=("time", "ch"),
-            coords={"time": time_coords, "ch": np.arange(n_ch)},
+            coords=coords,
         )
         # Store grid info in attributes for later reconstruction
         data_array.attrs["ncol"] = metadata.ncol

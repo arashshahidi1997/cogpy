@@ -8,6 +8,36 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
+BIDS_IEEG_CHANNEL_COUNT_KEYS: tuple[str, ...] = (
+    "ECOGChannelCount",
+    "SEEGChannelCount",
+    "EEGChannelCount",
+    "ECGChannelCount",
+    "EMGChannelCount",
+    "MiscChannelCount",
+    "TriggerChannelCount",
+)
+
+
+def resolve_channel_count(meta: dict[str, Any]) -> int:
+    """Resolve total channel count from a BIDS-iEEG JSON sidecar.
+
+    Prefers BIDS-iEEG standard modality-specific keys
+    (``ECOGChannelCount``, ``SEEGChannelCount``, …) summed together.
+    Falls back to the non-standard generic ``ChannelCount`` key for
+    backwards compatibility with pre-standard sidecars.
+    """
+    present = [k for k in BIDS_IEEG_CHANNEL_COUNT_KEYS if k in meta]
+    if present:
+        return int(sum(meta[k] for k in present))
+    if "ChannelCount" in meta:
+        return int(meta["ChannelCount"])
+    raise KeyError(
+        "Sidecar has no channel count: expected one of "
+        f"{BIDS_IEEG_CHANNEL_COUNT_KEYS} or legacy 'ChannelCount'"
+    )
+
+
 def read_json_metadata(
     path: str | Path, *, required_keys: tuple[str, ...] = ()
 ) -> dict[str, Any]:
