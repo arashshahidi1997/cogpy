@@ -377,28 +377,36 @@ def perievent_epochs(
     else:
         out_dtype = np.result_type(xsig.dtype, fill_arr.dtype)
 
-    out_shape = (len(event_times), *[xsig.sizes[d] for d in other_dims], n_samples)
-    out = np.full(out_shape, fill_value, dtype=out_dtype)
+    n_events = len(event_times)
 
+    # Extract underlying numpy array once; xarray.isel() in a loop is ~1000x
+    # slower than np.take due to per-call xarray bookkeeping (coord reshaping,
+    # new DataArray construction). All downstream operations are pure numpy.
     xsig_other_last = xsig.transpose(*other_dims, time_dim) if other_dims else xsig
-    for ie, t_ev in enumerate(event_times):
-        i_center = _nearest_sample_index(t, t_ev)
-        i_start = i_center - n_pre
-        i_end = i_center + n_post + 1
+    data = np.asarray(xsig_other_last.data)  # shape (*other_dims, n_time)
 
-        src_start = max(0, i_start)
-        src_end = min(n_time, i_end)
-        if src_end <= src_start:
-            continue
+    # Vectorized nearest-sample lookup for all events at once.
+    i_centers = _nearest_sample_indices(t, event_times)  # shape (n_events,)
+    i_starts = i_centers - n_pre  # shape (n_events,)
 
-        dest_start = max(0, -i_start)
-        dest_end = dest_start + (src_end - src_start)
+    # Per-event sample indices: shape (n_events, n_samples)
+    sample_idx = i_starts[:, None] + np.arange(n_samples)[None, :]
+    valid = (sample_idx >= 0) & (sample_idx < n_time)
 
-        epoch = xsig_other_last.isel({time_dim: slice(src_start, src_end)})
-        epoch_data = np.asarray(epoch.data)
-        out[(ie, *([slice(None)] * len(other_dims)), slice(dest_start, dest_end))] = (
-            epoch_data
-        )
+    # Clip to valid range so np.take won't error; invalid positions are
+    # overwritten with fill_value below.
+    safe_idx = np.clip(sample_idx, 0, max(n_time - 1, 0))
+
+    # Gather epochs in one C-level call: result shape (*other_dims, n_events, n_samples)
+    gathered = np.take(data, safe_idx, axis=-1)
+    # Move event axis to the front: (n_events, *other_dims, n_samples)
+    out = np.moveaxis(gathered, -2, 0).astype(out_dtype, copy=True)
+
+    # Apply fill_value where original indices were out of bounds.
+    if not valid.all():
+        invalid = ~valid
+        bcast_shape = (n_events,) + (1,) * len(other_dims) + (n_samples,)
+        out[np.broadcast_to(invalid.reshape(bcast_shape), out.shape)] = fill_value
 
     coords = {}
     for name, coord in xsig.coords.items():
@@ -428,3 +436,27 @@ def _nearest_sample_index(t: np.ndarray, t_ev: float) -> int:
     if i >= n:
         return n - 1
     return i if abs(t[i] - t_ev) <= abs(t[i - 1] - t_ev) else i - 1
+
+
+def _nearest_sample_indices(t: np.ndarray, event_times: np.ndarray) -> np.ndarray:
+    """
+    Vectorized nearest-sample-index lookup for multiple event times.
+
+    Same behavior as _nearest_sample_index per-element, but computed in one
+    numpy call for a whole array of events.
+
+    Assumes t is 1D, sorted increasing.
+    """
+    n = len(t)
+    if n == 0:
+        raise ValueError("time coordinate is empty")
+
+    i = np.searchsorted(t, event_times, side="left")
+    # Safe indices for comparison (avoid out-of-bounds on t[i] / t[i-1]).
+    safe_i = np.clip(i, 1, max(n - 1, 1))
+    left = np.abs(t[safe_i] - event_times)
+    right = np.abs(t[safe_i - 1] - event_times)
+    nearer = np.where(left <= right, safe_i, safe_i - 1)
+    # Preserve original edge behavior.
+    out = np.where(i <= 0, 0, np.where(i >= n, n - 1, nearer))
+    return out.astype(np.int64, copy=False)
