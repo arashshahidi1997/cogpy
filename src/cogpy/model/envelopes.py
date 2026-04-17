@@ -1,5 +1,8 @@
 import numpy as np
 
+# np.trapz was removed in numpy 2.x; np.trapezoid is the replacement (added 2.0).
+_trapezoid = getattr(np, "trapezoid", getattr(np, "trapz", None))
+
 
 def biexp(t, A=1.0, alpha=1.0, beta=0.5, t0=0.0):
     """
@@ -86,7 +89,7 @@ def finite_duration_biexp(
         if renorm == "area":
             # target area of the infinite bi-exponential (for common-shift case)
             target_area = A * (1.0 / alpha - 1.0 / beta)
-            num = np.trapz(y, t)
+            num = _trapezoid(y, t)
             if num != 0:
                 y *= target_area / num
         elif renorm == "peak":

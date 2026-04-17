@@ -22,6 +22,10 @@ import xarray as xr
 
 EPS = 1e-12
 
+# np.trapz was removed in numpy 2.x in favor of np.trapezoid (added in numpy 2.0).
+# Keep a single alias so cogpy stays compatible with both numpy 1.x and 2.x.
+_trapezoid = getattr(np, "trapezoid", getattr(np, "trapz", None))
+
 __all__ = [
     "band_power",
     "relative_band_power",
@@ -84,7 +88,7 @@ def band_power(psd, freqs, band):
         raise ValueError(
             f"Band {band} falls outside freqs range [{float(freqs[0])}, {float(freqs[-1])}]"
         )
-    return np.trapz(psd[..., mask], x=freqs[mask], axis=-1)
+    return _trapezoid(psd[..., mask], x=freqs[mask], axis=-1)
 
 
 def relative_band_power(psd, freqs, band, *, norm_range=None):
