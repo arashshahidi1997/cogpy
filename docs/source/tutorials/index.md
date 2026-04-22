@@ -23,4 +23,5 @@ bad-channel-detection
 spatial-measures
 travelling-waves
 factor-analysis
+factor-matching
 ```
