@@ -78,6 +78,7 @@ class ARWhiten:
         x : array-like
             Input data array. The first dimension should be the number of channels.
         """
+        x = np.asarray(x)
         params = []
         models = []
         for ich in range(x.shape[0]):
@@ -87,7 +88,7 @@ class ARWhiten:
         coefs = np.array(params)
         self.all_coefs = coefs.tolist()
         argmed = list(coefs[:, 0]).index(
-            np.percentile(coefs[:, 0], 50, interpolation="nearest")
+            np.percentile(coefs[:, 0], 50, method="nearest")
         )
         self.coefs = list(coefs[argmed])
         self.set_kernel()

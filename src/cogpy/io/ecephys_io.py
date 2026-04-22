@@ -27,6 +27,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from cogpy.utils.imports import import_optional
+from .sidecars import resolve_channel_count
 
 da = import_optional("dask.array")
 from typing import Union
@@ -66,7 +67,7 @@ def load_ecephys_metadata(lfp_path, sidecars=None) -> dict:
 
     return {
         "fs": meta["SamplingFrequency"],
-        "nch": meta["ChannelCount"],
+        "nch": resolve_channel_count(meta),
         "dtype": np.dtype(ch["dtype"].iloc[0]),
         "AP": elec["AP"].to_numpy(),
         "ML": elec["ML"].to_numpy(),
